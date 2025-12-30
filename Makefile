@@ -31,7 +31,7 @@ help: ## Show this help message
 	@echo "${YELLOW}Methodology: Run check-all before committing to ensure error_count = 0${NC}"
 
 check-all: lint test ## Run ALL quality checks (use before committing)
-	@echo "${GREEN}✅ All quality checks passed! Error count: 0${NC}"
+	@echo "${GREEN}✅ All quality checks passed!${NC}"
 
 lint: lint-black lint-isort lint-flake8 lint-pylint lint-mypy lint-bandit ## Run all linters
 	@echo "${GREEN}✅ All linters passed!${NC}"
