@@ -64,6 +64,7 @@ When contributing to this project:
 2. **Use environment variables** for sensitive configuration
 
 3. **Run security scanners:**
+
    ```bash
    # Bandit - Python code security
    bandit -r . --exclude ./tests
@@ -102,18 +103,21 @@ When contributing to this project:
 This project implements the following security measures:
 
 ### Code Security
+
 - ✅ Bandit security scanning in CI/CD
 - ✅ Dependency vulnerability scanning (Safety, pip-audit)
 - ✅ Container vulnerability scanning (Trivy)
 - ✅ Static Application Security Testing (SAST)
 
 ### CI/CD Security
+
 - ✅ Automated security scans on every PR
 - ✅ Dependency updates via Dependabot
 - ✅ No secrets in code (enforced by pre-commit hooks)
 - ✅ Security reports uploaded to GitHub Security tab
 
 ### Runtime Security
+
 - 🔄 Input validation (to be implemented)
 - 🔄 Rate limiting (to be implemented)
 - 🔄 Authentication/Authorization (to be implemented)
