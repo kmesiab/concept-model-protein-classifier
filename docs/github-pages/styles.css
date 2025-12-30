@@ -78,7 +78,7 @@ nav .container {
 }
 
 .nav-links a:hover,
-.nav-links a.active {
+.nav-links a[aria-current="page"] {
   color: var(--primary-color);
 }
 
@@ -448,9 +448,58 @@ footer .container {
 }
 
 /* Accessibility */
-a:focus, button:focus {
-  outline: 2px solid var(--primary-color);
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Skip to main content link */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--primary-color);
+  color: white;
+  padding: 0.5rem 1rem;
+  text-decoration: none;
+  border-radius: 0 0 4px 0;
+  z-index: 200;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* Improved focus states for keyboard navigation */
+a:focus-visible, button:focus-visible {
+  outline: 3px solid var(--primary-color);
   outline-offset: 2px;
+}
+
+/* Remove default focus outline when using mouse */
+a:focus:not(:focus-visible), button:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Ensure sufficient color contrast for text-light */
+p, li, .footer-section a {
+  color: #4b5563; /* Darker than original #6b7280 for better contrast */
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --text-light: #1f2937;
+    --border-color: #000000;
+  }
 }
 
 /* Loading Animation */
@@ -467,4 +516,20 @@ a:focus, button:focus {
 
 .fade-in {
   animation: fadeIn 0.6s ease-out;
+}
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .fade-in {
+    animation: none;
+  }
 }
