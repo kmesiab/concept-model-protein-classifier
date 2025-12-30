@@ -3,6 +3,7 @@ Pydantic models for request and response validation.
 """
 
 from typing import List, Optional
+
 from pydantic import BaseModel, Field, validator
 
 
@@ -14,6 +15,7 @@ class SequenceInput(BaseModel):
 
     @validator("sequence")
     def sequence_not_empty(cls, v):
+        """Validate that sequence is not empty."""
         if not v or not v.strip():
             raise ValueError("Sequence cannot be empty")
         return v.strip()

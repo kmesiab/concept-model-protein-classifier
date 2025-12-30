@@ -2,8 +2,8 @@
 Utility functions for the API.
 """
 
-from typing import List, Tuple
 from io import StringIO
+from typing import List, Tuple
 
 
 def _save_sequence(sequences: List[Tuple[str, str]], seq_id: str, seq_parts: List[str]) -> None:
@@ -53,9 +53,9 @@ def parse_fasta(fasta_text: str) -> List[Tuple[str, str]]:
     Raises:
         ValueError: If FASTA format is invalid
     """
-    sequences = []
+    sequences: List[Tuple[str, str]] = []
     current_id = None
-    current_seq = []
+    current_seq: List[str] = []
 
     lines = fasta_text.strip().split("\n")
 

@@ -5,8 +5,9 @@ Python client example for the Protein Disorder Classification API.
 This example demonstrates how to use the API to classify protein sequences.
 """
 
+from typing import Dict, List, Tuple
+
 import requests
-from typing import List, Tuple, Dict
 
 
 class ProteinClassifierClient:

@@ -3,14 +3,14 @@ Tests for the classifier module.
 """
 
 from app.classifier import (
-    get_aa_composition,
-    calculate_shannon_entropy,
-    compute_features,
-    count_conditions_met,
-    classify_sequence,
-    classify_batch,
     CANONICAL_AAS,
     DEFAULT_THRESHOLDS,
+    calculate_shannon_entropy,
+    classify_batch,
+    classify_sequence,
+    compute_features,
+    count_conditions_met,
+    get_aa_composition,
 )
 
 

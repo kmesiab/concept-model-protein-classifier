@@ -5,29 +5,29 @@ Provides REST API endpoints for fast, accurate protein disorder prediction.
 Based on validated classifier with 84.52% accuracy.
 """
 
-import time
-import os
+import hashlib
 import logging
+import os
+import time
 from datetime import datetime, timezone
 from typing import Optional
-from fastapi import FastAPI, HTTPException, Header, Request, status
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-import hashlib
 
+from fastapi import FastAPI, Header, HTTPException, Request, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from .auth import api_key_manager
+from .classifier import classify_batch
 from .models import (
+    ClassificationResult,
     ClassifyRequest,
     ClassifyResponse,
-    ClassificationResult,
+    ErrorResponse,
     FeatureValues,
     HealthResponse,
-    ErrorResponse,
 )
-from .classifier import classify_batch
-from .auth import api_key_manager
 from .rate_limiter import get_rate_limiter
 from .utils import parse_fasta, validate_amino_acid_sequence
-
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -80,7 +80,7 @@ app.add_middleware(
 
 
 @app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
+async def global_exception_handler(_request: Request, exc: Exception):
     """Global exception handler for unexpected errors."""
     # Log the full error server-side for debugging
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
@@ -214,9 +214,11 @@ async def classify_sequences(
     # Check batch size limit
     num_sequences = len(request.sequences)
     if num_sequences > metadata["max_batch_size"]:
+        max_batch = metadata["max_batch_size"]
+        tier = metadata["tier"]
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Batch size {num_sequences} exceeds limit of {metadata['max_batch_size']} for {metadata['tier']} tier",
+            detail=f"Batch size {num_sequences} exceeds limit of {max_batch} for {tier} tier",
         )
 
     # Check rate limits
@@ -315,14 +317,16 @@ async def classify_fasta(
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid FASTA format: {str(e)}"
-        )
+        ) from e
 
     # Check batch size limit
     num_sequences = len(sequences)
     if num_sequences > metadata["max_batch_size"]:
+        max_batch = metadata["max_batch_size"]
+        tier = metadata["tier"]
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Batch size {num_sequences} exceeds limit of {metadata['max_batch_size']} for {metadata['tier']} tier",
+            detail=f"Batch size {num_sequences} exceeds limit of {max_batch} for {tier} tier",
         )
 
     # Check rate limits

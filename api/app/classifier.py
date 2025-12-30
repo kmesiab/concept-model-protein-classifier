@@ -6,8 +6,7 @@ Extracted from the validated notebook with 84.52% accuracy.
 """
 
 import math
-from typing import Dict, List, Tuple, Optional
-
+from typing import Dict, List, Optional, Tuple
 
 # Amino Acid Property Scales
 # These are the fundamental biophysical properties used for classification
@@ -168,21 +167,21 @@ def get_aa_composition(sequence: str) -> Tuple[Dict[str, float], int]:
     Returns:
         Tuple of (composition dict, valid sequence length)
     """
-    composition = {aa: 0 for aa in CANONICAL_AAS}
+    composition = {amino_acid: 0 for amino_acid in CANONICAL_AAS}
     valid_len = 0
 
-    for aa in sequence:
-        if aa in CANONICAL_AAS:
-            composition[aa] += 1
+    for amino_acid in sequence:
+        if amino_acid in CANONICAL_AAS:
+            composition[amino_acid] += 1
             valid_len += 1
 
     if valid_len == 0:
-        return {aa: 0.0 for aa in CANONICAL_AAS}, 0
+        return {amino_acid: 0.0 for amino_acid in CANONICAL_AAS}, 0
 
-    for aa in composition:
-        composition[aa] /= valid_len
+    for amino_acid in composition:
+        composition[amino_acid] /= valid_len  # type: ignore
 
-    return composition, valid_len
+    return composition, valid_len  # type: ignore
 
 
 def calculate_shannon_entropy(aa_composition: Dict[str, float]) -> float:
@@ -250,12 +249,12 @@ def compute_features(sequence: str) -> Dict[str, float]:
     flex_norm_sum = 0
     h_bond_potential_sum = 0
 
-    for aa in sequence:
-        if aa in AA_PROPERTIES:
-            props = AA_PROPERTIES[aa]
-            hydro_norm_sum += props["hydro_norm"]
-            flex_norm_sum += props["flexibility"] / 0.544  # Normalize by max flexibility
-            h_bond_potential_sum += props["h_donors"] + props["h_acceptors"]
+    for amino_acid in sequence:
+        if amino_acid in AA_PROPERTIES:
+            props = AA_PROPERTIES[amino_acid]
+            hydro_norm_sum += props["hydro_norm"]  # type: ignore
+            flex_norm_sum += props["flexibility"] / 0.544  # type: ignore # Normalize by max flexibility
+            h_bond_potential_sum += props["h_donors"] + props["h_acceptors"]  # type: ignore
 
     # Net charge (positive - negative)
     net_charge_prop = (composition.get("R", 0) + composition.get("K", 0)) - (

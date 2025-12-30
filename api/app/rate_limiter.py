@@ -4,8 +4,9 @@ Rate limiting functionality using Redis for distributed rate limiting.
 
 import os
 import time
-from typing import Optional, Tuple
 from datetime import datetime, timezone
+from typing import Optional, Tuple
+
 import redis
 
 
@@ -34,7 +35,7 @@ class RateLimiter:
             print(f"Warning: Redis not available: {e}")
             print("Rate limiting will use in-memory fallback (not suitable for production)")
             self.redis_available = False
-            self._memory_store = {}  # Fallback for development
+            self._memory_store: dict = {}  # type: ignore  # Fallback for development
 
     def check_rate_limit(
         self,
