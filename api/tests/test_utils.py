@@ -3,7 +3,6 @@ Tests for utility functions.
 """
 
 import pytest
-
 from app.utils import format_fasta, parse_fasta, validate_amino_acid_sequence
 
 
