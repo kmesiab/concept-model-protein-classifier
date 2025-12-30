@@ -69,7 +69,7 @@ lint-mypy: ## Check type hints with mypy
 
 lint-bandit: ## Run security checks with Bandit
 	@echo "${YELLOW}Running Bandit security scanner...${NC}"
-	@bandit -r . --configfile pyproject.toml || (echo "${RED}❌ Bandit security scan failed${NC}" && exit 1)
+	@bandit -r . --exclude ./tests,./venv,./env,./.venv || (echo "${RED}❌ Bandit security scan failed${NC}" && exit 1)
 	@echo "${GREEN}✅ Bandit security scan passed${NC}"
 
 test: ## Run test suite with coverage
