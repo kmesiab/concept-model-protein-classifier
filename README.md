@@ -45,10 +45,32 @@ For each sequence or segment, the following features are computed:
 
 See the notebook for detailed metrics, confusion matrices, and code for reproducing the analysis.
 
+## Validation Experiments
+
+To ensure the concept model captures true biophysical principles rather than dataset-specific artifacts, comprehensive validation experiments have been added:
+
+1. **MobiDB Independent Test Set** - Tests generalization to an independent dataset from a different source
+2. **Homology-Aware Cross-Validation** - Prevents sequence similarity leakage between train/test sets using MMseqs2 clustering
+3. **Label-Shuffle Control** - Tests for data leakage by randomizing labels (should drop to ~50% accuracy)
+4. **Statistical Significance Testing** - Bootstrap confidence intervals and McNemar's test for rigorous comparison
+5. **Performance Comparison Table** - Side-by-side comparison of all validation results
+
+**See [docs/VALIDATION.md](docs/VALIDATION.md) for detailed documentation of validation methods and interpretation guidelines.**
+
+**Expected Results for Production-Ready Model:**
+- Homology-aware CV: >75% accuracy
+- MobiDB independent test: >70% accuracy  
+- Label-shuffle control: ~50% accuracy (random chance)
+- Narrow confidence intervals and statistically significant differences
+
 ## Running the Experiment
 
-1. Install dependencies (`numpy`, `pandas`, `scikit-learn`, `requests`).
-2. Download the notebook and run all cells. The scripts will download required protein FASTA files and compute all features and results.
+1. Install dependencies (`numpy`, `pandas`, `scikit-learn`, `scipy`, `requests`).
+2. (Optional) Install MMseqs2 for homology-aware validation: `conda install -c bioconda mmseqs2`
+3. Download the notebook and run all cells. The scripts will download required protein FASTA files and compute all features and results.
+4. To run validation experiments, uncomment the function calls in the "Validation Experiments" section of the notebook.
+
+For detailed validation documentation, see [docs/VALIDATION.md](docs/VALIDATION.md).
 
 ## Reference
 
