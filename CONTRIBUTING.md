@@ -218,7 +218,7 @@ All PRs must pass the following quality gates before merging:
 |-------|------|-----------|
 | Code formatting | Black | 100% compliance |
 | Linting | Flake8, Pylint | No errors |
-| Type checking | MyPy | Strict mode, no errors |
+| Type checking | MyPy | No errors |
 | Test coverage | pytest-cov | ≥80% |
 | Security | Bandit | No HIGH/CRITICAL |
 | Dependencies | Safety, pip-audit | No known vulnerabilities |
