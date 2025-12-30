@@ -8,7 +8,7 @@
 #   make fix          - Auto-fix formatting issues
 #   make help         - Show this help message
 
-.PHONY: help check-all lint test fix clean
+.PHONY: help check-all lint test fix clean fix-black fix-isort lint-black lint-isort lint-flake8 lint-pylint lint-mypy lint-bandit install
 .DEFAULT_GOAL := help
 
 # Colors for output
