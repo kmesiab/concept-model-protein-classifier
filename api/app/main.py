@@ -12,7 +12,7 @@ import time
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import FastAPI, Header, HTTPException, Request, status
+from fastapi import FastAPI, Header, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -284,7 +284,9 @@ async def classify_sequences(
     },
 )
 async def classify_fasta(
-    request: Request, threshold: int = 4, x_api_key: Optional[str] = Header(None, alias="X-API-Key")
+    request: Request,
+    threshold: int = Query(4, ge=1, le=7, description="Classification threshold (1-7)"),
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
 ):
     """
     Classify protein sequences from FASTA format input.
@@ -376,8 +378,6 @@ async def classify_fasta(
 
 
 if __name__ == "__main__":
-    import os
-
     import uvicorn
 
     # Get host from environment variable, default to 127.0.0.1 for security

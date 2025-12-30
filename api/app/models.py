@@ -14,7 +14,7 @@ class SequenceInput(BaseModel):
     sequence: str = Field(..., description="Protein sequence (amino acid string)")
 
     @validator("sequence")
-    def sequence_not_empty(cls, v):
+    def sequence_not_empty(cls, v):  # noqa: N805
         """Validate that sequence is not empty."""
         if not v or not v.strip():
             raise ValueError("Sequence cannot be empty")

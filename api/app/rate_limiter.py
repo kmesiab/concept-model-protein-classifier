@@ -2,12 +2,15 @@
 Rate limiting functionality using Redis for distributed rate limiting.
 """
 
+import logging
 import os
 import time
 from datetime import datetime, timezone
 from typing import Optional, Tuple
 
 import redis
+
+logger = logging.getLogger(__name__)
 
 
 class RateLimiter:
@@ -32,8 +35,8 @@ class RateLimiter:
             self.redis_client.ping()
             self.redis_available = True
         except (redis.ConnectionError, redis.RedisError) as e:
-            print(f"Warning: Redis not available: {e}")
-            print("Rate limiting will use in-memory fallback (not suitable for production)")
+            logger.warning("Redis not available: %s", e)
+            logger.warning("Rate limiting will use in-memory fallback (not suitable for production)")
             self.redis_available = False
             self._memory_store: dict = {}  # type: ignore  # Fallback for development
 
@@ -113,7 +116,7 @@ class RateLimiter:
 
                 return True, None
             except redis.RedisError as e:
-                print(f"Redis error: {e}")
+                logger.error("Redis error: %s", e)
                 # Fallback to allowing request if Redis fails
                 return True, None
         else:
