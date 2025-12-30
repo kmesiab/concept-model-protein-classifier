@@ -110,6 +110,25 @@ resource "aws_ecs_service" "api" {
     minimum_healthy_percent = 100
   }
 
+  # IMPORTANT: Deployment Circuit Breaker Behavior
+  #
+  # The circuit breaker is configured to automatically rollback failed deployments.
+  # When a rollback occurs, the ECS deployment command completes successfully (exit code 0),
+  # which means GitHub Actions will show a green checkmark even though the new version
+  # was NOT deployed.
+  #
+  # This can create confusion where:
+  # - GitHub Actions workflow shows SUCCESS
+  # - But ECS service is still running the previous task definition
+  # - The deployment was automatically rolled back due to health check failures
+  #
+  # To verify actual deployment status:
+  # 1. Check CloudWatch logs for deployment events
+  # 2. Verify running task definition matches expected version
+  # 3. Monitor ECS service events in AWS Console
+  #
+  # Consider adding post-deployment verification steps in the GitHub Actions workflow
+  # to confirm the desired task definition is actually running.
   deployment_circuit_breaker {
     enable   = true
     rollback = true

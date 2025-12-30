@@ -67,3 +67,14 @@ variable "health_check_path" {
   type        = string
   default     = "/health"
 }
+
+variable "nat_gateway_count" {
+  description = "Number of NAT Gateways to create (1 for cost savings, 2 for high availability)"
+  type        = number
+  default     = 1
+
+  validation {
+    condition     = var.nat_gateway_count == 1 || var.nat_gateway_count == 2
+    error_message = "NAT Gateway count must be either 1 (cost savings) or 2 (high availability)."
+  }
+}

@@ -83,6 +83,7 @@ resource "aws_eip" "nat_a" {
 }
 
 resource "aws_eip" "nat_b" {
+  count  = var.nat_gateway_count > 1 ? 1 : 0
   domain = "vpc"
 
   tags = {
@@ -105,7 +106,8 @@ resource "aws_nat_gateway" "nat_a" {
 }
 
 resource "aws_nat_gateway" "nat_b" {
-  allocation_id = aws_eip.nat_b.id
+  count         = var.nat_gateway_count > 1 ? 1 : 0
+  allocation_id = aws_eip.nat_b[0].id
   subnet_id     = aws_subnet.public_b.id
 
   tags = {
@@ -159,7 +161,8 @@ resource "aws_route_table" "private_b" {
 
   route {
     cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.nat_b.id
+    # Use nat_b if it exists (count=2), otherwise fall back to nat_a (count=1)
+    nat_gateway_id = var.nat_gateway_count > 1 ? aws_nat_gateway.nat_b[0].id : aws_nat_gateway.nat_a.id
   }
 
   tags = {
@@ -201,11 +204,11 @@ resource "aws_security_group" "alb" {
   }
 
   egress {
-    description = "Allow all outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    description     = "Allow traffic to ECS tasks on container port"
+    from_port       = var.container_port
+    to_port         = var.container_port
+    protocol        = "tcp"
+    security_groups = [aws_security_group.ecs_tasks.id]
   }
 
   tags = {
@@ -228,10 +231,26 @@ resource "aws_security_group" "ecs_tasks" {
   }
 
   egress {
-    description = "Allow all outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    description = "HTTPS for pulling images from ECR and AWS API calls"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "DNS resolution"
+    from_port   = 53
+    to_port     = 53
+    protocol    = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "DNS resolution (TCP)"
+    from_port   = 53
+    to_port     = 53
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 

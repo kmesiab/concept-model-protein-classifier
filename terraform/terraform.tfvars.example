@@ -29,5 +29,9 @@ container_memory = 1024  # 1 GB
 # ECS Service Configuration
 desired_count = 2
 
+# NAT Gateway Configuration
+# Set to 1 for cost savings (~$35/month), or 2 for high availability (~$70/month base cost)
+nat_gateway_count = 1  # Options: 1 (single NAT, lower cost) or 2 (dual NAT, HA)
+
 # Health Check
 health_check_path = "/health"
