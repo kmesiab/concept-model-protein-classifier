@@ -17,7 +17,7 @@ provider "aws" {
       Project     = "protein-classifier"
       Environment = var.environment
       ManagedBy   = "Terraform"
-      Repository  = "kmesiab/concept-model-protein-classifier"
+      Repository  = var.github_repo
     }
   }
 }

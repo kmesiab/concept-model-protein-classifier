@@ -3,7 +3,7 @@
 
 # AWS Configuration
 aws_region     = "us-west-2"
-aws_account_id = "462498369025"
+aws_account_id = "462498369025"  # REQUIRED: Replace with your AWS account ID
 
 # Environment
 environment = "prod"
