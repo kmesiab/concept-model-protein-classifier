@@ -65,6 +65,31 @@ def download_pdb_chains(limit: int = 15000, output_file: str = "pdb_chains.fasta
     return output_file
 
 
+def _parse_fasta_block(block: str) -> List[str]:
+    """
+    Parse a FASTA format block and extract sequences.
+    Returns a list of sequence strings (without headers).
+    """
+    raw_lines = block.splitlines()
+    header = None
+    seq_buf = ""
+    sequences = []
+
+    for line in raw_lines:
+        if line.startswith(">"):
+            if header is not None and seq_buf:
+                sequences.append(seq_buf)
+            header = line
+            seq_buf = ""
+        else:
+            seq_buf += line.strip()
+
+    if header is not None and seq_buf:
+        sequences.append(seq_buf)
+
+    return sequences
+
+
 def download_disprot_sequences(
     total_desired: int = 25000, output_file: str = "disprot_13000.fasta"
 ) -> str:
@@ -88,21 +113,8 @@ def download_disprot_sequences(
         if not block.startswith(">"):
             raise RuntimeError("Downloaded content does not look like FASTA.")
 
-        # Parse sequences
-        raw_lines = block.splitlines()
-        header = None
-        seq_buf = ""
-        this_page_seqs = []
-        for line in raw_lines:
-            if line.startswith(">"):
-                if header is not None and seq_buf:
-                    this_page_seqs.append(seq_buf)
-                header = line
-                seq_buf = ""
-            else:
-                seq_buf += line.strip()
-        if header is not None and seq_buf:
-            this_page_seqs.append(seq_buf)
+        # Parse sequences from the block
+        this_page_seqs = _parse_fasta_block(block)
 
         if not this_page_seqs:
             break  # No more sequences
