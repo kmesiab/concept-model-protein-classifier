@@ -36,7 +36,9 @@ class RateLimiter:
             self.redis_available = True
         except (redis.ConnectionError, redis.RedisError) as e:
             logger.warning("Redis not available: %s", e)
-            logger.warning("Rate limiting will use in-memory fallback (not suitable for production)")
+            logger.warning(
+                "Rate limiting will use in-memory fallback (not suitable for production)"
+            )
             self.redis_available = False
             self._memory_store: dict = {}  # type: ignore  # Fallback for development
 

@@ -14,7 +14,7 @@ class SequenceInput(BaseModel):
     sequence: str = Field(..., description="Protein sequence (amino acid string)")
 
     @validator("sequence")
-    def sequence_not_empty(cls, v):  # noqa: N805
+    def sequence_not_empty(cls, v):
         """Validate that sequence is not empty."""
         if not v or not v.strip():
             raise ValueError("Sequence cannot be empty")
@@ -25,7 +25,7 @@ class ClassifyRequest(BaseModel):
     """Request model for classification endpoint."""
 
     sequences: List[SequenceInput] = Field(
-        ..., description="List of protein sequences to classify", min_items=1, max_items=50
+        ..., description="List of protein sequences to classify", min_length=1, max_length=50
     )
     threshold: Optional[int] = Field(
         4,
