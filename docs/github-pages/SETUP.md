@@ -14,7 +14,7 @@ The complete GitHub Pages documentation site has been created and is ready to de
 
 ### Step 1: Enable GitHub Pages in Repository Settings
 
-1. Go to your repository: https://github.com/kmesiab/concept-model-protein-classifier
+1. Go to your repository: <https://github.com/kmesiab/concept-model-protein-classifier>
 2. Click **Settings** (tab at the top)
 3. Click **Pages** (in the left sidebar)
 4. Under "Build and deployment":
@@ -28,10 +28,12 @@ The complete GitHub Pages documentation site has been created and is ready to de
 The workflow is configured to deploy automatically when changes are pushed to `main` that affect `docs/github-pages/**` files.
 
 **Option A: Merge this PR**
+
 - Merging this PR will automatically trigger the deployment workflow
 - The site will be live within 1-2 minutes
 
 **Option B: Manual Trigger**
+
 1. Go to **Actions** tab
 2. Select "Deploy Documentation to GitHub Pages"
 3. Click "Run workflow"
@@ -41,7 +43,7 @@ The workflow is configured to deploy automatically when changes are pushed to `m
 ### Step 3: Verify Deployment
 
 1. After the workflow completes (1-2 minutes), go to **Settings → Pages**
-2. You should see: "Your site is live at https://kmesiab.github.io/concept-model-protein-classifier/"
+2. You should see: "Your site is live at <https://kmesiab.github.io/concept-model-protein-classifier/>"
 3. Click the link to visit your new documentation site!
 
 ## 🎯 Optional Enhancements
@@ -51,6 +53,7 @@ The workflow is configured to deploy automatically when changes are pushed to `m
 If you want to use a custom domain like `protein-classifier.com`:
 
 1. **Add CNAME file:**
+
    ```bash
    echo "protein-classifier.com" > docs/github-pages/CNAME
    git add docs/github-pages/CNAME
@@ -76,12 +79,14 @@ If you want to use a custom domain like `protein-classifier.com`:
 To track site usage, add analytics to each HTML file:
 
 **Option A: Plausible (Privacy-Friendly)**
+
 ```html
 <!-- Add before </head> in each HTML file -->
 <script defer data-domain="your-domain.com" src="https://plausible.io/js/script.js"></script>
 ```
 
 **Option B: Google Analytics**
+
 ```html
 <!-- Add before </head> in each HTML file -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
@@ -96,10 +101,11 @@ To track site usage, add analytics to each HTML file:
 ### SEO Optimization (Optional)
 
 1. **Submit to Google Search Console:**
-   - Verify your site at https://search.google.com/search-console
+   - Verify your site at <https://search.google.com/search-console>
    - Submit your sitemap (create one or use a generator)
 
 2. **Create sitemap.xml:**
+
    ```xml
    <?xml version="1.0" encoding="UTF-8"?>
    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -120,6 +126,7 @@ To track site usage, add analytics to each HTML file:
 ### Workflow Not Running?
 
 **Check workflow permissions:**
+
 1. Settings → Actions → General
 2. Scroll to "Workflow permissions"
 3. Select "Read and write permissions"
@@ -131,6 +138,7 @@ To track site usage, add analytics to each HTML file:
 **Wait a few minutes** - First deployment can take 5-10 minutes.
 
 **Check deployment status:**
+
 1. Go to Actions tab
 2. Look for "Deploy Documentation to GitHub Pages"
 3. Check if it completed successfully
@@ -139,6 +147,7 @@ To track site usage, add analytics to each HTML file:
 ### Site Not Updating?
 
 **Clear GitHub Pages cache:**
+
 1. Make a trivial change to any HTML file
 2. Commit and push
 3. Wait 1-2 minutes for redeployment
@@ -153,8 +162,8 @@ To track site usage, add analytics to each HTML file:
 
 ### Traffic Analysis (After Adding Analytics)
 
-- Plausible: https://plausible.io/your-domain.com
-- Google Analytics: https://analytics.google.com
+- Plausible: <https://plausible.io/your-domain.com>
+- Google Analytics: <https://analytics.google.com>
 
 ## 🔒 Security
 
@@ -167,6 +176,7 @@ To track site usage, add analytics to each HTML file:
 ### Dependabot (Optional)
 
 GitHub Actions versions will be kept up to date automatically if you enable Dependabot:
+
 1. Settings → Security → Code security and analysis
 2. Enable "Dependabot version updates"
 
@@ -182,7 +192,8 @@ If you encounter issues:
 ---
 
 **Expected Result:** After following these steps, your documentation site will be live at:
-- **Default URL:** https://kmesiab.github.io/concept-model-protein-classifier/
-- **Custom URL:** https://your-custom-domain.com (if configured)
+
+- **Default URL:** <https://kmesiab.github.io/concept-model-protein-classifier/>
+- **Custom URL:** <https://your-custom-domain.com> (if configured)
 
 Showcasing your 84.52% accurate protein disorder classifier to the world! 🧬✨
