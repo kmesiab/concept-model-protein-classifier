@@ -79,7 +79,7 @@ class TestDownloadPdbChains:
             assert os.path.exists(output_file)
 
             # Check content
-            with open(output_file) as f:
+            with open(output_file, encoding="utf-8") as f:
                 content = f.read()
                 assert ">chain1" in content
                 assert ">chain2" in content
@@ -115,7 +115,7 @@ class TestDownloadDisprotSequences:
             assert os.path.exists(output_file)
 
             # Check content
-            with open(output_file) as f:
+            with open(output_file, encoding="utf-8") as f:
                 content = f.read()
                 assert ">disprot_sequence_1" in content
                 assert "MSEQUENCE" in content

@@ -1,7 +1,6 @@
 [MASTER]
 jobs=1
 persistent=yes
-suggestion-mode=yes
 unsafe-load-any-extension=no
 
 [MESSAGES CONTROL]
@@ -76,4 +75,4 @@ min-public-methods=2
 allow-wildcard-with-all=no
 
 [EXCEPTIONS]
-overgeneral-exceptions=Exception
+overgeneral-exceptions=builtins.Exception
