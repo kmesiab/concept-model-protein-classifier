@@ -96,7 +96,6 @@ jobs:
         id: tflint
         run: tflint --format compact --recursive
         working-directory: terraform
-        continue-on-error: true
 
       - name: TFLint Summary
         if: always()
@@ -106,6 +105,10 @@ jobs:
             echo "✅ TFLint validation passed - No provider-specific issues found" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ TFLint found issues - Please review and fix" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Fail the job if TFLint found issues
+          if [ "${{ steps.tflint.outcome }}" != "success" ]; then
             exit 1
           fi
 
@@ -113,6 +116,9 @@ jobs:
   security-scan:
     name: Gate 2 - Security Scan (tfsec)
     runs-on: ubuntu-latest
+    
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Prevent API rate limiting
     
     steps:
       - name: Checkout code
@@ -126,22 +132,35 @@ jobs:
           format: default
           soft_fail: false
           additional_args: --minimum-severity MEDIUM
-        continue-on-error: true
 
       - name: Run tfsec with SARIF output
+        id: tfsec_sarif
+        if: always()  # Run even if previous step fails
         uses: aquasecurity/tfsec-action@v1.0.3
         with:
           working_directory: terraform
           format: sarif
-          soft_fail: true
-        continue-on-error: true
+          soft_fail: false
+          additional_args: --out results.sarif --minimum-severity MEDIUM
+
+      - name: Verify SARIF file exists
+        id: verify_sarif
+        if: always()
+        run: |
+          if [ -f "terraform/results.sarif" ]; then
+            echo "sarif_exists=true" >> $GITHUB_OUTPUT
+            echo "✅ SARIF file created successfully"
+          else
+            echo "sarif_exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️ WARNING: SARIF file not found at terraform/results.sarif"
+          fi
 
       - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        if: always() && steps.verify_sarif.outputs.sarif_exists == 'true'
         with:
-          sarif_file: results.sarif
-        continue-on-error: true
+          sarif_file: terraform/results.sarif
+          category: tfsec
 
       - name: Security Scan Summary
         if: always()
@@ -153,7 +172,13 @@ jobs:
             echo "- No overly permissive security groups" >> $GITHUB_STEP_SUMMARY
             echo "- Encryption enabled where required" >> $GITHUB_STEP_SUMMARY
           else
-            echo "⚠️ Security issues detected - Please review" >> $GITHUB_STEP_SUMMARY
+            echo "❌ Security issues detected - Please review" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Security findings have been uploaded to the Security tab." >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Fail the job if security issues were found
+          if [ "${{ steps.tfsec.outcome }}" != "success" ]; then
             exit 1
           fi
 
