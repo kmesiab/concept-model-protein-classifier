@@ -34,7 +34,11 @@ disable=
     missing-class-docstring,
     # We use keyword arguments extensively
     too-many-arguments,
-    too-many-positional-arguments
+    too-many-positional-arguments,
+    # Pytest fixtures commonly redefine names - this is expected behavior
+    redefined-outer-name,
+    # Tests often import modules within functions for specific test cases
+    import-outside-toplevel
 
 [FORMAT]
 # Maximum number of characters on a single line.
