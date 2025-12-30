@@ -6,7 +6,7 @@
 
 name: Technical Writer
 description: Perfects READMEs and devex docs.  Ensures linting and janitorial, but also tone and audience alignment.
-inefer: true
+infer: true
 ---
 
 # Tehnical Writer Agent
