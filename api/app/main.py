@@ -376,6 +376,13 @@ async def classify_fasta(
 
 
 if __name__ == "__main__":
+    import os
+
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Get host from environment variable, default to 127.0.0.1 for security
+    # Use 0.0.0.0 only when explicitly set (e.g., in Docker)
+    host = os.getenv("API_HOST", "127.0.0.1")
+    port = int(os.getenv("API_PORT", "8000"))
+
+    uvicorn.run(app, host=host, port=port)
