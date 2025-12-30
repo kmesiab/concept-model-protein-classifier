@@ -7,12 +7,14 @@ Successfully implemented a **production-ready REST API** for protein disorder cl
 ## 🎯 Achievements
 
 ### Performance
+
 - **Speed**: 12,750 sequences/second
 - **Latency**: 0.08ms per sequence
 - **Batch Processing**: 50 sequences in 1.33ms
 - **Target Exceeded**: 159x faster than required (1000 sequences in <10s)
 
 ### Quality
+
 - **Test Coverage**: 87% (target: >80%)
 - **Tests Passing**: 68/68 (100%)
 - **Code Review**: Completed with all issues resolved
@@ -21,6 +23,7 @@ Successfully implemented a **production-ready REST API** for protein disorder cl
 ### Features Implemented
 
 #### Core Functionality
+
 - ✅ `/api/v1/classify` - JSON input endpoint
 - ✅ `/api/v1/classify/fasta` - FASTA input endpoint
 - ✅ `/health` - Health check endpoint
@@ -29,6 +32,7 @@ Successfully implemented a **production-ready REST API** for protein disorder cl
 - ✅ Detailed feature reporting
 
 #### Infrastructure
+
 - ✅ FastAPI framework with async support
 - ✅ Redis-backed rate limiting
 - ✅ API key authentication
@@ -37,6 +41,7 @@ Successfully implemented a **production-ready REST API** for protein disorder cl
 - ✅ Auto-generated OpenAPI docs
 
 #### Rate Limiting (Free Tier)
+
 - ✅ 1,000 sequences per day
 - ✅ 100 requests per minute
 - ✅ Max 50 sequences per batch
@@ -46,7 +51,7 @@ Successfully implemented a **production-ready REST API** for protein disorder cl
 
 ### Architecture
 
-```
+```text
 api/
 ├── app/
 │   ├── __init__.py          # Package initialization
@@ -84,6 +89,7 @@ The API uses a threshold-based approach with 7 biophysical features:
 7. **Bulky Hydrophobics** - W, C, F, Y, I, V, L frequency
 
 **Classification Logic:**
+
 - Count features meeting "structured" conditions
 - If count ≥ threshold (default: 4) → "structured"
 - Otherwise → "disordered"
@@ -179,12 +185,14 @@ docker-compose up -d
 The API will be available at `http://localhost:8000`
 
 ### Components
+
 - **API Container**: FastAPI application
 - **Redis Container**: Rate limiting backend
 - **Network**: Bridge network for communication
 - **Volume**: Persistent Redis data
 
 ### Production Features
+
 - ✅ Non-root user for security
 - ✅ Health checks configured
 - ✅ Auto-restart on failure
@@ -197,14 +205,14 @@ The API will be available at `http://localhost:8000`
 
 ### Single Sequence
 
-```
+```text
 Request time: 2.86ms (including network)
 Processing time: 0.08ms (classification only)
 ```
 
 ### Batch (50 sequences)
 
-```
+```text
 Request time: 3.92ms (including network)
 Processing time: 1.33ms (classification only)
 Average per sequence: 0.08ms
