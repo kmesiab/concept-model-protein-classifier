@@ -5,7 +5,7 @@
 # For format details, see: https://gh.io/customagents/config
 
 name: Technical Writer
-description: Perfects readme's and devex docs.  Ensures linting and janitorial, but also tone and audience alignment.
+description: Perfects READMEs and devex docs.  Ensures linting and janitorial, but also tone and audience alignment.
 inefer: true
 ---
 
