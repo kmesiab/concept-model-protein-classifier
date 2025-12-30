@@ -1,0 +1,123 @@
+# CloudWatch Log Group
+resource "aws_cloudwatch_log_group" "ecs_logs" {
+  name              = "/ecs/protein-classifier-api"
+  retention_in_days = 7
+
+  tags = {
+    Name = "protein-classifier-ecs-logs"
+  }
+}
+
+# ECS Cluster
+resource "aws_ecs_cluster" "main" {
+  name = "protein-classifier-api-1-0-0-prod-cluster"
+
+  setting {
+    name  = "containerInsights"
+    value = "enabled"
+  }
+
+  tags = {
+    Name = "protein-classifier-api-1-0-0-prod-cluster"
+  }
+}
+
+# ECS Task Definition
+resource "aws_ecs_task_definition" "api" {
+  family                   = "protein-classifier-api"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = var.container_cpu
+  memory                   = var.container_memory
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  task_role_arn            = aws_iam_role.ecs_task_role.arn
+
+  container_definitions = jsonencode([
+    {
+      name  = "protein-classifier-api"
+      image = "${aws_ecr_repository.api.repository_url}:latest"
+
+      portMappings = [
+        {
+          containerPort = var.container_port
+          hostPort      = var.container_port
+          protocol      = "tcp"
+        }
+      ]
+
+      environment = [
+        {
+          name  = "PORT"
+          value = tostring(var.container_port)
+        },
+        {
+          name  = "ENVIRONMENT"
+          value = var.environment
+        }
+      ]
+
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.ecs_logs.name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "ecs"
+        }
+      }
+
+      healthCheck = {
+        command     = ["CMD-SHELL", "curl -f http://localhost:${var.container_port}${var.health_check_path} || exit 1"]
+        interval    = 30
+        timeout     = 10
+        retries     = 3
+        startPeriod = 60
+      }
+
+      essential = true
+    }
+  ])
+
+  tags = {
+    Name = "protein-classifier-api-task"
+  }
+}
+
+# ECS Service
+resource "aws_ecs_service" "api" {
+  name            = "protein-classifier-api-service"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.api.arn
+  desired_count   = var.desired_count
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = [aws_subnet.private_a.id, aws_subnet.private_b.id]
+    security_groups  = [aws_security_group.ecs_tasks.id]
+    assign_public_ip = false
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.ecs.arn
+    container_name   = "protein-classifier-api"
+    container_port   = var.container_port
+  }
+
+  deployment_configuration {
+    maximum_percent         = 200
+    minimum_healthy_percent = 100
+  }
+
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
+
+  depends_on = [
+    aws_lb_listener.https,
+    aws_iam_role_policy_attachment.ecs_task_execution_role_policy
+  ]
+
+  tags = {
+    Name = "protein-classifier-api-service"
+  }
+}
