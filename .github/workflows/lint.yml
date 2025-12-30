@@ -60,7 +60,7 @@ jobs:
           echo "Running Pylint..."
           # Only lint Python files that exist
           if [ -d "api" ]; then
-            pylint api/
+            pylint --rcfile=api/.pylintrc api/
           fi
           # Lint root-level Python files
           find . -maxdepth 1 -name "*.py" -type f | xargs -r pylint
@@ -71,7 +71,7 @@ jobs:
           echo "Running MyPy type checker..."
           # Check api directory if it exists
           if [ -d "api" ]; then
-            mypy api/
+            mypy --config-file=api/mypy.ini api/
           fi
           # Check root-level Python files
           find . -maxdepth 1 -name "*.py" -type f | xargs -r mypy
@@ -80,7 +80,7 @@ jobs:
       - name: Import sorting (isort)
         run: |
           echo "Running isort import checker..."
-          isort --check-only --diff .
+          isort --settings-file=api/.isort.cfg --check-only --diff .
         continue-on-error: false
       
       - name: Lint summary
