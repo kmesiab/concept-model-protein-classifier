@@ -33,7 +33,7 @@ This directory contains the Terraform infrastructure code for deploying the Prot
 
 ## File Structure
 
-```
+```text
 terraform/
 ├── backend.tf           # S3 backend configuration
 ├── provider.tf          # AWS provider configuration
@@ -78,7 +78,7 @@ terraform/
 
 After applying, Terraform will output important information:
 
-```
+```text
 ecr_repository_url        = URL of the ECR repository
 ecs_cluster_name          = Name of the ECS cluster
 ecs_service_name          = Name of the ECS service

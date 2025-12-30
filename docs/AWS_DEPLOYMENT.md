@@ -67,7 +67,7 @@ This guide provides instructions for deploying the Protein Classifier API to AWS
    - `ecr_repository_url`: ECR repository for Docker images
    - `ecs_cluster_name`: ECS cluster name
    - `ecs_service_name`: ECS service name
-   - `api_url`: API endpoint (https://api.proteinclassifier.com)
+   - `api_url`: API endpoint (<https://api.proteinclassifier.com>)
    - `github_actions_role_arn`: IAM role ARN for GitHub Actions
 
 ### 2. Verify Infrastructure
@@ -198,6 +198,7 @@ aws elbv2 describe-target-health \
 #### Issue: ECS tasks failing health checks
 
 **Solution**:
+
 - Check CloudWatch logs for errors
 - Verify `/health` endpoint is responding on port 8000
 - Ensure security groups allow traffic from ALB to ECS tasks
@@ -205,6 +206,7 @@ aws elbv2 describe-target-health \
 #### Issue: SSL certificate not validating
 
 **Solution**:
+
 - Verify DNS validation records are created in Route 53
 - Allow 5-10 minutes for DNS propagation
 - Check ACM certificate status in AWS Console
@@ -212,6 +214,7 @@ aws elbv2 describe-target-health \
 #### Issue: GitHub Actions OIDC authentication fails
 
 **Solution**:
+
 - Verify the IAM role ARN in workflow files
 - Check the trust policy on the IAM role
 - Ensure the repository name matches the trust policy condition
@@ -341,6 +344,7 @@ terraform destroy
 ```
 
 **Warning**: This will delete:
+
 - ECS cluster and service
 - Load balancer and target groups
 - VPC and all networking components
@@ -349,6 +353,7 @@ terraform destroy
 - IAM roles
 
 **Not deleted**:
+
 - S3 state bucket (manual deletion required)
 - Route 53 hosted zone (manual deletion required)
 - DynamoDB state lock table (manual deletion required)
@@ -356,6 +361,7 @@ terraform destroy
 ## Support
 
 For issues or questions:
+
 - Create an issue in the GitHub repository
 - Review CloudWatch logs for error messages
 - Check AWS service health dashboard
