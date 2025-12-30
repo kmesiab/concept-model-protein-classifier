@@ -8,7 +8,7 @@
 #   make fix          - Auto-fix formatting issues
 #   make help         - Show this help message
 
-.PHONY: help check-all lint test fix clean fix-black fix-isort lint-black lint-isort lint-flake8 lint-pylint lint-mypy lint-bandit install
+.PHONY: help check-all lint test fix clean fix-black fix-isort lint-black lint-isort lint-flake8 lint-pylint lint-mypy lint-bandit lint-markdown install
 .DEFAULT_GOAL := help
 
 # Colors for output
@@ -33,7 +33,7 @@ help: ## Show this help message
 check-all: lint test ## Run ALL quality checks (use before committing)
 	@echo "${GREEN}✅ All quality checks passed!${NC}"
 
-lint: lint-black lint-isort lint-flake8 lint-pylint lint-mypy lint-bandit ## Run all linters
+lint: lint-black lint-isort lint-flake8 lint-pylint lint-mypy lint-bandit lint-markdown ## Run all linters
 	@echo "${GREEN}✅ All linters passed!${NC}"
 
 lint-black: ## Check code formatting with Black
@@ -83,6 +83,16 @@ lint-bandit: ## Run security checks with Bandit
 		bandit -r . --exclude ./tests,./venv,./env,./.venv || (echo "${RED}❌ Bandit security scan failed${NC}" && exit 1); \
 	fi
 	@echo "${GREEN}✅ Bandit security scan passed${NC}"
+
+lint-markdown: ## Check markdown files with markdownlint
+	@echo "${YELLOW}Running markdownlint...${NC}"
+	@if command -v markdownlint >/dev/null 2>&1; then \
+		markdownlint '**/*.md' --ignore node_modules --ignore __pycache__ --ignore '*.egg-info' --ignore venv --ignore .venv --ignore env --ignore ENV --ignore build --ignore dist --ignore .pytest_cache --ignore .mypy_cache --ignore .tox --ignore .nox --ignore .ipynb_checkpoints --config .markdownlint.json || (echo "${RED}❌ markdownlint failed${NC}" && exit 1); \
+	else \
+		echo "${YELLOW}⚠️  markdownlint not installed - skipping markdown checks${NC}"; \
+		echo "${YELLOW}   Install with: npm install -g markdownlint-cli${NC}"; \
+	fi
+	@echo "${GREEN}✅ markdownlint passed${NC}"
 
 test: ## Run test suite with coverage
 	@echo "${YELLOW}Running test suite...${NC}"

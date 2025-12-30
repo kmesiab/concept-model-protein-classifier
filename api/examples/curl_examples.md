@@ -279,5 +279,6 @@ curl -X GET http://localhost:8000/openapi.json | jq .
 ### 19. View Interactive Documentation
 
 Open in your browser:
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+
+- Swagger UI: <http://localhost:8000/docs>
+- ReDoc: <http://localhost:8000/redoc>
