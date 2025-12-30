@@ -1,6 +1,6 @@
 # Concept Model Experiment – Protein Folding Predictions
 
-https://kevinmesiab.substack.com/p/emergent-concept-modeling-a-paradigm
+<https://kevinmesiab.substack.com/p/emergent-concept-modeling-a-paradigm>
 
 This repository contains a Jupyter notebook experiment that explores the prediction of protein folding states (Folded vs. Disordered) using a rule-based classification framework inspired by the Concept Model (4-Layer Matrix). The analysis investigates the biophysical and compositional constraints that distinguish folded protein domains (typically from PDB) from intrinsically disordered proteins (from DisProt), and tests how well these constraints can be used for automated prediction.
 
@@ -17,6 +17,7 @@ The notebook implements and evaluates two main approaches:
    - Applies a stateful rule: a protein is "Folded" if it has at most 3 uncancelled “failed” windows, where a window “fails” if fewer than 4 features meet the folded condition.
 
 Both approaches are mapped to the Concept Model framework:
+
 - **M1:** Property vectors for amino acids or sequence segments.
 - **M2:** Empirically-derived constraints (feature thresholds).
 - **M3:** Rules for counting and aggregating satisfied conditions.
@@ -30,6 +31,7 @@ Both approaches are mapped to the Concept Model framework:
 ## Feature Definitions
 
 For each sequence or segment, the following features are computed:
+
 1. Average normalized hydrophobicity
 2. Average normalized flexibility
 3. Average hydrogen bond potential
@@ -58,6 +60,7 @@ To ensure the concept model captures true biophysical principles rather than dat
 **See [docs/VALIDATION.md](docs/VALIDATION.md) for detailed documentation of validation methods and interpretation guidelines.**
 
 **Expected Results for Production-Ready Model:**
+
 - Homology-aware CV: >75% accuracy
 - MobiDB independent test: >70% accuracy  
 - Label-shuffle control: ~50% accuracy (random chance)

@@ -4,7 +4,7 @@ This directory contains the static HTML/CSS documentation site for the Protein D
 
 ## 📁 Structure
 
-```
+```text
 docs/github-pages/
 ├── index.html              # Landing page with performance highlights
 ├── methodology.html        # Scientific approach & validation
@@ -19,7 +19,7 @@ docs/github-pages/
 
 The site is automatically deployed to GitHub Pages when changes are pushed to the `main` branch via the `.github/workflows/deploy-docs.yml` workflow.
 
-**Live Site:** https://kmesiab.github.io/concept-model-protein-classifier/
+**Live Site:** <https://kmesiab.github.io/concept-model-protein-classifier/>
 
 ## 🎨 Design Principles
 
@@ -62,7 +62,9 @@ python3 -m http.server 8000
 ## 🔧 Customization
 
 ### Colors
+
 Update CSS variables in `styles.css`:
+
 ```css
 :root {
   --primary-color: #2563eb;
@@ -72,6 +74,7 @@ Update CSS variables in `styles.css`:
 ```
 
 ### Content
+
 Each HTML file is standalone and can be edited independently. The navigation and footer are consistent across all pages.
 
 ## 📈 Analytics
