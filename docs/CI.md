@@ -17,7 +17,7 @@ The CI/CD pipeline ensures code quality, security, and reliability through autom
 
 ### Pipeline Architecture
 
-```
+```text
 ┌─────────────┐
 │   Push/PR   │
 └──────┬──────┘
@@ -44,15 +44,18 @@ The CI/CD pipeline ensures code quality, security, and reliability through autom
 ### 1. Code Quality Workflow (`lint.yml`)
 
 **Triggers:**
+
 - Push to `main` or `develop` branches
 - Pull requests to `main` or `develop`
 
 **Jobs:**
+
 - Runs on Ubuntu latest
 - Tests Python 3.10, 3.11, and 3.12 (matrix)
 - Executes 5 linting tools in sequence
 
 **Steps:**
+
 1. **Checkout Code** - Uses `actions/checkout@v4`
 2. **Setup Python** - Uses `actions/setup-python@v5`
 3. **Cache Dependencies** - Caches pip packages for faster builds
@@ -64,11 +67,13 @@ The CI/CD pipeline ensures code quality, security, and reliability through autom
 9. **isort** - Validates import sorting
 
 **Failure Handling:**
+
 - Any linting failure stops the workflow
 - Clear error messages with file locations
 - Suggests fixes when possible
 
 **Example Run:**
+
 ```bash
 # Local equivalent
 black --check --diff --color .
@@ -81,15 +86,18 @@ isort --check-only --diff --color .
 ### 2. Testing Workflow (`test.yml`)
 
 **Triggers:**
+
 - Push to `main` or `develop` branches
 - Pull requests to `main` or `develop`
 
 **Jobs:**
+
 - Runs on Ubuntu latest
 - Matrix testing: Python 3.10, 3.11, 3.12
 - fail-fast disabled for complete test coverage
 
 **Steps:**
+
 1. **Checkout Code**
 2. **Setup Python** - For each matrix version
 3. **Cache Dependencies**
@@ -100,11 +108,13 @@ isort --check-only --diff --color .
 8. **Upload HTML Report** - Artifacts available for download
 
 **Coverage Requirements:**
+
 - Overall: ≥80%
 - Branch coverage: Tracked
 - Missing lines: Reported
 
 **Example Run:**
+
 ```bash
 # Local equivalent
 pytest tests/ -v --cov=. --cov-report=xml --cov-report=term --cov-report=html
@@ -114,6 +124,7 @@ coverage report --fail-under=80
 ### 3. Security Workflow (`security.yml`)
 
 **Triggers:**
+
 - Push to `main` or `develop` branches
 - Pull requests to `main` or `develop`
 - Scheduled: Weekly on Mondays at 9 AM UTC
@@ -122,6 +133,7 @@ coverage report --fail-under=80
 Single job with 4 security scanners
 
 **Steps:**
+
 1. **Checkout Code**
 2. **Setup Python 3.11**
 3. **Cache Dependencies**
@@ -140,11 +152,13 @@ Single job with 4 security scanners
    - Checks for CRITICAL, HIGH, and MEDIUM severity
 
 **Security Reports:**
+
 - Uploaded as artifacts for each run
 - SARIF results sent to GitHub Security tab
 - Summary posted to workflow summary
 
 **Example Run:**
+
 ```bash
 # Local equivalent
 bandit -r . --exclude ./tests,./venv
@@ -159,6 +173,7 @@ pip-audit
 Centralizes configuration for multiple tools:
 
 **Black Configuration:**
+
 ```toml
 [tool.black]
 line-length = 100
@@ -166,6 +181,7 @@ target-version = ['py310', 'py311', 'py312']
 ```
 
 **isort Configuration:**
+
 ```toml
 [tool.isort]
 profile = "black"
@@ -173,6 +189,7 @@ line_length = 100
 ```
 
 **MyPy Configuration:**
+
 ```toml
 [tool.mypy]
 python_version = "3.10"
@@ -182,6 +199,7 @@ ignore_missing_imports = true
 ```
 
 **pytest Configuration:**
+
 ```toml
 [tool.pytest.ini_options]
 minversion = "7.0"
@@ -189,6 +207,7 @@ testpaths = ["tests"]
 ```
 
 **Coverage Configuration:**
+
 ```toml
 [tool.coverage.report]
 fail_under = 80
@@ -197,6 +216,7 @@ fail_under = 80
 ### `.flake8`
 
 Flake8-specific configuration:
+
 ```ini
 [flake8]
 max-line-length = 100
@@ -207,6 +227,7 @@ exclude = .git, __pycache__, build, dist
 ### `pylintrc`
 
 Pylint configuration (extensive):
+
 - Disabled checks: C0111 (missing-docstring), C0103 (invalid-name)
 - Max line length: 100
 - Max complexity: Configured per category
@@ -257,6 +278,7 @@ Include administrators: true
 **Problem:** `would reformat X files`
 
 **Solution:**
+
 ```bash
 black .
 git add .
@@ -268,6 +290,7 @@ git commit -m "style: apply black formatting"
 **Problem:** `Coverage report --fail-under=80`
 
 **Solution:**
+
 - Add more tests for uncovered code
 - Check coverage report: `htmlcov/index.html`
 - Focus on critical paths first
@@ -277,6 +300,7 @@ git commit -m "style: apply black formatting"
 **Problem:** `error: Need type annotation`
 
 **Solution:**
+
 ```python
 # Before
 def func(param):
@@ -292,8 +316,10 @@ def func(param: str) -> str:
 **Problem:** `Your code has been rated at X/10`
 
 **Solution:**
+
 - Fix reported issues
 - Or disable specific checks (last resort):
+
 ```python
 # pylint: disable=specific-rule
 ```
@@ -303,6 +329,7 @@ def func(param: str) -> str:
 **Problem:** Bandit/Safety reports vulnerabilities
 
 **Solution:**
+
 - Update dependencies: `pip install --upgrade package-name`
 - Check if false positive
 - Add exception if necessary (with justification)
@@ -310,16 +337,19 @@ def func(param: str) -> str:
 ### Debugging Workflows
 
 **View workflow runs:**
+
 ```bash
 gh run list --workflow=lint.yml
 gh run view RUN_ID --log
 ```
 
 **Re-run failed jobs:**
+
 - Use GitHub UI to re-run
 - Or push a new commit to trigger
 
 **Check specific job logs:**
+
 1. Go to Actions tab
 2. Click on workflow run
 3. Click on specific job
@@ -362,11 +392,13 @@ echo "✅ All checks passed!"
 ## Performance
 
 **Typical Run Times:**
+
 - Lint workflow: ~2-3 minutes
 - Test workflow: ~3-5 minutes per Python version
 - Security workflow: ~4-6 minutes
 
 **Optimization Tips:**
+
 - Caching reduces install time by ~50%
 - Matrix jobs run in parallel
 - fail-fast disabled for complete feedback
@@ -374,11 +406,13 @@ echo "✅ All checks passed!"
 ## Future Enhancements
 
 ### Phase 2 (Planned)
+
 - Docker build and push workflow
 - Performance benchmarking workflow
 - Automated dependency updates via Dependabot
 
 ### Phase 3 (Future)
+
 - AWS deployment workflow
 - Production monitoring integration
 - Automated rollback procedures
