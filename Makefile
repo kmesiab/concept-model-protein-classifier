@@ -38,27 +38,33 @@ lint: lint-black lint-isort lint-flake8 lint-pylint lint-mypy lint-bandit ## Run
 
 lint-black: ## Check code formatting with Black
 	@echo "${YELLOW}Running Black formatter check...${NC}"
-	@cd $(API_DIR) && black --check . || (echo "${RED}❌ Black formatting failed${NC}" && exit 1)
+	@black --check --diff . || (echo "${RED}❌ Black formatting failed${NC}" && exit 1)
 	@echo "${GREEN}✅ Black check passed${NC}"
 
 lint-isort: ## Check import ordering with isort
 	@echo "${YELLOW}Running isort import checker...${NC}"
-	@cd $(API_DIR) && isort --settings-file=.isort.cfg --check-only --diff . || (echo "${RED}❌ isort check failed${NC}" && exit 1)
+	@isort --check-only --diff . || (echo "${RED}❌ isort check failed${NC}" && exit 1)
 	@echo "${GREEN}✅ isort check passed${NC}"
 
 lint-flake8: ## Check code style with Flake8
 	@echo "${YELLOW}Running Flake8 linter...${NC}"
-	@cd $(API_DIR) && flake8 . || (echo "${RED}❌ Flake8 failed${NC}" && exit 1)
+	@flake8 --count --show-source --statistics . || (echo "${RED}❌ Flake8 failed${NC}" && exit 1)
 	@echo "${GREEN}✅ Flake8 passed${NC}"
 
 lint-pylint: ## Check code quality with Pylint
 	@echo "${YELLOW}Running Pylint...${NC}"
-	@cd $(API_DIR) && pylint --rcfile=.pylintrc app/ || (echo "${RED}❌ Pylint failed${NC}" && exit 1)
+	@if [ -d "$(API_DIR)" ]; then \
+		pylint $(API_DIR)/ || (echo "${RED}❌ Pylint failed${NC}" && exit 1); \
+	fi
+	@find . -maxdepth 1 -name "*.py" -type f | xargs -r pylint || (echo "${RED}❌ Pylint failed${NC}" && exit 1)
 	@echo "${GREEN}✅ Pylint passed${NC}"
 
 lint-mypy: ## Check type hints with mypy
 	@echo "${YELLOW}Running mypy type checker...${NC}"
-	@cd $(API_DIR) && mypy --config-file=mypy.ini app/ || (echo "${RED}❌ mypy failed${NC}" && exit 1)
+	@if [ -d "$(API_DIR)" ]; then \
+		mypy $(API_DIR)/ || (echo "${RED}❌ mypy failed${NC}" && exit 1); \
+	fi
+	@find . -maxdepth 1 -name "*.py" -type f | xargs -r mypy || (echo "${RED}❌ mypy failed${NC}" && exit 1)
 	@echo "${GREEN}✅ mypy passed${NC}"
 
 lint-bandit: ## Run security checks with Bandit
@@ -68,7 +74,7 @@ lint-bandit: ## Run security checks with Bandit
 
 test: ## Run test suite with coverage
 	@echo "${YELLOW}Running test suite...${NC}"
-	@cd $(API_DIR) && pytest --cov=app --cov-report=term-missing || (echo "${RED}❌ Tests failed${NC}" && exit 1)
+	@pytest tests/ --cov=. --cov-report=xml --cov-report=term --cov-report=html || (echo "${RED}❌ Tests failed${NC}" && exit 1)
 	@echo "${GREEN}✅ Tests passed${NC}"
 
 fix: fix-black fix-isort ## Auto-fix formatting issues
@@ -76,12 +82,12 @@ fix: fix-black fix-isort ## Auto-fix formatting issues
 
 fix-black: ## Auto-fix code formatting with Black
 	@echo "${YELLOW}Running Black formatter (fixing)...${NC}"
-	@cd $(API_DIR) && black .
+	@black .
 	@echo "${GREEN}✅ Black formatting applied${NC}"
 
 fix-isort: ## Auto-fix import ordering with isort
 	@echo "${YELLOW}Running isort (fixing)...${NC}"
-	@cd $(API_DIR) && isort --settings-file=.isort.cfg .
+	@isort .
 	@echo "${GREEN}✅ isort fixes applied${NC}"
 
 clean: ## Clean up cache and temporary files
@@ -94,5 +100,5 @@ clean: ## Clean up cache and temporary files
 
 install: ## Install development dependencies
 	@echo "${YELLOW}Installing dependencies...${NC}"
-	@cd $(API_DIR) && $(PIP) install -r requirements.txt
+	@$(PIP) install -r requirements.txt
 	@echo "${GREEN}✅ Dependencies installed${NC}"
