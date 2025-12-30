@@ -37,6 +37,9 @@ resource "aws_ecs_task_definition" "api" {
       name  = "protein-classifier-api"
       image = "${aws_ecr_repository.api.repository_url}:latest"
 
+      cpu    = var.container_cpu
+      memory = var.container_memory
+
       portMappings = [
         {
           containerPort = var.container_port
@@ -66,7 +69,7 @@ resource "aws_ecs_task_definition" "api" {
       }
 
       healthCheck = {
-        command     = ["CMD-SHELL", "curl -f http://localhost:${var.container_port}${var.health_check_path} || exit 1"]
+        command     = ["CMD-SHELL", "python -c \"import sys, urllib.request; resp = urllib.request.urlopen('http://localhost:${var.container_port}${var.health_check_path}'); sys.exit(0 if 200 <= resp.getcode() < 400 else 1)\""]
         interval    = 30
         timeout     = 10
         retries     = 3

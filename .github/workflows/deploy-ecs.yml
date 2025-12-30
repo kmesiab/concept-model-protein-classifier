@@ -43,10 +43,15 @@ jobs:
       - name: Get current task definition
         id: current-task-def
         run: |
-          aws ecs describe-task-definition \
+          if ! aws ecs describe-task-definition \
             --task-definition protein-classifier-api \
             --query 'taskDefinition' \
-            --output json > task-definition.json
+            --output json > task-definition.json 2>/dev/null; then
+            echo "ERROR: Failed to retrieve ECS task definition 'protein-classifier-api'."
+            echo "Ensure the Terraform infrastructure has been applied before running this workflow."
+            echo "Run 'terraform apply' in the terraform/ directory to create the infrastructure."
+            exit 1
+          fi
 
       - name: Update task definition with new image
         id: task-def

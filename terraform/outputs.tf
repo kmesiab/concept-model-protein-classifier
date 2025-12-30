@@ -32,3 +32,8 @@ output "cloudwatch_log_group" {
   description = "CloudWatch log group for ECS tasks"
   value       = aws_cloudwatch_log_group.ecs_logs.name
 }
+
+output "alb_target_group_arn" {
+  description = "ARN of the ALB target group"
+  value       = aws_lb_target_group.ecs.arn
+}

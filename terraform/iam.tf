@@ -42,10 +42,17 @@ resource "aws_iam_role_policy" "github_actions_policy" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "ECRPermissions"
+        Sid    = "ECRAuthToken"
         Effect = "Allow"
         Action = [
-          "ecr:GetAuthorizationToken",
+          "ecr:GetAuthorizationToken"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "ECRRepositoryAccess"
+        Effect = "Allow"
+        Action = [
           "ecr:BatchCheckLayerAvailability",
           "ecr:GetDownloadUrlForLayer",
           "ecr:BatchGetImage",
@@ -54,18 +61,28 @@ resource "aws_iam_role_policy" "github_actions_policy" {
           "ecr:UploadLayerPart",
           "ecr:CompleteLayerUpload"
         ]
-        Resource = "*"
+        Resource = aws_ecr_repository.api.arn
       },
       {
-        Sid    = "ECSPermissions"
+        Sid    = "ECSClusterAccess"
         Effect = "Allow"
         Action = [
           "ecs:UpdateService",
           "ecs:DescribeServices",
-          "ecs:DescribeTaskDefinition",
-          "ecs:RegisterTaskDefinition",
           "ecs:ListTasks",
           "ecs:DescribeTasks"
+        ]
+        Resource = [
+          aws_ecs_cluster.main.arn,
+          "${aws_ecs_cluster.main.arn}/*"
+        ]
+      },
+      {
+        Sid    = "ECSTaskDefinitionAccess"
+        Effect = "Allow"
+        Action = [
+          "ecs:DescribeTaskDefinition",
+          "ecs:RegisterTaskDefinition"
         ]
         Resource = "*"
       },
@@ -89,7 +106,7 @@ resource "aws_iam_role_policy" "github_actions_policy" {
           "logs:PutLogEvents",
           "logs:DescribeLogStreams"
         ]
-        Resource = "*"
+        Resource = "${aws_cloudwatch_log_group.ecs_logs.arn}:*"
       }
     ]
   })
