@@ -10,7 +10,7 @@ Phase 1 of the CI/CD pipeline has been successfully implemented with production-
    - Black formatting (100% compliance)
    - Flake8 linting (0 errors)
    - Pylint static analysis (10.00/10 score)
-   - MyPy strict type checking (passing)
+   - MyPy type checking (passing)
    - isort import organization (passing)
    - Matrix testing across Python 3.10, 3.11, 3.12
 
