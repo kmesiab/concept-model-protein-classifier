@@ -20,7 +20,7 @@ NC := \033[0m # No Color
 # Python settings
 PYTHON := python3
 PIP := pip3
-API_DIR := api
+API_DIR := .
 
 help: ## Show this help message
 	@echo "${GREEN}Protein Disorder Classifier - Development Commands${NC}"
