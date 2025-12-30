@@ -53,12 +53,18 @@ lint-flake8: ## Check code style with Flake8
 
 lint-pylint: ## Check code quality with Pylint
 	@echo "${YELLOW}Running Pylint...${NC}"
-	@pylint $(API_DIR)/ || (echo "${RED}❌ Pylint failed${NC}" && exit 1)
+	@if [ -d "$(API_DIR)" ]; then \
+		pylint $(API_DIR)/ || (echo "${RED}❌ Pylint failed${NC}" && exit 1); \
+	fi
+	@find . -maxdepth 1 -name "*.py" -type f | xargs -r pylint || (echo "${RED}❌ Pylint failed${NC}" && exit 1)
 	@echo "${GREEN}✅ Pylint passed${NC}"
 
 lint-mypy: ## Check type hints with mypy
 	@echo "${YELLOW}Running mypy type checker...${NC}"
-	@mypy $(API_DIR)/ || (echo "${RED}❌ mypy failed${NC}" && exit 1)
+	@if [ -d "$(API_DIR)" ]; then \
+		mypy $(API_DIR)/ || (echo "${RED}❌ mypy failed${NC}" && exit 1); \
+	fi
+	@find . -maxdepth 1 -name "*.py" -type f | xargs -r mypy || (echo "${RED}❌ mypy failed${NC}" && exit 1)
 	@echo "${GREEN}✅ mypy passed${NC}"
 
 lint-bandit: ## Run security checks with Bandit
