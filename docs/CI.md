@@ -60,7 +60,7 @@ The CI/CD pipeline ensures code quality, security, and reliability through autom
 5. **Black Check** - Validates code formatting
 6. **Flake8** - Checks code style and complexity
 7. **Pylint** - Advanced static code analysis
-8. **MyPy** - Type checking with strict mode
+8. **MyPy** - Type checking with strict equality checks
 9. **isort** - Validates import sorting
 
 **Failure Handling:**

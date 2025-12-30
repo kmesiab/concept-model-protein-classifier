@@ -93,7 +93,7 @@ This project follows a professional code of conduct. Please be respectful, colla
 - **Line length:** Maximum 100 characters
 - **Code formatter:** Black (enforced)
 - **Import sorting:** isort with Black profile
-- **Type hints:** Required for all function signatures (mypy --strict compatible)
+- **Type hints:** Required for all function signatures
 
 ### Linting Standards
 
@@ -101,7 +101,7 @@ All code must pass:
 - **Black:** 100% compliance with Black formatting
 - **Flake8:** No errors or warnings (max complexity: 10)
 - **Pylint:** Score ≥ 9.0/10
-- **MyPy:** Type checking with strict mode enabled
+- **MyPy:** Type checking enabled with strict equality checks
 
 ### Code Quality
 
