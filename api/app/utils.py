@@ -25,7 +25,7 @@ def parse_fasta(fasta_text: str) -> List[Tuple[str, str]]:
     
     lines = fasta_text.strip().split('\n')
     
-    if not lines:
+    if not lines or not fasta_text.strip():
         raise ValueError("Empty FASTA input")
     
     for line_num, line in enumerate(lines, 1):

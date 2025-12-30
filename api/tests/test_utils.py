@@ -3,7 +3,7 @@ Tests for utility functions.
 """
 
 import pytest
-from api.app.utils import parse_fasta, format_fasta, validate_amino_acid_sequence
+from app.utils import parse_fasta, format_fasta, validate_amino_acid_sequence
 
 
 class TestParseFasta:

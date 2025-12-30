@@ -1,31 +1,30 @@
 # FastAPI and web server
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-pydantic==2.5.0
-pydantic-settings==2.1.0
-python-multipart==0.0.6
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.6.0
+pydantic-settings>=2.2.0
+python-multipart>=0.0.9
 
-# Scientific computing (matching notebook dependencies)
-numpy==1.24.3
-pandas==2.0.3
-scipy==1.11.4
+# Scientific computing
+numpy>=1.26.0
+pandas>=2.2.0
+scipy>=1.12.0
 
 # Rate limiting and caching
-redis==5.0.1
-slowapi==0.1.9
+redis>=5.0.0
 
 # Authentication and security
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-python-dotenv==1.0.0
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+python-dotenv>=1.0.0
 
 # Testing
-pytest==7.4.3
-pytest-asyncio==0.21.1
-pytest-cov==4.1.0
-httpx==0.25.1
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+pytest-cov>=4.1.0
+httpx>=0.27.0
 
 # Development
-black==23.11.0
-flake8==6.1.0
-mypy==1.7.1
+black>=24.0.0
+flake8>=7.0.0
+mypy>=1.8.0
