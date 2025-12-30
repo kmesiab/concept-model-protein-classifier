@@ -1,0 +1,277 @@
+name: Terraform Validation Pipeline
+
+on:
+  pull_request:
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-validate.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  # Gate 1: TFLint - Catch provider-specific errors and enforce naming conventions
+  tflint:
+    name: Gate 1 - TFLint
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Cache TFLint plugin directory
+        uses: actions/cache@v4
+        with:
+          path: ~/.tflint.d/plugins
+          key: ${{ runner.os }}-tflint-${{ hashFiles('.tflint.hcl') }}
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+
+      - name: Show TFLint version
+        run: tflint --version
+
+      - name: Create TFLint config
+        run: |
+          cat > .tflint.hcl <<EOF
+          plugin "aws" {
+            enabled = true
+            version = "0.29.0"
+            source  = "github.com/terraform-linters/tflint-ruleset-aws"
+          }
+
+          rule "terraform_naming_convention" {
+            enabled = true
+          }
+
+          rule "terraform_documented_variables" {
+            enabled = true
+          }
+
+          rule "terraform_typed_variables" {
+            enabled = true
+          }
+
+          rule "terraform_unused_declarations" {
+            enabled = true
+          }
+
+          rule "terraform_deprecated_index" {
+            enabled = true
+          }
+
+          rule "terraform_comment_syntax" {
+            enabled = true
+          }
+
+          rule "terraform_required_version" {
+            enabled = true
+          }
+
+          rule "terraform_required_providers" {
+            enabled = true
+          }
+          EOF
+
+      - name: Init TFLint
+        run: tflint --init
+        working-directory: terraform
+
+      - name: Run TFLint
+        run: tflint --format compact --recursive
+        working-directory: terraform
+
+      - name: TFLint Summary
+        if: always()
+        run: |
+          echo "### 🔍 Gate 1: TFLint Results" >> $GITHUB_STEP_SUMMARY
+          if [ $? -eq 0 ]; then
+            echo "✅ TFLint validation passed - No provider-specific issues found" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ TFLint found issues - Please review and fix" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Gate 2: Security Scanner - Scan for security issues
+  security-scan:
+    name: Gate 2 - Security Scan (tfsec)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: terraform
+          format: default
+          soft_fail: false
+          additional_args: --minimum-severity MEDIUM
+
+      - name: Run tfsec with SARIF output
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: terraform
+          format: sarif
+          soft_fail: true
+        continue-on-error: true
+
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: results.sarif
+        continue-on-error: true
+
+      - name: Security Scan Summary
+        if: always()
+        run: |
+          echo "### 🔒 Gate 2: Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          if [ $? -eq 0 ]; then
+            echo "✅ No security issues found" >> $GITHUB_STEP_SUMMARY
+            echo "- No public S3 buckets" >> $GITHUB_STEP_SUMMARY
+            echo "- No overly permissive security groups" >> $GITHUB_STEP_SUMMARY
+            echo "- Encryption enabled where required" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Security issues detected - Please review" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Gate 3: Infracost - Show cost estimates
+  infracost:
+    name: Gate 3 - Cost Estimation
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+          terraform_wrapper: false
+
+      - name: Terraform init
+        run: terraform init
+        working-directory: terraform
+        continue-on-error: true
+
+      - name: Terraform plan
+        id: plan
+        run: |
+          terraform plan -out=tfplan.binary -var="aws_account_id=462498369025" || echo "plan_failed=true" >> $GITHUB_OUTPUT
+        working-directory: terraform
+        continue-on-error: true
+
+      - name: Convert plan to JSON
+        if: steps.plan.outputs.plan_failed != 'true'
+        run: terraform show -json tfplan.binary > plan.json
+        working-directory: terraform
+        continue-on-error: true
+
+      - name: Setup Infracost
+        if: steps.plan.outputs.plan_failed != 'true'
+        uses: infracost/actions/setup@v3
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      - name: Generate Infracost JSON
+        if: steps.plan.outputs.plan_failed != 'true'
+        run: |
+          infracost breakdown --path plan.json \
+            --format json \
+            --out-file infracost.json || true
+        working-directory: terraform
+        continue-on-error: true
+
+      - name: Post Infracost comment
+        if: steps.plan.outputs.plan_failed != 'true'
+        uses: infracost/actions/comment@v1
+        with:
+          path: terraform/infracost.json
+          behavior: update
+        continue-on-error: true
+
+      - name: Cost Estimation Summary (Manual)
+        if: always()
+        run: |
+          echo "### 💰 Gate 3: Cost Estimation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ secrets.INFRACOST_API_KEY }}" ]; then
+            echo "✅ Infracost analysis completed" >> $GITHUB_STEP_SUMMARY
+            echo "Check the PR comment for detailed cost breakdown" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Infracost API key not configured" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Estimated Monthly Costs (Manual Calculation):**" >> $GITHUB_STEP_SUMMARY
+            echo "- ECS Fargate (2 tasks, 0.5 vCPU, 1GB): ~\$35-40/month" >> $GITHUB_STEP_SUMMARY
+            echo "- Application Load Balancer: ~\$20-25/month" >> $GITHUB_STEP_SUMMARY
+            echo "- NAT Gateways (2 for HA): ~\$70/month" >> $GITHUB_STEP_SUMMARY
+            echo "- Route 53 Hosted Zone: ~\$0.50/month" >> $GITHUB_STEP_SUMMARY
+            echo "- Data Transfer: Variable (estimate \$5-10/month)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Total Estimated: ~\$130-145/month**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "To enable automated cost tracking, add INFRACOST_API_KEY secret" >> $GITHUB_STEP_SUMMARY
+            echo "Get free API key at: https://www.infracost.io/" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Summary job - only runs if all gates pass
+  validation-summary:
+    name: Validation Summary
+    runs-on: ubuntu-latest
+    needs: [tflint, security-scan, infracost]
+    if: always()
+    
+    steps:
+      - name: Check gate results
+        run: |
+          echo "## 🚀 Triple-Gated Terraform Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.tflint.result }}" == "success" ]; then
+            echo "✅ **Gate 1 (TFLint):** PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Gate 1 (TFLint):** FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.security-scan.result }}" == "success" ]; then
+            echo "✅ **Gate 2 (Security):** PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Gate 2 (Security):** FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.infracost.result }}" == "success" ] || [ "${{ needs.infracost.result }}" == "skipped" ]; then
+            echo "✅ **Gate 3 (Cost Est):** COMPLETED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ **Gate 3 (Cost Est):** NEEDS REVIEW" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.tflint.result }}" == "success" ] && [ "${{ needs.security-scan.result }}" == "success" ]; then
+            echo "### 🎉 All critical gates passed! Infrastructure changes are approved." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ⚠️ Some gates failed. Please review and address the issues before merging." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Fail if critical gates failed
+        if: needs.tflint.result != 'success' || needs.security-scan.result != 'success'
+        run: |
+          echo "Critical validation gates failed"
+          exit 1

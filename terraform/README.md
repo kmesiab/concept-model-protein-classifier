@@ -2,6 +2,18 @@
 
 This directory contains the Terraform infrastructure code for deploying the Protein Classifier API to AWS ECS Fargate with OIDC authentication.
 
+## 🚀 Triple-Gated Validation Pipeline
+
+All infrastructure changes are automatically validated through our **Triple-Gated CI/CD Pipeline**:
+
+1. 🔍 **Gate 1: TFLint** - Catch provider-specific errors and enforce naming conventions
+2. 🔒 **Gate 2: Security Scanner** - Scan for security issues (tfsec)
+3. 💰 **Gate 3: Infracost** - Show cost estimates before applying
+
+**[View Pipeline Documentation →](../docs/TERRAFORM_VALIDATION.md)**
+
+This acts as an automated Senior DevOps Reviewer for all Terraform changes.
+
 ## Prerequisites
 
 - Terraform >= 1.0
