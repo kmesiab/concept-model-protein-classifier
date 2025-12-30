@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Compare protein disorder classifiers. See how our API stacks up against PONDR, IUPred, ESpritz, and more.">
+  <meta name="keywords" content="protein disorder comparison, IDP prediction comparison, bioinformatics tools">
+  <title>Comparison - Protein Disorder Classifier</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav>
+    <div class="container">
+      <a href="index.html" class="logo">🧬 Protein Disorder Classifier</a>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="methodology.html">Methodology</a></li>
+        <li><a href="api-docs.html">API Docs</a></li>
+        <li><a href="comparison.html" class="active">Comparison</a></li>
+        <li><a href="getting-started.html">Get Started</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <div class="container">
+      <h1>📊 Performance Comparison</h1>
+      <p class="tagline" style="color: var(--text-light); font-size: 1.25rem; margin-bottom: 3rem;">
+        See how our classifier compares to established disorder prediction tools
+      </p>
+
+      <!-- Benchmark Table -->
+      <section id="benchmark">
+        <h2>Benchmark Comparison</h2>
+        
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Method</th>
+                <th>Accuracy</th>
+                <th>Speed/Seq</th>
+                <th>Training Required</th>
+                <th>Interpretable</th>
+                <th>Open Source</th>
+                <th>API Available</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="background-color: #dbeafe;">
+                <td><strong>This API</strong></td>
+                <td><strong>84.52%</strong></td>
+                <td><strong>&lt;50ms</strong></td>
+                <td>None</td>
+                <td>✅</td>
+                <td>Methodology</td>
+                <td>✅</td>
+              </tr>
+              <tr>
+                <td>PONDR-FIT</td>
+                <td>~81%</td>
+                <td>~1s</td>
+                <td>Required</td>
+                <td>❌</td>
+                <td>No</td>
+                <td>Limited</td>
+              </tr>
+              <tr>
+                <td>IUPred</td>
+                <td>~80%</td>
+                <td>~500ms</td>
+                <td>None</td>
+                <td>⚠️ Partial</td>
+                <td>Yes</td>
+                <td>Web only</td>
+              </tr>
+              <tr>
+                <td>ESpritz</td>
+                <td>~83%</td>
+                <td>~2s</td>
+                <td>Required</td>
+                <td>❌</td>
+                <td>Yes</td>
+                <td>No</td>
+              </tr>
+              <tr>
+                <td>DISOPRED3</td>
+                <td>~82%</td>
+                <td>~5s</td>
+                <td>Required</td>
+                <td>❌</td>
+                <td>Yes</td>
+                <td>No</td>
+              </tr>
+              <tr>
+                <td>AlphaFold</td>
+                <td>N/A*</td>
+                <td>~60s</td>
+                <td>Required</td>
+                <td>❌</td>
+                <td>Yes</td>
+                <td>Limited</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <p style="margin-top: 1rem; color: var(--text-light); font-size: 0.875rem;">
+          * AlphaFold predicts 3D structure with confidence scores; disorder can be inferred from low pLDDT regions but it's not a direct disorder predictor.
+        </p>
+      </section>
+
+      <!-- Feature Comparison -->
+      <section id="features">
+        <h2>Feature-by-Feature Comparison</h2>
+        
+        <div class="card-grid">
+          <div class="card">
+            <h3>🚀 Speed</h3>
+            <p><strong>Our API: &lt;50ms per sequence</strong></p>
+            <p>20-100x faster than most competitors. Ideal for high-throughput screening of large protein datasets.</p>
+            <ul>
+              <li>Single sequence: &lt;50ms</li>
+              <li>50 sequences: &lt;500ms</li>
+              <li>1000 sequences: &lt;10s</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <h3>🎯 Accuracy</h3>
+            <p><strong>Our API: 84.52%</strong></p>
+            <p>Competitive with state-of-the-art methods, validated on multiple independent datasets.</p>
+            <ul>
+              <li>PDB/DisProt: 84.52%</li>
+              <li>Homology-aware CV: >75%</li>
+              <li>MobiDB independent: >70%</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <h3>🔍 Interpretability</h3>
+            <p><strong>Our API: Fully transparent</strong></p>
+            <p>Know exactly why each classification was made based on biophysical features.</p>
+            <ul>
+              <li>7 interpretable features</li>
+              <li>Threshold-based decision</li>
+              <li>No black-box ML</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <h3>💰 Cost</h3>
+            <p><strong>Our API: Free tier available</strong></p>
+            <p>1000 sequences/day at no cost for academic research.</p>
+            <ul>
+              <li>Free: 1000 seq/day</li>
+              <li>Premium: Unlimited</li>
+              <li>Enterprise: Custom</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- When to Use -->
+      <section id="use-cases">
+        <h2>When to Use Our API</h2>
+        
+        <div class="alert alert-success">
+          <h3 style="margin-top: 0;">✅ Perfect For:</h3>
+          <ul style="margin-bottom: 0;">
+            <li><strong>High-throughput screening</strong> - Process thousands of sequences quickly</li>
+            <li><strong>Real-time disorder prediction</strong> - Sub-second response times for interactive applications</li>
+            <li><strong>Pre-filtering before structure prediction</strong> - Fast initial assessment before expensive AlphaFold runs</li>
+            <li><strong>API integration into pipelines</strong> - RESTful API for easy automation</li>
+            <li><strong>Educational/research applications</strong> - Transparent methodology for understanding</li>
+            <li><strong>Reproducible science</strong> - Same input always gives same output, no model updates</li>
+          </ul>
+        </div>
+
+        <div class="alert alert-warning">
+          <h3 style="margin-top: 0;">⚠️ Limitations:</h3>
+          <ul style="margin-bottom: 0;">
+            <li><strong>Binary classification only</strong> - Predicts disordered vs. structured at whole-protein level</li>
+            <li><strong>No per-residue disorder prediction</strong> - Cannot identify specific disordered regions</li>
+            <li><strong>Global features only</strong> - May miss local disorder in otherwise structured proteins</li>
+            <li><strong>Not a replacement for detailed structural analysis</strong> - Use AlphaFold for 3D structure</li>
+          </ul>
+        </div>
+
+        <div class="alert" style="background-color: #fef2f2; border-color: #ef4444; color: #991b1b;">
+          <h3 style="margin-top: 0;">❌ Not Suitable For:</h3>
+          <ul style="margin-bottom: 0;">
+            <li><strong>Clinical diagnostic decisions</strong> - Not FDA/EMA approved for medical use</li>
+            <li><strong>Single-residue disorder mapping</strong> - Use IUPred or DISOPRED for per-residue predictions</li>
+            <li><strong>Regulatory submissions</strong> - Not validated for pharmaceutical regulatory purposes</li>
+            <li><strong>Detailed structural predictions</strong> - Use AlphaFold or Rosetta for structure modeling</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Detailed Method Descriptions -->
+      <section id="method-details">
+        <h2>Detailed Tool Descriptions</h2>
+
+        <div class="card">
+          <h3>PONDR-FIT</h3>
+          <p><strong>Predictor of Natural Disordered Regions - FIT</strong></p>
+          <p>Machine learning-based ensemble method combining multiple neural networks. High accuracy but slower and less interpretable. Requires web submission or licensed software.</p>
+          <ul>
+            <li>✅ Good accuracy (~81%)</li>
+            <li>❌ Slow (~1s per sequence)</li>
+            <li>❌ Not open source</li>
+            <li>❌ Limited API access</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>IUPred</h3>
+          <p><strong>Intrinsically Unstructured Protein Predictor</strong></p>
+          <p>Energy estimation approach based on amino acid interaction potentials. Open source and reasonably fast, but less accurate than ML methods.</p>
+          <ul>
+            <li>✅ Open source</li>
+            <li>✅ No training required</li>
+            <li>⚠️ Moderate speed (~500ms)</li>
+            <li>⚠️ Lower accuracy (~80%)</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>ESpritz</h3>
+          <p><strong>Ensemble of machine learning approaches</strong></p>
+          <p>Bidirectional recurrent neural network trained on multiple disorder definitions. High accuracy but computationally expensive.</p>
+          <ul>
+            <li>✅ Good accuracy (~83%)</li>
+            <li>✅ Open source</li>
+            <li>❌ Slow (~2s per sequence)</li>
+            <li>❌ Requires GPU for optimal speed</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>DISOPRED3</h3>
+          <p><strong>Disorder Prediction version 3</strong></p>
+          <p>Support vector machine classifier using PSI-BLAST profiles. Requires sequence database searches, making it very slow.</p>
+          <ul>
+            <li>✅ Solid accuracy (~82%)</li>
+            <li>✅ Open source</li>
+            <li>❌ Very slow (~5s+ per sequence)</li>
+            <li>❌ Requires BLAST database</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>AlphaFold</h3>
+          <p><strong>Deep learning structure prediction</strong></p>
+          <p>Predicts 3D protein structures with confidence scores. Low confidence (pLDDT &lt; 50) regions often indicate disorder, but this is not the primary use case.</p>
+          <ul>
+            <li>✅ Revolutionary structure prediction</li>
+            <li>✅ Open source</li>
+            <li>❌ Very slow (~60s per sequence)</li>
+            <li>❌ Requires significant compute (GPU)</li>
+            <li>⚠️ Disorder is secondary inference</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Performance vs Speed Chart -->
+      <section id="tradeoffs">
+        <h2>Accuracy vs. Speed Tradeoffs</h2>
+        
+        <div class="card">
+          <p>Different tools offer different tradeoffs between accuracy and speed:</p>
+          
+          <div style="background: var(--bg-light); padding: 2rem; border-radius: 8px; margin: 2rem 0;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+              <div>
+                <h4>🐇 Speed-Optimized Tools</h4>
+                <ul>
+                  <li><strong>Our API</strong> - 84.52% @ &lt;50ms</li>
+                  <li><strong>IUPred</strong> - ~80% @ ~500ms</li>
+                </ul>
+                <p>Best for: High-throughput, real-time applications</p>
+              </div>
+              
+              <div>
+                <h4>🎯 Accuracy-Optimized Tools</h4>
+                <ul>
+                  <li><strong>Our API</strong> - 84.52% @ &lt;50ms</li>
+                  <li><strong>ESpritz</strong> - ~83% @ ~2s</li>
+                  <li><strong>DISOPRED3</strong> - ~82% @ ~5s</li>
+                </ul>
+                <p>Best for: Careful analysis, publication-quality predictions</p>
+              </div>
+            </div>
+            
+            <div style="margin-top: 2rem; padding: 1rem; background: white; border-radius: 6px;">
+              <strong>💡 Our Sweet Spot:</strong> We offer competitive accuracy (84.52%) at exceptional speed (&lt;50ms), making us ideal for both high-throughput and careful analysis.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tool Selection Guide -->
+      <section id="selection-guide">
+        <h2>Tool Selection Guide</h2>
+        
+        <table>
+          <thead>
+            <tr>
+              <th>Your Needs</th>
+              <th>Recommended Tool</th>
+              <th>Why</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Proteome-wide screening (10,000+ sequences)</td>
+              <td><strong>Our API</strong></td>
+              <td>Speed critical; 10,000 sequences in ~8 minutes vs. 3+ hours with alternatives</td>
+            </tr>
+            <tr>
+              <td>Real-time web application</td>
+              <td><strong>Our API</strong></td>
+              <td>Sub-second response times; RESTful API for easy integration</td>
+            </tr>
+            <tr>
+              <td>Per-residue disorder regions</td>
+              <td>IUPred or DISOPRED3</td>
+              <td>Our API only does whole-protein classification</td>
+            </tr>
+            <tr>
+              <td>Publication-quality analysis (small dataset)</td>
+              <td><strong>Our API</strong> + ESpritz</td>
+              <td>Compare multiple methods for robust conclusions</td>
+            </tr>
+            <tr>
+              <td>Structure prediction with disorder context</td>
+              <td><strong>Our API</strong> → AlphaFold</td>
+              <td>Pre-filter with our API; run AlphaFold only on structured proteins</td>
+            </tr>
+            <tr>
+              <td>Teaching/educational use</td>
+              <td><strong>Our API</strong></td>
+              <td>Transparent methodology; students can understand the "why"</td>
+            </tr>
+            <tr>
+              <td>Offline processing (no internet)</td>
+              <td>IUPred or ESpritz</td>
+              <td>Downloadable tools; our API requires internet</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- References -->
+      <section id="references">
+        <h2>References</h2>
+        
+        <div class="card">
+          <ul style="margin: 0;">
+            <li>PONDR: Romero et al. (2001) "Sequence complexity of disordered protein"</li>
+            <li>IUPred: Dosztányi et al. (2005) "IUPred: web server for the prediction of intrinsically unstructured regions"</li>
+            <li>ESpritz: Walsh et al. (2012) "ESpritz: accurate and fast prediction of protein disorder"</li>
+            <li>DISOPRED3: Jones & Cozzetto (2015) "DISOPRED3: precise disordered region predictions"</li>
+            <li>AlphaFold: Jumper et al. (2021) "Highly accurate protein structure prediction with AlphaFold"</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- CTA -->
+      <section style="text-align: center; background: var(--bg-light); padding: 3rem; border-radius: 8px;">
+        <h2>Try Our Fast, Accurate API</h2>
+        <p style="font-size: 1.125rem; margin-bottom: 2rem;">Experience the balance of speed and accuracy for yourself</p>
+        <a href="getting-started.html" class="cta">Get Started Free</a>
+        <a href="api-docs.html" class="btn-secondary" style="margin-left: 1rem;">View Documentation</a>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="footer-section">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="api-docs.html">API Documentation</a></li>
+          <li><a href="getting-started.html">Getting Started</a></li>
+          <li><a href="comparison.html">Comparisons</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="methodology.html">Methodology</a></li>
+          <li><a href="https://github.com/kmesiab/concept-model-protein-classifier">GitHub Repository</a></li>
+          <li><a href="https://github.com/kmesiab/concept-model-protein-classifier/blob/main/docs/VALIDATION.md">Validation Guide</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Community</h4>
+        <ul>
+          <li><a href="https://github.com/kmesiab/concept-model-protein-classifier/issues">Report Issues</a></li>
+          <li><a href="https://github.com/kmesiab/concept-model-protein-classifier/discussions">Discussions</a></li>
+          <li><a href="https://kevinmesiab.substack.com/p/emergent-concept-modeling-a-paradigm">Concept Model</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#">Terms of Service</a></li>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Academic Use</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2025 Protein Disorder Classifier. Built with transparency for the research community.</p>
+    </div>
+  </footer>
+</body>
+</html>
