@@ -43,7 +43,11 @@ lint-black: ## Check code formatting with Black
 
 lint-isort: ## Check import ordering with isort
 	@echo "${YELLOW}Running isort import checker...${NC}"
-	@isort --check-only --diff . || (echo "${RED}❌ isort check failed${NC}" && exit 1)
+	@if [ -f "api/.isort.cfg" ]; then \
+		isort --settings-file=api/.isort.cfg --check-only --diff . || (echo "${RED}❌ isort check failed${NC}" && exit 1); \
+	else \
+		isort --check-only --diff . || (echo "${RED}❌ isort check failed${NC}" && exit 1); \
+	fi
 	@echo "${GREEN}✅ isort check passed${NC}"
 
 lint-flake8: ## Check code style with Flake8
@@ -53,7 +57,9 @@ lint-flake8: ## Check code style with Flake8
 
 lint-pylint: ## Check code quality with Pylint
 	@echo "${YELLOW}Running Pylint...${NC}"
-	@if [ -d "$(API_DIR)" ]; then \
+	@if [ -d "api" ] && [ -f "api/.pylintrc" ]; then \
+		pylint --rcfile=api/.pylintrc api/ || (echo "${RED}❌ Pylint failed${NC}" && exit 1); \
+	else \
 		pylint $(API_DIR)/ || (echo "${RED}❌ Pylint failed${NC}" && exit 1); \
 	fi
 	@find . -maxdepth 1 -name "*.py" -type f | xargs -r pylint || (echo "${RED}❌ Pylint failed${NC}" && exit 1)
@@ -61,7 +67,9 @@ lint-pylint: ## Check code quality with Pylint
 
 lint-mypy: ## Check type hints with mypy
 	@echo "${YELLOW}Running mypy type checker...${NC}"
-	@if [ -d "$(API_DIR)" ]; then \
+	@if [ -d "api" ] && [ -f "api/mypy.ini" ]; then \
+		mypy --config-file=api/mypy.ini api/ || (echo "${RED}❌ mypy failed${NC}" && exit 1); \
+	else \
 		mypy $(API_DIR)/ || (echo "${RED}❌ mypy failed${NC}" && exit 1); \
 	fi
 	@find . -maxdepth 1 -name "*.py" -type f | xargs -r mypy || (echo "${RED}❌ mypy failed${NC}" && exit 1)
@@ -69,7 +77,11 @@ lint-mypy: ## Check type hints with mypy
 
 lint-bandit: ## Run security checks with Bandit
 	@echo "${YELLOW}Running Bandit security scanner...${NC}"
-	@bandit -r . --exclude ./tests,./venv,./env,./.venv || (echo "${RED}❌ Bandit security scan failed${NC}" && exit 1)
+	@if [ -f "pyproject.toml" ]; then \
+		bandit -r . --configfile pyproject.toml || (echo "${RED}❌ Bandit security scan failed${NC}" && exit 1); \
+	else \
+		bandit -r . --exclude ./tests,./venv,./env,./.venv || (echo "${RED}❌ Bandit security scan failed${NC}" && exit 1); \
+	fi
 	@echo "${GREEN}✅ Bandit security scan passed${NC}"
 
 test: ## Run test suite with coverage
