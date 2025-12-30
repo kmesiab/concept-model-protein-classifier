@@ -9,16 +9,36 @@
   --primary-color: #2563eb;
   --primary-dark: #1e40af;
   --text-color: #1f2937;
-  --text-light: #4b5563; /* Improved from #6b7280 for WCAG AA contrast */
+  --text-light: #4b5563; /* WCAG AA: 7.56:1 contrast on white */
   --bg-color: #ffffff;
   --bg-light: #f9fafb;
   --border-color: #e5e7eb;
-  --success-color: #10b981;
-  --warning-color: #f59e0b;
+  --success-color: #047857; /* WCAG AA: 5.48:1 contrast on white (was #10b981: 2.54:1) */
+  --warning-color: #b45309; /* WCAG AA: 5.02:1 contrast on white (was #f59e0b: 2.15:1) */
   --code-bg: #f3f4f6;
   --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
+
+/* 
+ * Color Contrast Compliance (WCAG 2.1 AA)
+ * ========================================
+ * All color combinations meet or exceed WCAG AA standards:
+ * - Normal text: 4.5:1 minimum
+ * - Large text (18pt+ or 14pt+ bold): 3:1 minimum
+ * - UI components: 3:1 minimum
+ * 
+ * Verified combinations:
+ * - --text-color (#1f2937) on white: 14.68:1 ✓
+ * - --text-light (#4b5563) on white: 7.56:1 ✓
+ * - --primary-color (#2563eb) on white: 5.17:1 ✓
+ * - --success-color (#047857) on white: 5.48:1 ✓
+ * - --warning-color (#b45309) on white: 5.02:1 ✓
+ * - White text on hero gradient (#667eea): 3.66:1 ✓ (large text)
+ * - Alert success text (#065f46) on light green (#d1fae5): 6.78:1 ✓
+ * - Alert warning text (#92400e) on light yellow (#fef3c7): 6.37:1 ✓
+ * - Alert info text (#1e40af) on light blue (#dbeafe): 7.15:1 ✓
+ */
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
