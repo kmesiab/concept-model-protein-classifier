@@ -9,7 +9,7 @@
   --primary-color: #2563eb;
   --primary-dark: #1e40af;
   --text-color: #1f2937;
-  --text-light: #6b7280;
+  --text-light: #4b5563; /* Improved from #6b7280 for WCAG AA contrast */
   --bg-color: #ffffff;
   --bg-light: #f9fafb;
   --border-color: #e5e7eb;
@@ -489,11 +489,6 @@ a:focus:not(:focus-visible), button:focus:not(:focus-visible) {
   outline: none;
 }
 
-/* Ensure sufficient color contrast for text-light */
-p, li, .footer-section a {
-  color: #4b5563; /* Darker than original #6b7280 for better contrast */
-}
-
 /* High contrast mode support */
 @media (prefers-contrast: high) {
   :root {
@@ -520,13 +515,11 @@ p, li, .footer-section a {
 
 /* Respect user's motion preferences */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+  * {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+    scroll-behavior: auto;
   }
   
   .fade-in {
