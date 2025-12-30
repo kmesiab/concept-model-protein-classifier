@@ -44,16 +44,16 @@ app = FastAPI(
     title="Protein Disorder Classification API",
     description="""
     Fast and accurate protein disorder prediction API.
-    
+
     ## Features
     - **High Accuracy**: 84.52% accuracy based on extensive validation
     - **Fast**: Threshold-based classification, no ML inference overhead
     - **Batch Processing**: Process up to 50 sequences per request (free tier)
     - **Multiple Input Formats**: JSON or FASTA
-    
+
     ## Authentication
     All endpoints require an API key passed in the `X-API-Key` header.
-    
+
     ## Rate Limits (Free Tier)
     - 1,000 sequences per day
     - 100 requests per minute

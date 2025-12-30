@@ -102,7 +102,7 @@ def main():
         print(f"Confidence: {result['confidence']}")
         print(f"Conditions Met: {result['conditions_met']}/{result['threshold']}")
         print(f"Processing Time: {result['processing_time_ms']}ms")
-        print(f"\nFeatures:")
+        print("\nFeatures:")
         for feature, value in result["features"].items():
             print(f"  {feature}: {value:.4f}")
 

@@ -6,6 +6,42 @@ from typing import List, Tuple
 from io import StringIO
 
 
+def _save_sequence(
+    sequences: List[Tuple[str, str]], seq_id: str, seq_parts: List[str]
+) -> None:
+    """
+    Save a sequence to the sequences list after validation.
+
+    Args:
+        sequences: List to append sequence to
+        seq_id: Sequence identifier
+        seq_parts: List of sequence parts to join
+
+    Raises:
+        ValueError: If sequence has no data
+    """
+    if not seq_parts:
+        raise ValueError(f"Sequence {seq_id} has no sequence data")
+    sequences.append((seq_id, "".join(seq_parts)))
+
+
+def _process_header_line(line: str, line_num: int) -> str:
+    """
+    Process a FASTA header line and extract the sequence ID.
+
+    Args:
+        line: Header line (starting with >)
+        line_num: Line number for error reporting
+
+    Returns:
+        Sequence ID
+    """
+    seq_id = line[1:].strip()
+    if not seq_id:
+        seq_id = f"sequence_{line_num}"
+    return seq_id
+
+
 def parse_fasta(fasta_text: str) -> List[Tuple[str, str]]:
     """
     Parse FASTA format text into a list of (id, sequence) tuples.
@@ -37,25 +73,21 @@ def parse_fasta(fasta_text: str) -> List[Tuple[str, str]]:
         if line.startswith(">"):
             # Save previous sequence if exists
             if current_id is not None:
-                if not current_seq:
-                    raise ValueError(f"Sequence {current_id} has no sequence data")
-                sequences.append((current_id, "".join(current_seq)))
+                _save_sequence(sequences, current_id, current_seq)
 
             # Start new sequence
-            current_id = line[1:].strip()
-            if not current_id:
-                current_id = f"sequence_{line_num}"
+            current_id = _process_header_line(line, line_num)
             current_seq = []
         else:
             if current_id is None:
-                raise ValueError(f"Sequence data found before header at line {line_num}")
+                raise ValueError(
+                    f"Sequence data found before header at line {line_num}"
+                )
             current_seq.append(line)
 
     # Save last sequence
     if current_id is not None:
-        if not current_seq:
-            raise ValueError(f"Sequence {current_id} has no sequence data")
-        sequences.append((current_id, "".join(current_seq)))
+        _save_sequence(sequences, current_id, current_seq)
 
     if not sequences:
         raise ValueError("No valid sequences found in FASTA input")
