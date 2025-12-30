@@ -63,22 +63,64 @@ terraform/
 
 ## Deployment Instructions
 
-### Initial Setup
+### Bootstrap Process (First-Time Setup)
 
-1. **Initialize Terraform**:
+**Note**: There's a chicken-and-egg problem with the DynamoDB state lock table. The backend configuration references the DynamoDB table before it exists. Follow these steps for initial setup:
+
+1. **Temporarily disable state locking**:
+
+   Edit `backend.tf` and comment out the `dynamodb_table` line:
+
+   ```hcl
+   terraform {
+     backend "s3" {
+       bucket         = "protein-classifier-terraform-state"
+       key            = "protein-classifier/terraform.tfstate"
+       region         = "us-west-2"
+       # dynamodb_table = "protein-classifier-terraform-locks"  # Temporarily commented
+       encrypt        = true
+     }
+   }
+   ```
+
+2. **Initialize Terraform**:
 
    ```bash
    cd terraform
    terraform init
    ```
 
-2. **Review the plan**:
+3. **Create the DynamoDB table**:
+
+   ```bash
+   terraform apply -target=aws_dynamodb_table.terraform_locks
+   ```
+
+4. **Re-enable state locking**:
+
+   Uncomment the `dynamodb_table` line in `backend.tf`:
+
+   ```hcl
+   dynamodb_table = "protein-classifier-terraform-locks"
+   ```
+
+5. **Reconfigure the backend**:
+
+   ```bash
+   terraform init -reconfigure
+   ```
+
+### Regular Deployment
+
+After the initial bootstrap, follow these steps:
+
+1. **Review the plan**:
 
    ```bash
    terraform plan
    ```
 
-3. **Apply the infrastructure**:
+2. **Apply the infrastructure**:
 
    ```bash
    terraform apply

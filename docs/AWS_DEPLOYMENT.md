@@ -265,10 +265,12 @@ resource "aws_appautoscaling_policy" "ecs_cpu" {
 
 - **ECS Fargate**: ~$30-40/month (2 tasks, 0.5 vCPU, 1GB RAM)
 - **Application Load Balancer**: ~$20-25/month
-- **NAT Gateways**: ~$70/month (2 NAT gateways for HA)
-- **Data Transfer**: Variable based on usage
+- **NAT Gateways**: ~$65/month base for 2 NAT gateways (HA) **plus** data processing (~$0.045/GB)
+  - Base cost: ~$32.40/month per NAT Gateway ($0.045/hour × 720 hours)
+  - Data processing costs can significantly increase with higher traffic
+- **Data Transfer**: Variable based on usage (includes NAT data processing and egress)
 - **Route 53**: ~$0.50/month (hosted zone)
-- **Total**: ~$120-140/month
+- **Total**: ~$120-140+/month (depending heavily on data transfer volume)
 
 ### Cost Reduction Options
 

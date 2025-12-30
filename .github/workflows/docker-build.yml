@@ -15,6 +15,7 @@ permissions:
 
 env:
   AWS_REGION: us-west-2
+  AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID || '462498369025' }}
   ECR_REPOSITORY: protein-classifier-api
 
 jobs:
@@ -28,7 +29,7 @@ jobs:
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::462498369025:role/protein-classifier-github-actions-role
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/protein-classifier-github-actions-role
           role-session-name: github-actions-docker-build
           aws-region: ${{ env.AWS_REGION }}
 
@@ -48,8 +49,6 @@ jobs:
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5

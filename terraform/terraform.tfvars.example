@@ -1,19 +1,25 @@
-# Example Terraform Variables File
-# Copy this file to terraform.tfvars and customize values as needed
+# -------------------------------------------------------------------------
+# WARNING:
+#   - DO NOT USE THIS FILE DIRECTLY WITH TERRAFORM.
+#   - First copy this file to terraform.tfvars and then replace ALL
+#     placeholder values with settings appropriate for your environment.
+#   - Using the example values as-is may result in deployment to the
+#     wrong AWS account or environment, or incur unexpected costs.
+# -------------------------------------------------------------------------
 
 # AWS Configuration
 aws_region     = "us-west-2"
-aws_account_id = "462498369025"  # REQUIRED: Replace with your AWS account ID
+aws_account_id = "123456789012"  # REQUIRED: Replace with your 12-digit AWS account ID
 
 # Environment
-environment = "prod"
+environment = "prod"  # Options: dev, staging, prod
 
 # GitHub Repository
-github_repo = "kmesiab/concept-model-protein-classifier"
+github_repo = "your-github-username/your-repo-name"  # Replace with your GitHub repository
 
 # Domain Configuration
-domain_name   = "proteinclassifier.com"
-api_subdomain = "api"
+domain_name   = "example.com"      # Replace with your domain name
+api_subdomain = "api"              # Replace with your desired API subdomain
 
 # Container Configuration
 container_port   = 8000

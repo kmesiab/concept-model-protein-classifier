@@ -15,6 +15,7 @@ permissions:
 
 env:
   AWS_REGION: us-west-2
+  AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID || '462498369025' }}
   ECS_CLUSTER: protein-classifier-api-1-0-0-prod-cluster
   ECS_SERVICE: protein-classifier-api-service
   ECR_REPOSITORY: protein-classifier-api
@@ -32,7 +33,7 @@ jobs:
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::462498369025:role/protein-classifier-github-actions-role
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/protein-classifier-github-actions-role
           role-session-name: github-actions-ecs-deploy
           aws-region: ${{ env.AWS_REGION }}
 
