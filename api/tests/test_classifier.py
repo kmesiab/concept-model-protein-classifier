@@ -96,7 +96,7 @@ class TestComputeFeatures:
     def test_disordered_protein_features(self):
         """Test features of a typical disordered protein sequence."""
         # Use a charged, flexible sequence with unbalanced charge
-        sequence = "KKKKEEEEGGGGSSSSP PRP"
+        sequence = "KKKKEEEEGGGGSSSSPPPP"
         features = compute_features(sequence)
         
         # Has proline

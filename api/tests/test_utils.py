@@ -188,7 +188,7 @@ class TestFastaRoundTrip:
         original_fasta = """>seq1
 ACDEFGHIKLMNPQRSTVWY
 >seq2
-ABCDEFGHIJKLMNOPQRSTUVWXYZ"""
+ACDEFGHIKLMNPQRSTVWYACDEFGHIKLMNPQRSTVWY"""
         
         # Parse
         sequences = parse_fasta(original_fasta)
