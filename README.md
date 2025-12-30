@@ -206,7 +206,19 @@ cd concept-model-protein-classifier/api
 docker-compose up -d
 ```
 
-**[View Deployment Guide →](api/README.md#-deployment)**
+**[View API Deployment Guide →](api/README.md#-deployment)**
+
+### AWS ECS Fargate (Production)
+
+Deploy to AWS with Terraform infrastructure and GitHub Actions CI/CD.
+
+```bash
+cd terraform
+terraform init
+terraform apply
+```
+
+**[View AWS Deployment Guide →](docs/AWS_DEPLOYMENT.md)**
 
 ---
 

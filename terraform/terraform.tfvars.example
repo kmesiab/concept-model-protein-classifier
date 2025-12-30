@@ -1,0 +1,27 @@
+# Example Terraform Variables File
+# Copy this file to terraform.tfvars and customize values as needed
+
+# AWS Configuration
+aws_region     = "us-west-2"
+aws_account_id = "462498369025"
+
+# Environment
+environment = "prod"
+
+# GitHub Repository
+github_repo = "kmesiab/concept-model-protein-classifier"
+
+# Domain Configuration
+domain_name   = "proteinclassifier.com"
+api_subdomain = "api"
+
+# Container Configuration
+container_port   = 8000
+container_cpu    = 512   # 0.5 vCPU
+container_memory = 1024  # 1 GB
+
+# ECS Service Configuration
+desired_count = 2
+
+# Health Check
+health_check_path = "/health"
