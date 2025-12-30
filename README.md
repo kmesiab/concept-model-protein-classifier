@@ -32,7 +32,7 @@ Visit our [Getting Started Guide](https://kmesiab.github.io/concept-model-protei
 ### 2. Make Your First Request
 
 ```bash
-curl -X POST https://api.proteinclassifier.io/api/v1/classify \
+curl -X POST https://api.proteinclassifier.com/api/v1/classify \
   -H "Content-Type: application/json" \
   -H "X-API-Key: YOUR_API_KEY" \
   -d '{
@@ -152,7 +152,7 @@ For production workloads and commercial applications.
 ### API Documentation
 
 - **[Complete API Reference](api/README.md)** - Endpoints, authentication, examples
-- **[Interactive Swagger Docs](https://api.proteinclassifier.io/docs)** - Try the API in your browser
+- **[Interactive Swagger Docs](https://api.proteinclassifier.com/docs)** - Try the API in your browser
 - **[Getting Started Guide](https://kmesiab.github.io/concept-model-protein-classifier/getting-started.html)** - Step-by-step integration
 
 ### Scientific Validation
@@ -191,7 +191,7 @@ Access our hosted API with zero infrastructure management.
 
 ```bash
 # Just use our API endpoint
-curl https://api.proteinclassifier.io/api/v1/classify \
+curl https://api.proteinclassifier.com/api/v1/classify \
   -H "X-API-Key: YOUR_KEY" \
   -d @your_sequences.json
 ```
