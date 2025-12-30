@@ -1,0 +1,89 @@
+name: Code Quality
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install black flake8 pylint mypy isort
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      
+      - name: Black formatting check
+        run: |
+          echo "Running Black formatter check..."
+          black --check --diff .
+        continue-on-error: false
+      
+      - name: Flake8 linting
+        run: |
+          echo "Running Flake8 linting..."
+          flake8 . --count --show-source --statistics
+        continue-on-error: false
+      
+      - name: Pylint
+        run: |
+          echo "Running Pylint..."
+          # Only lint Python files that exist
+          if [ -d "api" ]; then
+            pylint api/
+          fi
+          # Lint root-level Python files
+          find . -maxdepth 1 -name "*.py" -type f | xargs -r pylint
+        continue-on-error: false
+      
+      - name: MyPy type checking
+        run: |
+          echo "Running MyPy type checker..."
+          # Check api directory if it exists
+          if [ -d "api" ]; then
+            mypy api/
+          fi
+          # Check root-level Python files
+          find . -maxdepth 1 -name "*.py" -type f | xargs -r mypy
+        continue-on-error: false
+      
+      - name: Import sorting (isort)
+        run: |
+          echo "Running isort import checker..."
+          isort --check-only --diff .
+        continue-on-error: false
+      
+      - name: Lint summary
+        if: always()
+        run: |
+          echo "✅ Code quality checks completed for Python ${{ matrix.python-version }}"

@@ -1,0 +1,129 @@
+name: Security
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+  schedule:
+    # Run weekly security scans on Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-security-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-security-
+            ${{ runner.os }}-pip-
+      
+      - name: Install security tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit safety pip-audit
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      
+      - name: Bandit security scan
+        run: |
+          echo "Running Bandit security scan..."
+          mkdir -p reports
+          bandit -r . -f json -o reports/bandit-report.json --exclude ./tests,./venv,./env,./.venv || true
+          bandit -r . -f txt --exclude ./tests,./venv,./env,./.venv
+        continue-on-error: false
+      
+      - name: Upload Bandit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: reports/bandit-report.json
+      
+      - name: Safety dependency check
+        run: |
+          echo "Running Safety dependency vulnerability check..."
+          # Create JSON report (Safety 3.x syntax)
+          safety scan --output json > reports/safety-report.json || true
+          # Display results
+          safety scan || echo "⚠️ Safety found vulnerabilities"
+        continue-on-error: true
+      
+      - name: Upload Safety report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: safety-report
+          path: reports/safety-report.json
+      
+      - name: Pip audit
+        run: |
+          echo "Running pip-audit for dependency vulnerabilities..."
+          pip-audit --desc --format json --output reports/pip-audit-report.json || true
+          pip-audit --desc || echo "⚠️ pip-audit found vulnerabilities"
+        continue-on-error: true
+      
+      - name: Upload pip-audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pip-audit-report
+          path: reports/pip-audit-report.json
+      
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+      
+      - name: Upload Trivy scan results to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+        continue-on-error: true
+      
+      - name: Trivy filesystem scan (table output)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'
+      
+      - name: Security scan summary
+        if: always()
+        run: |
+          echo "## Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Bandit: Python code security analysis completed" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Safety: Dependency vulnerability check completed" >> $GITHUB_STEP_SUMMARY
+          echo "✅ pip-audit: Additional dependency audit completed" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Trivy: Filesystem vulnerability scan completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 Check artifacts for detailed reports" >> $GITHUB_STEP_SUMMARY
