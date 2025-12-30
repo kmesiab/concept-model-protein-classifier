@@ -536,13 +536,8 @@ a:focus:not(:focus-visible), button:focus:not(:focus-visible) {
 /* Respect user's motion preferences */
 @media (prefers-reduced-motion: reduce) {
   * {
-    animation-duration: 0.01ms;
-    animation-iteration-count: 1;
-    transition-duration: 0.01ms;
-    scroll-behavior: auto;
-  }
-  
-  .fade-in {
     animation: none;
+    transition: none;
+    scroll-behavior: auto;
   }
 }
