@@ -9,12 +9,13 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <nav>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  <nav role="navigation" aria-label="Main navigation">
     <div class="container">
-      <a href="index.html" class="logo">🧬 Protein Disorder Classifier</a>
+      <a href="index.html" class="logo" aria-label="Protein Disorder Classifier Home">🧬 Protein Disorder Classifier</a>
       <ul class="nav-links">
         <li><a href="index.html">Home</a></li>
-        <li><a href="methodology.html" class="active">Methodology</a></li>
+        <li><a href="methodology.html" aria-current="page">Methodology</a></li>
         <li><a href="api-docs.html">API Docs</a></li>
         <li><a href="comparison.html">Comparison</a></li>
         <li><a href="getting-started.html">Get Started</a></li>
@@ -22,7 +23,7 @@
     </div>
   </nav>
 
-  <main>
+  <main id="main-content" role="main">
     <div class="container">
       <h1>🔬 Scientific Methodology</h1>
       <p class="tagline" style="color: var(--text-light); font-size: 1.25rem; margin-bottom: 3rem;">
@@ -258,7 +259,7 @@
     </div>
   </main>
 
-  <footer>
+  <footer role="contentinfo">
     <div class="container">
       <div class="footer-section">
         <h4>Product</h4>

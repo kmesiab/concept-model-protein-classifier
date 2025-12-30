@@ -37,11 +37,12 @@
   </script>
 </head>
 <body>
-  <nav>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  <nav role="navigation" aria-label="Main navigation">
     <div class="container">
-      <a href="index.html" class="logo">🧬 Protein Disorder Classifier</a>
+      <a href="index.html" class="logo" aria-label="Protein Disorder Classifier Home">🧬 Protein Disorder Classifier</a>
       <ul class="nav-links">
-        <li><a href="index.html" class="active">Home</a></li>
+        <li><a href="index.html" aria-current="page">Home</a></li>
         <li><a href="methodology.html">Methodology</a></li>
         <li><a href="api-docs.html">API Docs</a></li>
         <li><a href="comparison.html">Comparison</a></li>
@@ -74,11 +75,11 @@
     </div>
   </header>
 
-  <main>
+  <main id="main-content" role="main">
     <div class="container">
       <!-- Quick Start Section -->
-      <section id="quick-start">
-        <h2>Quick Start</h2>
+      <section id="quick-start" aria-labelledby="quick-start-heading">
+        <h2 id="quick-start-heading">Quick Start</h2>
         <p>Get started with a simple API call:</p>
         <pre><code>curl -X POST https://api.protein-classifier.com/v1/classify \
   -H "X-API-Key: your_key_here" \
@@ -92,8 +93,8 @@
       </section>
 
       <!-- Value Propositions -->
-      <section id="value-props">
-        <h2>Why Choose Our Classifier?</h2>
+      <section id="value-props" aria-labelledby="value-props-heading">
+        <h2 id="value-props-heading">Why Choose Our Classifier?</h2>
         <div class="value-props">
           <div class="value-prop">
             <span class="icon">✅</span>
@@ -141,8 +142,8 @@
       </section>
 
       <!-- Performance Highlights -->
-      <section id="performance">
-        <h2>Performance Metrics</h2>
+      <section id="performance" aria-labelledby="performance-heading">
+        <h2 id="performance-heading">Performance Metrics</h2>
         <div class="metrics-grid">
           <div class="metric-card">
             <h4>Overall Accuracy</h4>
@@ -179,8 +180,8 @@
       </section>
 
       <!-- Use Cases -->
-      <section id="use-cases">
-        <h2>Perfect For</h2>
+      <section id="use-cases" aria-labelledby="use-cases-heading">
+        <h2 id="use-cases-heading">Perfect For</h2>
         <div class="card-grid">
           <div class="card">
             <h3>High-Throughput Screening</h3>
@@ -202,8 +203,8 @@
       </section>
 
       <!-- Validation Transparency -->
-      <section id="validation">
-        <h2>Rigorous Validation</h2>
+      <section id="validation" aria-labelledby="validation-heading">
+        <h2 id="validation-heading">Rigorous Validation</h2>
         <div class="alert alert-info">
           <strong>Homology-Aware Cross-Validation:</strong> >75% accuracy with no sequence similarity leakage (MMseqs2 clustering)
         </div>
@@ -229,7 +230,7 @@
     </div>
   </main>
 
-  <footer>
+  <footer role="contentinfo">
     <div class="container">
       <div class="footer-section">
         <h4>Product</h4>

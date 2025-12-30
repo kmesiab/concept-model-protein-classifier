@@ -9,20 +9,21 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <nav>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  <nav role="navigation" aria-label="Main navigation">
     <div class="container">
-      <a href="index.html" class="logo">🧬 Protein Disorder Classifier</a>
+      <a href="index.html" class="logo" aria-label="Protein Disorder Classifier Home">🧬 Protein Disorder Classifier</a>
       <ul class="nav-links">
         <li><a href="index.html">Home</a></li>
         <li><a href="methodology.html">Methodology</a></li>
         <li><a href="api-docs.html">API Docs</a></li>
-        <li><a href="comparison.html" class="active">Comparison</a></li>
+        <li><a href="comparison.html" aria-current="page">Comparison</a></li>
         <li><a href="getting-started.html">Get Started</a></li>
       </ul>
     </div>
   </nav>
 
-  <main>
+  <main id="main-content" role="main">
     <div class="container">
       <h1>📊 Performance Comparison</h1>
       <p class="tagline" style="color: var(--text-light); font-size: 1.25rem; margin-bottom: 3rem;">
@@ -30,74 +31,75 @@
       </p>
 
       <!-- Benchmark Table -->
-      <section id="benchmark">
-        <h2>Benchmark Comparison</h2>
+      <section id="benchmark" aria-labelledby="benchmark-heading">
+        <h2 id="benchmark-heading">Benchmark Comparison</h2>
         
         <div style="overflow-x: auto;">
           <table>
+            <caption class="sr-only">Comparison of protein disorder prediction methods including accuracy, speed, and features</caption>
             <thead>
               <tr>
-                <th>Method</th>
-                <th>Accuracy</th>
-                <th>Speed/Seq</th>
-                <th>Training Required</th>
-                <th>Interpretable</th>
-                <th>Open Source</th>
-                <th>API Available</th>
+                <th scope="col">Method</th>
+                <th scope="col">Accuracy</th>
+                <th scope="col">Speed/Seq</th>
+                <th scope="col">Training Required</th>
+                <th scope="col">Interpretable</th>
+                <th scope="col">Open Source</th>
+                <th scope="col">API Available</th>
               </tr>
             </thead>
             <tbody>
               <tr style="background-color: #dbeafe;">
-                <td><strong>This API</strong></td>
+                <th scope="row"><strong>This API</strong></th>
                 <td><strong>84.52%</strong></td>
                 <td><strong>&lt;50ms</strong></td>
                 <td>None</td>
-                <td>✅</td>
+                <td><span role="img" aria-label="Yes">✅</span></td>
                 <td>Methodology</td>
-                <td>✅</td>
+                <td><span role="img" aria-label="Yes">✅</span></td>
               </tr>
               <tr>
-                <td>PONDR-FIT</td>
+                <th scope="row">PONDR-FIT</th>
                 <td>~81%</td>
                 <td>~1s</td>
                 <td>Required</td>
-                <td>❌</td>
+                <td><span role="img" aria-label="No">❌</span></td>
                 <td>No</td>
                 <td>Limited</td>
               </tr>
               <tr>
-                <td>IUPred</td>
+                <th scope="row">IUPred</th>
                 <td>~80%</td>
                 <td>~500ms</td>
                 <td>None</td>
-                <td>⚠️ Partial</td>
+                <td><span role="img" aria-label="Partial">⚠️ Partial</span></td>
                 <td>Yes</td>
                 <td>Web only</td>
               </tr>
               <tr>
-                <td>ESpritz</td>
+                <th scope="row">ESpritz</th>
                 <td>~83%</td>
                 <td>~2s</td>
                 <td>Required</td>
-                <td>❌</td>
+                <td><span role="img" aria-label="No">❌</span></td>
                 <td>Yes</td>
                 <td>No</td>
               </tr>
               <tr>
-                <td>DISOPRED3</td>
+                <th scope="row">DISOPRED3</th>
                 <td>~82%</td>
                 <td>~5s</td>
                 <td>Required</td>
-                <td>❌</td>
+                <td><span role="img" aria-label="No">❌</span></td>
                 <td>Yes</td>
                 <td>No</td>
               </tr>
               <tr>
-                <td>AlphaFold</td>
+                <th scope="row">AlphaFold</th>
                 <td>N/A*</td>
                 <td>~60s</td>
                 <td>Required</td>
-                <td>❌</td>
+                <td><span role="img" aria-label="No">❌</span></td>
                 <td>Yes</td>
                 <td>Limited</td>
               </tr>
@@ -377,7 +379,7 @@
     </div>
   </main>
 
-  <footer>
+  <footer role="contentinfo">
     <div class="container">
       <div class="footer-section">
         <h4>Product</h4>
