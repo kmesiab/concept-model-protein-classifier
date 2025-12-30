@@ -46,7 +46,7 @@ jobs:
       - name: Black formatting check
         run: |
           echo "Running Black formatter check..."
-          black --check --diff --color .
+          black --check --diff .
         continue-on-error: false
       
       - name: Flake8 linting
@@ -80,7 +80,7 @@ jobs:
       - name: Import sorting (isort)
         run: |
           echo "Running isort import checker..."
-          isort --check-only --diff --color .
+          isort --check-only --diff .
         continue-on-error: false
       
       - name: Lint summary

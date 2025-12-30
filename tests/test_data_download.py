@@ -1,4 +1,5 @@
 """Tests for data_download module."""
+
 import os
 import tempfile
 from unittest.mock import MagicMock, patch
