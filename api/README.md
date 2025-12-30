@@ -14,13 +14,13 @@ Fast and accurate REST API for protein disorder prediction. Built on a validated
 
 ## 📋 Table of Contents
 
-- [Quick Start](#quick-start)
-- [API Usage](#api-usage)
-- [Client Examples](#client-examples)
-- [Rate Limits](#rate-limits)
-- [Deployment](#deployment)
-- [Development](#development)
-- [Testing](#testing)
+- [Quick Start](#-quick-start)
+- [API Usage](#-api-usage)
+- [Client Examples](#-client-examples)
+- [Rate Limits](#-rate-limits)
+- [Deployment](#-deployment)
+- [Development](#️-development)
+- [Testing](#-testing)
 
 ## 🏁 Quick Start
 
@@ -65,7 +65,7 @@ curl http://localhost:8000/health
 
 A demo API key is automatically created when the server starts. Check the server logs for:
 
-```
+```text
 Demo API Key created: pk_...
 ```
 
@@ -258,7 +258,7 @@ curl -X POST http://localhost:8000/api/v1/classify/fasta \
 
 Rate limit information is included in response headers:
 
-```
+```text
 X-RateLimit-Limit: 100
 X-RateLimit-Remaining: 95
 X-RateLimit-Reset: 1634567890
@@ -327,9 +327,9 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 ### Access Interactive Documentation
 
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-- **OpenAPI JSON**: http://localhost:8000/openapi.json
+- **Swagger UI**: <http://localhost:8000/docs>
+- **ReDoc**: <http://localhost:8000/redoc>
+- **OpenAPI JSON**: <http://localhost:8000/openapi.json>
 
 ## 🧪 Testing
 
