@@ -73,8 +73,8 @@ resource "aws_iam_role_policy" "github_actions_policy" {
           "ecs:DescribeTasks"
         ]
         Resource = [
-          aws_ecs_cluster.main.arn,
-          "${aws_ecs_cluster.main.arn}/*"
+          "arn:aws:ecs:${var.aws_region}:${var.aws_account_id}:service/${aws_ecs_cluster.main.name}/*",
+          "arn:aws:ecs:${var.aws_region}:${var.aws_account_id}:task/${aws_ecs_cluster.main.name}/*"
         ]
       },
       {
