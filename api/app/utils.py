@@ -6,9 +6,7 @@ from typing import List, Tuple
 from io import StringIO
 
 
-def _save_sequence(
-    sequences: List[Tuple[str, str]], seq_id: str, seq_parts: List[str]
-) -> None:
+def _save_sequence(sequences: List[Tuple[str, str]], seq_id: str, seq_parts: List[str]) -> None:
     """
     Save a sequence to the sequences list after validation.
 
@@ -80,9 +78,7 @@ def parse_fasta(fasta_text: str) -> List[Tuple[str, str]]:
             current_seq = []
         else:
             if current_id is None:
-                raise ValueError(
-                    f"Sequence data found before header at line {line_num}"
-                )
+                raise ValueError(f"Sequence data found before header at line {line_num}")
             current_seq.append(line)
 
     # Save last sequence
