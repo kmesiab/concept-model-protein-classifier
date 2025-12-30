@@ -2,7 +2,6 @@
 Tests for the classifier module.
 """
 
-import pytest
 from app.classifier import (
     get_aa_composition,
     calculate_shannon_entropy,

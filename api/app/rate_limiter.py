@@ -2,11 +2,11 @@
 Rate limiting functionality using Redis for distributed rate limiting.
 """
 
+import os
 import time
 from typing import Optional, Tuple
-from datetime import datetime, timedelta
+from datetime import datetime, timezone
 import redis
-from fastapi import HTTPException, status
 
 
 class RateLimiter:
@@ -16,13 +16,16 @@ class RateLimiter:
     Supports both per-minute and daily limits.
     """
     
-    def __init__(self, redis_url: str = "redis://localhost:6379/0"):
+    def __init__(self, redis_url: str = None):
         """
         Initialize rate limiter.
         
         Args:
-            redis_url: Redis connection URL
+            redis_url: Redis connection URL (defaults to REDIS_URL env var or localhost)
         """
+        if redis_url is None:
+            redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+            
         try:
             self.redis_client = redis.from_url(redis_url, decode_responses=True)
             self.redis_client.ping()
@@ -68,7 +71,7 @@ class RateLimiter:
         day_key = f"rate_limit:day:{api_key_hash}:{self._get_current_day()}"
         daily_allowed, daily_error = self._check_counter(
             day_key,
-            max_sequences_per_day - num_sequences + 1,  # Account for current request
+            max_sequences_per_day,  # Fixed: check against the limit directly
             86400,  # 24 hours in seconds
             "sequences per day",
             increment=num_sequences
@@ -105,7 +108,8 @@ class RateLimiter:
                 current = self.redis_client.get(key)
                 current_value = int(current) if current else 0
                 
-                if current_value >= limit:
+                # Check if adding this increment would exceed the limit
+                if current_value + increment > limit:
                     return False, f"Rate limit exceeded: {limit} {limit_type}"
                 
                 # Increment counter
@@ -136,7 +140,8 @@ class RateLimiter:
                 entry['count'] = 0
                 entry['expires_at'] = current_time + ttl
             
-            if entry['count'] >= limit:
+            # Check if adding this increment would exceed the limit
+            if entry['count'] + increment > limit:
                 return False, f"Rate limit exceeded: {limit} {limit_type}"
             
             entry['count'] += increment
@@ -144,11 +149,11 @@ class RateLimiter:
     
     def _get_current_minute(self) -> str:
         """Get current minute as YYYY-MM-DD-HH-MM."""
-        return datetime.utcnow().strftime("%Y-%m-%d-%H-%M")
+        return datetime.now(timezone.utc).strftime("%Y-%m-%d-%H-%M")
     
     def _get_current_day(self) -> str:
         """Get current day as YYYY-MM-DD."""
-        return datetime.utcnow().strftime("%Y-%m-%d")
+        return datetime.now(timezone.utc).strftime("%Y-%m-%d")
     
     def get_usage(self, api_key_hash: str) -> dict:
         """

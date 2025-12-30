@@ -6,10 +6,12 @@ Based on validated classifier with 84.52% accuracy.
 """
 
 import time
-from datetime import datetime
+import os
+import logging
+from datetime import datetime, timezone
 from typing import Optional
 from fastapi import FastAPI, HTTPException, Header, Request, status
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import hashlib
 
@@ -21,17 +23,21 @@ from .models import (
     HealthResponse,
     ErrorResponse
 )
-from .classifier import classify_sequence, classify_batch
+from .classifier import classify_batch
 from .auth import api_key_manager
 from .rate_limiter import get_rate_limiter
 from .utils import parse_fasta, validate_amino_acid_sequence
 
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # API Version
 API_VERSION = "1.0.0"
 
 # Application start time for uptime tracking
-START_TIME = datetime.utcnow()
+START_TIME = datetime.now(timezone.utc)
 
 # Create FastAPI app
 app = FastAPI(
@@ -59,9 +65,12 @@ app = FastAPI(
 )
 
 # Add CORS middleware
+# Configure allowed origins from environment variable for production security
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8000").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -71,11 +80,15 @@ app.add_middleware(
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Global exception handler for unexpected errors."""
+    # Log the full error server-side for debugging
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    
+    # Return a generic error message to clients to avoid leaking internal details
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
             "error": "Internal server error",
-            "detail": str(exc),
+            "detail": "An unexpected error occurred. Please try again later.",
             "code": "INTERNAL_ERROR"
         }
     )
@@ -158,7 +171,7 @@ async def health_check():
     
     Returns service status and uptime information.
     """
-    uptime = (datetime.utcnow() - START_TIME).total_seconds()
+    uptime = (datetime.now(timezone.utc) - START_TIME).total_seconds()
     
     return HealthResponse(
         status="healthy",

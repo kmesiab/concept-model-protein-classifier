@@ -5,7 +5,7 @@ API Key authentication and management.
 import secrets
 import hashlib
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timezone
 
 
 class APIKeyManager:
@@ -41,7 +41,7 @@ class APIKeyManager:
         self._keys[key_hash] = {
             'email': user_email,
             'tier': tier,
-            'created_at': datetime.utcnow(),
+            'created_at': datetime.now(timezone.utc),
             'is_active': True,
             'daily_limit': 1000 if tier == 'free' else 100000,
             'rate_limit_per_minute': 100 if tier == 'free' else 1000,
@@ -101,9 +101,8 @@ api_key_manager = APIKeyManager()
 
 
 # Pre-create a demo API key for testing
+# Note: In production, use proper key management and avoid printing keys
 DEMO_API_KEY = api_key_manager.generate_api_key(
     user_email="demo@example.com",
     tier="free"
 )
-
-print(f"Demo API Key created: {DEMO_API_KEY}")

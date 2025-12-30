@@ -6,7 +6,6 @@ Extracted from the validated notebook with 84.52% accuracy.
 """
 
 import math
-import numpy as np
 from typing import Dict, List, Tuple, Optional
 
 
