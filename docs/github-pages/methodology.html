@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Scientific methodology and validation results for protein disorder classifier. 84.52% accuracy with rigorous cross-validation.">
+  <meta name="keywords" content="protein disorder methodology, biophysics, protein classification validation">
+  <title>Methodology - Protein Disorder Classifier</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav>
+    <div class="container">
+      <a href="index.html" class="logo">🧬 Protein Disorder Classifier</a>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="methodology.html" class="active">Methodology</a></li>
+        <li><a href="api-docs.html">API Docs</a></li>
+        <li><a href="comparison.html">Comparison</a></li>
+        <li><a href="getting-started.html">Get Started</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <div class="container">
+      <h1>🔬 Scientific Methodology</h1>
+      <p class="tagline" style="color: var(--text-light); font-size: 1.25rem; margin-bottom: 3rem;">
+        Transparent, reproducible, and rigorously validated approach to protein disorder prediction
+      </p>
+
+      <!-- Performance Metrics -->
+      <section id="performance-metrics">
+        <h2>📊 Validation Results</h2>
+        
+        <div class="card">
+          <h3>Overall Performance</h3>
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <h4>Accuracy</h4>
+              <div class="metric-value">84.52%</div>
+              <p>k=5 optimal threshold</p>
+            </div>
+            <div class="metric-card">
+              <h4>Precision (Structured)</h4>
+              <div class="metric-value">88.01%</div>
+              <p>Low false positives</p>
+            </div>
+            <div class="metric-card">
+              <h4>Recall (Disordered)</h4>
+              <div class="metric-value">83.13%</div>
+              <p>Identifies disorder well</p>
+            </div>
+          </div>
+          <div class="metrics-grid" style="margin-top: 1rem;">
+            <div class="metric-card">
+              <h4>F1-Score (DisProt)</h4>
+              <div class="metric-value">80.12%</div>
+              <p>Disordered proteins</p>
+            </div>
+            <div class="metric-card">
+              <h4>F1-Score (PDB)</h4>
+              <div class="metric-value">74.36%</div>
+              <p>Structured proteins</p>
+            </div>
+            <div class="metric-card">
+              <h4>Dataset Size</h4>
+              <div class="metric-value">40,000</div>
+              <p>Training sequences</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 id="validation">Cross-Validation Results</h3>
+          <ul>
+            <li><strong>Homology-Aware CV:</strong> >75% accuracy (prevents data leakage via MMseqs2 clustering)</li>
+            <li><strong>MobiDB Independent Test:</strong> >70% accuracy (generalization to external dataset)</li>
+            <li><strong>Label-Shuffle Control:</strong> ~50% accuracy (proves model learns real patterns, not artifacts)</li>
+            <li><strong>Bootstrap Confidence Intervals:</strong> Narrow intervals indicate statistical significance</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>Processing Speed</h3>
+          <ul>
+            <li><strong>Single sequence:</strong> &lt;50ms</li>
+            <li><strong>Batch (50 sequences):</strong> &lt;500ms</li>
+            <li><strong>1000 sequences:</strong> &lt;10 seconds</li>
+            <li><strong>Throughput:</strong> 100+ sequences/second for batch processing</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Scientific Approach -->
+      <section id="approach">
+        <h2>🔬 Scientific Approach</h2>
+        
+        <p>Our classifier leverages fundamental biophysical principles to distinguish structured from intrinsically disordered proteins. Unlike machine learning approaches that can act as "black boxes," our method is interpretable and based on well-established protein chemistry.</p>
+
+        <div class="card">
+          <h3>1. Global Sequence Features</h3>
+          <p>We extract seven biophysical and compositional features from protein sequences:</p>
+          <ul>
+            <li><strong>Amino acid composition analysis</strong> - Distribution of different amino acid types</li>
+            <li><strong>Charge distribution patterns</strong> - Absolute net charge proportion</li>
+            <li><strong>Hydrogen bonding potential</strong> - Capacity for forming stabilizing H-bonds</li>
+            <li><strong>Hydrophobicity profiles</strong> - Normalized average hydrophobicity</li>
+            <li><strong>Shannon entropy measurements</strong> - Sequence complexity and diversity</li>
+            <li><strong>Proline frequency</strong> - Known disorder-promoting residue</li>
+            <li><strong>Bulky hydrophobic frequency</strong> - W, C, F, Y, I, V, L content</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>2. Threshold-Based Classification</h3>
+          <p>Our approach uses empirically-derived thresholds from training data:</p>
+          <ul>
+            <li><strong>No machine learning training required</strong> - Thresholds calculated from statistical midpoints</li>
+            <li><strong>Reproducible across datasets</strong> - Same features, same thresholds</li>
+            <li><strong>Interpretable results</strong> - Each feature's contribution is transparent</li>
+            <li><strong>Fast computation</strong> - No complex model inference needed</li>
+          </ul>
+          <p><strong>Classification Rule:</strong> A protein is classified as structured if it meets at least k=5 of the 7 feature conditions (empirically optimized for best F1-score).</p>
+        </div>
+
+        <div class="card">
+          <h3>3. Validation Framework</h3>
+          <p>We employ rigorous validation to ensure our model learns true biological principles:</p>
+          <ul>
+            <li><strong>Homology-aware cross-validation</strong> - MMseqs2 clustering at 30% identity prevents sequence similarity leakage</li>
+            <li><strong>Independent test sets</strong> - MobiDB validation ensures generalization beyond training data</li>
+            <li><strong>Statistical significance testing</strong> - Bootstrap confidence intervals and McNemar's test</li>
+            <li><strong>Label-shuffle controls</strong> - Confirms model learns real patterns (performance drops to ~50% with random labels)</li>
+          </ul>
+        </div>
+
+        <div class="alert alert-warning">
+          <strong>🔒 Proprietary Details Not Revealed:</strong>
+          <ul style="margin-top: 0.5rem; margin-bottom: 0;">
+            <li>Exact feature weightings and normalization constants</li>
+            <li>Threshold calculation formulas and optimization algorithms</li>
+            <li>Proprietary performance optimizations and caching strategies</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Data Sources -->
+      <section id="data-sources">
+        <h2>📚 Training & Validation Data</h2>
+        
+        <div class="card-grid">
+          <div class="card">
+            <h3>Structured Proteins (PDB)</h3>
+            <p><strong>15,000 sequences</strong></p>
+            <p>High-quality protein structures from the Protein Data Bank (PDB). These represent well-folded, stable protein domains with experimentally determined 3D structures.</p>
+          </div>
+          <div class="card">
+            <h3>Disordered Proteins (DisProt)</h3>
+            <p><strong>25,000 sequences</strong></p>
+            <p>Intrinsically disordered proteins from DisProt database, experimentally validated to lack stable 3D structure under physiological conditions.</p>
+          </div>
+          <div class="card">
+            <h3>Independent Validation (MobiDB)</h3>
+            <p><strong>1,000+ sequences</strong></p>
+            <p>External validation set from MobiDB, which aggregates disorder predictions and experimental annotations from multiple sources.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Concept Model Framework -->
+      <section id="concept-model">
+        <h2>🧠 Concept Model Framework</h2>
+        
+        <p>Our classifier implements the <a href="https://kevinmesiab.substack.com/p/emergent-concept-modeling-a-paradigm" target="_blank">Concept Model framework</a>, a paradigm for building interpretable classification systems:</p>
+
+        <div class="card">
+          <h3>Four-Layer Architecture</h3>
+          <ul>
+            <li><strong>M1 (Property Vectors):</strong> The 7 biophysical features extracted from each sequence</li>
+            <li><strong>M2 (Constraints):</strong> Empirically-derived thresholds that define "structured-like" vs "disordered-like" for each feature</li>
+            <li><strong>M3 (Transformation Rules):</strong> Count how many conditions are met; classify based on threshold k=5</li>
+            <li><strong>M4 (Goal State):</strong> True labels (structured vs. disordered) used for validation</li>
+          </ul>
+        </div>
+
+        <p>This framework ensures transparency and interpretability - every classification decision can be traced back to specific biophysical properties.</p>
+      </section>
+
+      <!-- Limitations -->
+      <section id="limitations">
+        <h2>⚠️ Known Limitations</h2>
+        
+        <div class="alert alert-warning">
+          <strong>Important Considerations:</strong>
+          <ul style="margin-top: 0.5rem; margin-bottom: 0;">
+            <li><strong>Binary classification only:</strong> Predicts disordered vs. structured at the whole-protein level, not per-residue disorder</li>
+            <li><strong>Global features:</strong> Does not detect local disorder regions within otherwise structured proteins</li>
+            <li><strong>No structural details:</strong> Does not predict specific 3D structures or binding sites</li>
+            <li><strong>Threshold-based:</strong> Edge cases near decision boundary may have lower confidence</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>Not Suitable For:</h3>
+          <ul>
+            <li>Clinical diagnostic decisions requiring regulatory approval</li>
+            <li>Single-residue disorder mapping or IDR boundary detection</li>
+            <li>Regulatory submissions requiring FDA/EMA-approved tools</li>
+            <li>Detailed structural analysis or protein engineering</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Future Directions -->
+      <section id="future">
+        <h2>🚀 Future Improvements</h2>
+        
+        <div class="card-grid">
+          <div class="card">
+            <h3>Per-Residue Prediction</h3>
+            <p>Sliding window approach to predict disorder at individual residue level (currently in research phase).</p>
+          </div>
+          <div class="card">
+            <h3>Confidence Scores</h3>
+            <p>Enhanced confidence metrics based on distance from decision boundary and feature agreement.</p>
+          </div>
+          <div class="card">
+            <h3>Expanded Features</h3>
+            <p>Additional biophysical properties and sequence motifs for improved accuracy.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- References -->
+      <section id="references">
+        <h2>📖 References & Further Reading</h2>
+        
+        <div class="card">
+          <ul>
+            <li>Concept Model Framework: <a href="https://kevinmesiab.substack.com/p/emergent-concept-modeling-a-paradigm" target="_blank">Emergent Concept Modeling</a></li>
+            <li>DisProt Database: Piovesan et al. (2021) "DisProt: intrinsic protein disorder annotation in 2020"</li>
+            <li>MobiDB Database: Piovesan et al. (2021) "MobiDB: intrinsically disordered proteins in 2021"</li>
+            <li>PDB: Protein Data Bank - <a href="https://www.rcsb.org/" target="_blank">www.rcsb.org</a></li>
+            <li>MMseqs2: Steinegger & Söding (2017) "MMseqs2 enables sensitive protein sequence searching"</li>
+            <li>Full Validation Guide: <a href="https://github.com/kmesiab/concept-model-protein-classifier/blob/main/docs/VALIDATION.md" target="_blank">GitHub Documentation</a></li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- CTA -->
+      <section style="text-align: center; background: var(--bg-light); padding: 3rem; border-radius: 8px;">
+        <h2>Ready to Try It?</h2>
+        <p style="font-size: 1.125rem; margin-bottom: 2rem;">Start classifying protein sequences with our validated API</p>
+        <a href="getting-started.html" class="cta">Get Started</a>
+        <a href="api-docs.html" class="btn-secondary" style="margin-left: 1rem;">API Documentation</a>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="footer-section">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="api-docs.html">API Documentation</a></li>
+          <li><a href="getting-started.html">Getting Started</a></li>
+          <li><a href="comparison.html">Comparisons</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="methodology.html">Methodology</a></li>
+          <li><a href="https://github.com/kmesiab/concept-model-protein-classifier">GitHub Repository</a></li>
+          <li><a href="https://github.com/kmesiab/concept-model-protein-classifier/blob/main/docs/VALIDATION.md">Validation Guide</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Community</h4>
+        <ul>
+          <li><a href="https://github.com/kmesiab/concept-model-protein-classifier/issues">Report Issues</a></li>
+          <li><a href="https://github.com/kmesiab/concept-model-protein-classifier/discussions">Discussions</a></li>
+          <li><a href="https://kevinmesiab.substack.com/p/emergent-concept-modeling-a-paradigm">Concept Model</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#">Terms of Service</a></li>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Academic Use</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2025 Protein Disorder Classifier. Built with transparency for the research community.</p>
+    </div>
+  </footer>
+</body>
+</html>

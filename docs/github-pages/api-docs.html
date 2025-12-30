@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Complete API documentation for protein disorder classifier. RESTful API with JSON responses.">
+  <meta name="keywords" content="protein disorder API, bioinformatics API, REST API, protein classification API">
+  <title>API Documentation - Protein Disorder Classifier</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav>
+    <div class="container">
+      <a href="index.html" class="logo">🧬 Protein Disorder Classifier</a>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="methodology.html">Methodology</a></li>
+        <li><a href="api-docs.html" class="active">API Docs</a></li>
+        <li><a href="comparison.html">Comparison</a></li>
+        <li><a href="getting-started.html">Get Started</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <div class="container">
+      <h1>📖 API Documentation</h1>
+      <p class="tagline" style="color: var(--text-light); font-size: 1.25rem; margin-bottom: 3rem;">
+        RESTful API for fast, accurate protein disorder prediction
+      </p>
+
+      <!-- Base URL -->
+      <section id="base-url">
+        <h2>Base URL</h2>
+        <pre><code>https://api.protein-classifier.com/v1</code></pre>
+      </section>
+
+      <!-- Authentication -->
+      <section id="authentication">
+        <h2>Authentication</h2>
+        <p>All API requests require authentication using an API key passed in the <code>X-API-Key</code> header.</p>
+        <pre><code>X-API-Key: your_api_key_here</code></pre>
+        <div class="alert alert-info">
+          <strong>Get Your API Key:</strong> Sign up at <a href="getting-started.html">Getting Started</a> to receive your free API key.
+        </div>
+      </section>
+
+      <!-- Rate Limits -->
+      <section id="rate-limits">
+        <h2>Rate Limits</h2>
+        <div class="card">
+          <h3>Free Tier</h3>
+          <ul>
+            <li><strong>Daily Limit:</strong> 1,000 sequences per day</li>
+            <li><strong>Rate Limit:</strong> 100 requests per minute</li>
+            <li><strong>Max Batch Size:</strong> 50 sequences per request</li>
+            <li><strong>Response Time:</strong> &lt;50ms per sequence</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Premium Tier</h3>
+          <ul>
+            <li><strong>Daily Limit:</strong> Unlimited sequences</li>
+            <li><strong>Rate Limit:</strong> 1,000 requests per minute</li>
+            <li><strong>Max Batch Size:</strong> 100 sequences per request</li>
+            <li><strong>Priority Processing:</strong> Guaranteed &lt;30ms per sequence</li>
+            <li><strong>Support:</strong> Email support within 24 hours</li>
+          </ul>
+          <p><a href="getting-started.html#pricing" class="btn-secondary">View Pricing →</a></p>
+        </div>
+      </section>
+
+      <!-- Endpoints -->
+      <section id="endpoints">
+        <h2>Endpoints</h2>
+
+        <!-- Classify Endpoint -->
+        <div class="card">
+          <h3 id="classify">POST /v1/classify</h3>
+          <p>Classify one or more protein sequences as disordered or structured.</p>
+
+          <h4>Request Headers</h4>
+          <pre><code>Content-Type: application/json
+X-API-Key: your_api_key_here</code></pre>
+
+          <h4>Request Body</h4>
+          <pre><code>{
+  "sequences": [
+    {
+      "id": "string",      // Unique identifier for the sequence
+      "sequence": "string" // Amino acid sequence (single-letter codes)
+    }
+  ]
+}</code></pre>
+
+          <h4>Example Request</h4>
+          <pre><code>curl -X POST https://api.protein-classifier.com/v1/classify \
+  -H "X-API-Key: your_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sequences": [
+      {
+        "id": "protein1",
+        "sequence": "MKVLWAASLLLLASAARA"
+      },
+      {
+        "id": "protein2",
+        "sequence": "GSQEVHPNSPSDEAGPLGEGL"
+      }
+    ]
+  }'</code></pre>
+
+          <h4>Response</h4>
+          <pre><code>{
+  "results": [
+    {
+      "id": "protein1",
+      "sequence": "MKVLWAASLLLLASAARA",
+      "classification": "structured",
+      "confidence": 0.87,
+      "conditions_met": 6,
+      "threshold": 5,
+      "features": {
+        "hydrophobicity": 0.72,
+        "flexibility": 0.31,
+        "h_bond_potential": 0.58,
+        "net_charge": 0.11,
+        "shannon_entropy": 2.45,
+        "proline_freq": 0.0,
+        "bulky_hydrophobic_freq": 0.44
+      },
+      "processing_time_ms": 12.3
+    },
+    {
+      "id": "protein2",
+      "sequence": "GSQEVHPNSPSDEAGPLGEGL",
+      "classification": "disordered",
+      "confidence": 0.73,
+      "conditions_met": 3,
+      "threshold": 5,
+      "features": {
+        "hydrophobicity": 0.18,
+        "flexibility": 0.67,
+        "h_bond_potential": 0.42,
+        "net_charge": 0.19,
+        "shannon_entropy": 2.89,
+        "proline_freq": 0.14,
+        "bulky_hydrophobic_freq": 0.09
+      },
+      "processing_time_ms": 11.8
+    }
+  ],
+  "total_sequences": 2,
+  "total_time_ms": 24.1,
+  "api_version": "1.0.0"
+}</code></pre>
+
+          <h4>Response Fields</h4>
+          <ul>
+            <li><code>id</code> - Your provided sequence identifier</li>
+            <li><code>sequence</code> - The input amino acid sequence</li>
+            <li><code>classification</code> - Either "structured" or "disordered"</li>
+            <li><code>confidence</code> - Classification confidence (0.0-1.0)</li>
+            <li><code>conditions_met</code> - Number of biophysical conditions satisfied (0-7)</li>
+            <li><code>threshold</code> - Threshold for structured classification (default: 5)</li>
+            <li><code>features</code> - Computed biophysical features (normalized 0-1)</li>
+            <li><code>processing_time_ms</code> - Time to process this sequence in milliseconds</li>
+          </ul>
+
+          <h4>HTTP Status Codes</h4>
+          <ul>
+            <li><code>200 OK</code> - Successful classification</li>
+            <li><code>400 Bad Request</code> - Invalid request format or sequence</li>
+            <li><code>401 Unauthorized</code> - Missing or invalid API key</li>
+            <li><code>429 Too Many Requests</code> - Rate limit exceeded</li>
+            <li><code>500 Internal Server Error</code> - Server error</li>
+          </ul>
+        </div>
+
+        <!-- Health Check Endpoint -->
+        <div class="card">
+          <h3 id="health">GET /v1/health</h3>
+          <p>Check API service health and status.</p>
+
+          <h4>Example Request</h4>
+          <pre><code>curl -X GET https://api.protein-classifier.com/v1/health</code></pre>
+
+          <h4>Response</h4>
+          <pre><code>{
+  "status": "healthy",
+  "version": "1.0.0",
+  "uptime_seconds": 3456789,
+  "timestamp": "2025-12-30T00:56:51Z"
+}</code></pre>
+        </div>
+
+        <!-- Stats Endpoint -->
+        <div class="card">
+          <h3 id="stats">GET /v1/stats</h3>
+          <p>Retrieve your API usage statistics (requires authentication).</p>
+
+          <h4>Request Headers</h4>
+          <pre><code>X-API-Key: your_api_key_here</code></pre>
+
+          <h4>Example Request</h4>
+          <pre><code>curl -X GET https://api.protein-classifier.com/v1/stats \
+  -H "X-API-Key: your_key_here"</code></pre>
+
+          <h4>Response</h4>
+          <pre><code>{
+  "user_id": "user_abc123",
+  "tier": "free",
+  "usage": {
+    "sequences_today": 347,
+    "sequences_this_month": 12450,
+    "requests_today": 89,
+    "requests_this_month": 3201
+  },
+  "limits": {
+    "daily_sequences": 1000,
+    "requests_per_minute": 100,
+    "max_batch_size": 50
+  },
+  "remaining": {
+    "sequences_today": 653,
+    "requests_this_minute": 98
+  }
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- Code Examples -->
+      <section id="code-examples">
+        <h2>Code Examples</h2>
+
+        <div class="card">
+          <h3>Python</h3>
+          <pre><code>import requests
+import json
+
+API_KEY = "your_api_key_here"
+BASE_URL = "https://api.protein-classifier.com/v1"
+
+def classify_sequences(sequences):
+    """
+    Classify protein sequences.
+    
+    Args:
+        sequences: List of dicts with 'id' and 'sequence' keys
+    
+    Returns:
+        API response with classification results
+    """
+    headers = {
+        "X-API-Key": API_KEY,
+        "Content-Type": "application/json"
+    }
+    
+    payload = {"sequences": sequences}
+    
+    response = requests.post(
+        f"{BASE_URL}/classify",
+        headers=headers,
+        json=payload
+    )
+    
+    response.raise_for_status()
+    return response.json()
+
+# Example usage
+sequences = [
+    {"id": "protein1", "sequence": "MKVLWAASLLLLASAARA"},
+    {"id": "protein2", "sequence": "GSQEVHPNSPSDEAGPLGEGL"}
+]
+
+results = classify_sequences(sequences)
+
+for result in results["results"]:
+    print(f"{result['id']}: {result['classification']} "
+          f"(confidence: {result['confidence']:.2f})")</code></pre>
+        </div>
+
+        <div class="card">
+          <h3>JavaScript (Node.js)</h3>
+          <pre><code>const axios = require('axios');
+
+const API_KEY = 'your_api_key_here';
+const BASE_URL = 'https://api.protein-classifier.com/v1';
+
+async function classifySequences(sequences) {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/classify`,
+      { sequences },
+      {
+        headers: {
+          'X-API-Key': API_KEY,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error:', error.response?.data || error.message);
+    throw error;
+  }
+}
+
+// Example usage
+const sequences = [
+  { id: 'protein1', sequence: 'MKVLWAASLLLLASAARA' },
+  { id: 'protein2', sequence: 'GSQEVHPNSPSDEAGPLGEGL' }
+];
+
+classifySequences(sequences)
+  .then(results => {
+    results.results.forEach(result => {
+      console.log(`${result.id}: ${result.classification} ` +
+                  `(confidence: ${result.confidence.toFixed(2)})`);
+    });
+  });</code></pre>
+        </div>
+
+        <div class="card">
+          <h3>Go</h3>
+          <pre><code>package main
+
+import (
+    "bytes"
+    "encoding/json"
+    "fmt"
+    "io"
+    "net/http"
+)
+
+const (
+    APIKey  = "your_api_key_here"
+    BaseURL = "https://api.protein-classifier.com/v1"
+)
+
+type Sequence struct {
+    ID       string `json:"id"`
+    Sequence string `json:"sequence"`
+}
+
+type ClassifyRequest struct {
+    Sequences []Sequence `json:"sequences"`
+}
+
+type ClassifyResponse struct {
+    Results []struct {
+        ID             string             `json:"id"`
+        Sequence       string             `json:"sequence"`
+        Classification string             `json:"classification"`
+        Confidence     float64            `json:"confidence"`
+        ConditionsMet  int                `json:"conditions_met"`
+        Features       map[string]float64 `json:"features"`
+    } `json:"results"`
+}
+
+func classifySequences(sequences []Sequence) (*ClassifyResponse, error) {
+    reqBody := ClassifyRequest{Sequences: sequences}
+    jsonData, err := json.Marshal(reqBody)
+    if err != nil {
+        return nil, err
+    }
+
+    req, err := http.NewRequest("POST", BaseURL+"/classify", bytes.NewBuffer(jsonData))
+    if err != nil {
+        return nil, err
+    }
+
+    req.Header.Set("X-API-Key", APIKey)
+    req.Header.Set("Content-Type", "application/json")
+
+    client := &http.Client{}
+    resp, err := client.Do(req)
+    if err != nil {
+        return nil, err
+    }
+    defer resp.Body.Close()
+
+    body, err := io.ReadAll(resp.Body)
+    if err != nil {
+        return nil, err
+    }
+
+    var result ClassifyResponse
+    err = json.Unmarshal(body, &result)
+    return &result, err
+}
+
+func main() {
+    sequences := []Sequence{
+        {ID: "protein1", Sequence: "MKVLWAASLLLLASAARA"},
+        {ID: "protein2", Sequence: "GSQEVHPNSPSDEAGPLGEGL"},
+    }
+
+    results, err := classifySequences(sequences)
+    if err != nil {
+        fmt.Printf("Error: %v\n", err)
+        return
+    }
+
+    for _, result := range results.Results {
+        fmt.Printf("%s: %s (confidence: %.2f)\n",
+            result.ID, result.Classification, result.Confidence)
+    }
+}</code></pre>
+        </div>
+
+        <div class="card">
+          <h3>cURL</h3>
+          <pre><code># Single sequence
+curl -X POST https://api.protein-classifier.com/v1/classify \
+  -H "X-API-Key: your_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sequences": [
+      {"id": "test1", "sequence": "MKVLWAASLLLLASAARA"}
+    ]
+  }'
+
+# Multiple sequences
+curl -X POST https://api.protein-classifier.com/v1/classify \
+  -H "X-API-Key: your_key_here" \
+  -H "Content-Type: application/json" \
+  -d @sequences.json
+
+# Check usage stats
+curl -X GET https://api.protein-classifier.com/v1/stats \
+  -H "X-API-Key: your_key_here"</code></pre>
+        </div>
+      </section>
+
+      <!-- Error Handling -->
+      <section id="error-handling">
+        <h2>Error Handling</h2>
+        
+        <div class="card">
+          <h3>Error Response Format</h3>
+          <pre><code>{
+  "error": {
+    "code": "INVALID_SEQUENCE",
+    "message": "Sequence contains invalid amino acid characters",
+    "details": {
+      "sequence_id": "protein1",
+      "invalid_characters": ["X", "Z"]
+    }
+  }
+}</code></pre>
+
+          <h3>Common Error Codes</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>HTTP Status</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>INVALID_API_KEY</td>
+                <td>401</td>
+                <td>API key is missing, invalid, or expired</td>
+              </tr>
+              <tr>
+                <td>RATE_LIMIT_EXCEEDED</td>
+                <td>429</td>
+                <td>Too many requests, slow down</td>
+              </tr>
+              <tr>
+                <td>INVALID_SEQUENCE</td>
+                <td>400</td>
+                <td>Sequence contains invalid characters</td>
+              </tr>
+              <tr>
+                <td>BATCH_SIZE_EXCEEDED</td>
+                <td>400</td>
+                <td>Too many sequences in single request</td>
+              </tr>
+              <tr>
+                <td>QUOTA_EXCEEDED</td>
+                <td>429</td>
+                <td>Daily sequence limit reached</td>
+              </tr>
+              <tr>
+                <td>SERVER_ERROR</td>
+                <td>500</td>
+                <td>Internal server error, try again later</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h3>Best Practices</h3>
+          <ul>
+            <li><strong>Implement exponential backoff</strong> for rate limit errors (429)</li>
+            <li><strong>Validate sequences</strong> before sending (only standard 20 amino acids)</li>
+            <li><strong>Use batch processing</strong> to minimize API calls and improve efficiency</li>
+            <li><strong>Cache results</strong> for identical sequences to reduce API usage</li>
+            <li><strong>Monitor usage</strong> via the <code>/stats</code> endpoint</li>
+            <li><strong>Handle errors gracefully</strong> with appropriate user feedback</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- CTA -->
+      <section style="text-align: center; background: var(--bg-light); padding: 3rem; border-radius: 8px;">
+        <h2>Ready to Start?</h2>
+        <p style="font-size: 1.125rem; margin-bottom: 2rem;">Get your free API key and start classifying proteins today</p>
+        <a href="getting-started.html" class="cta">Get API Key</a>
+        <a href="comparison.html" class="btn-secondary" style="margin-left: 1rem;">Compare Performance</a>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="footer-section">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="api-docs.html">API Documentation</a></li>
+          <li><a href="getting-started.html">Getting Started</a></li>
+          <li><a href="comparison.html">Comparisons</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="methodology.html">Methodology</a></li>
+          <li><a href="https://github.com/kmesiab/concept-model-protein-classifier">GitHub Repository</a></li>
+          <li><a href="https://github.com/kmesiab/concept-model-protein-classifier/blob/main/docs/VALIDATION.md">Validation Guide</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Community</h4>
+        <ul>
+          <li><a href="https://github.com/kmesiab/concept-model-protein-classifier/issues">Report Issues</a></li>
+          <li><a href="https://github.com/kmesiab/concept-model-protein-classifier/discussions">Discussions</a></li>
+          <li><a href="https://kevinmesiab.substack.com/p/emergent-concept-modeling-a-paradigm">Concept Model</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#">Terms of Service</a></li>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Academic Use</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2025 Protein Disorder Classifier. Built with transparency for the research community.</p>
+    </div>
+  </footer>
+</body>
+</html>

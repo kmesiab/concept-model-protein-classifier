@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Get started with the Protein Disorder Classifier API. Free API key, quick start guide, and integration examples.">
+  <meta name="keywords" content="protein disorder API, get started, API key, quick start guide">
+  <title>Getting Started - Protein Disorder Classifier</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav>
+    <div class="container">
+      <a href="index.html" class="logo">🧬 Protein Disorder Classifier</a>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="methodology.html">Methodology</a></li>
+        <li><a href="api-docs.html">API Docs</a></li>
+        <li><a href="comparison.html">Comparison</a></li>
+        <li><a href="getting-started.html" class="active">Get Started</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <div class="container">
+      <h1>🚀 Getting Started</h1>
+      <p class="tagline" style="color: var(--text-light); font-size: 1.25rem; margin-bottom: 3rem;">
+        Start classifying protein sequences in minutes
+      </p>
+
+      <!-- Quick Start Steps -->
+      <section id="quick-start">
+        <h2>Quick Start Guide</h2>
+        
+        <div class="card-grid">
+          <div class="card">
+            <h3>1️⃣ Get API Key</h3>
+            <p>Sign up for a free account to receive your API key.</p>
+            <div class="alert alert-info" style="margin-top: 1rem;">
+              <strong>📧 Contact for API Access</strong>
+              <p style="margin: 0.5rem 0 0 0;">This is currently a research project. To request API access, please:</p>
+              <ul style="margin: 0.5rem 0 0 1.5rem;">
+                <li>Email: <a href="mailto:kmesiab@gmail.com">kmesiab@gmail.com</a></li>
+                <li>Open an issue: <a href="https://github.com/kmesiab/concept-model-protein-classifier/issues">GitHub Issues</a></li>
+                <li>Include your use case and expected volume</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>2️⃣ Make First Request</h3>
+            <p>Test the API with a simple curl command.</p>
+            <pre style="margin-top: 1rem;"><code>curl -X POST \
+  https://api.protein-classifier.com/v1/classify \
+  -H "X-API-Key: your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sequences": [{
+      "id": "test1",
+      "sequence": "MKVLWAASLLLLASAARA"
+    }]
+  }'</code></pre>
+          </div>
+
+          <div class="card">
+            <h3>3️⃣ Integrate</h3>
+            <p>Choose your language and integrate into your workflow.</p>
+            <ul style="margin-top: 1rem;">
+              <li><a href="api-docs.html#code-examples">Python examples</a></li>
+              <li><a href="api-docs.html#code-examples">JavaScript examples</a></li>
+              <li><a href="api-docs.html#code-examples">Go examples</a></li>
+              <li><a href="api-docs.html#code-examples">cURL examples</a></li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <h3>4️⃣ Scale Up</h3>
+            <p>Monitor usage and upgrade as needed.</p>
+            <ul style="margin-top: 1rem;">
+              <li>Check <code>/stats</code> endpoint</li>
+              <li>Implement batch processing</li>
+              <li>Optimize with caching</li>
+              <li>Upgrade to premium tier</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pricing -->
+      <section id="pricing">
+        <h2>💰 Pricing Plans</h2>
+        
+        <div class="card-grid">
+          <div class="card">
+            <h3>Free Tier</h3>
+            <div style="font-size: 2rem; font-weight: 700; margin: 1rem 0;">$0</div>
+            <p style="color: var(--text-light);">Perfect for research and testing</p>
+            
+            <ul style="margin-top: 2rem;">
+              <li>✅ 1,000 sequences/day</li>
+              <li>✅ 100 requests/minute</li>
+              <li>✅ Up to 50 sequences/batch</li>
+              <li>✅ &lt;50ms response time</li>
+              <li>✅ Email support (48h)</li>
+              <li>✅ Community access</li>
+            </ul>
+            
+            <div style="margin-top: 2rem;">
+              <div class="alert alert-info">
+                <strong>Currently in Research Phase</strong>
+                <p style="margin: 0.5rem 0 0 0;">Contact us for API access. This is a research project - we're happy to collaborate!</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="border: 2px solid var(--primary-color);">
+            <div style="background: var(--primary-color); color: white; margin: -2rem -2rem 1rem -2rem; padding: 0.5rem; text-align: center; border-radius: 6px 6px 0 0; font-weight: 600;">
+              RECOMMENDED
+            </div>
+            <h3>Premium Tier</h3>
+            <div style="font-size: 2rem; font-weight: 700; margin: 1rem 0;">$99<span style="font-size: 1rem; font-weight: 400;">/month</span></div>
+            <p style="color: var(--text-light);">For production pipelines</p>
+            
+            <ul style="margin-top: 2rem;">
+              <li>✅ <strong>Unlimited</strong> sequences</li>
+              <li>✅ 1,000 requests/minute</li>
+              <li>✅ Up to 100 sequences/batch</li>
+              <li>✅ &lt;30ms response time</li>
+              <li>✅ Priority processing</li>
+              <li>✅ Email support (24h)</li>
+              <li>✅ SLA guarantee (99.9%)</li>
+              <li>✅ Advanced analytics</li>
+            </ul>
+            
+            <button class="cta" style="margin-top: 2rem; width: 100%; cursor: not-allowed; opacity: 0.7;" disabled>Coming Soon</button>
+          </div>
+
+          <div class="card">
+            <h3>Enterprise</h3>
+            <div style="font-size: 2rem; font-weight: 700; margin: 1rem 0;">Custom</div>
+            <p style="color: var(--text-light);">For large organizations</p>
+            
+            <ul style="margin-top: 2rem;">
+              <li>✅ Everything in Premium</li>
+              <li>✅ Custom rate limits</li>
+              <li>✅ Dedicated infrastructure</li>
+              <li>✅ On-premise deployment</li>
+              <li>✅ Custom features</li>
+              <li>✅ Priority support (4h)</li>
+              <li>✅ Training & consultation</li>
+              <li>✅ Custom SLA</li>
+            </ul>
+            
+            <a href="mailto:kmesiab@gmail.com?subject=Enterprise%20Inquiry" class="btn-secondary" style="margin-top: 2rem; width: 100%; text-align: center; display: block;">Contact Sales</a>
+          </div>
+        </div>
+
+        <div class="alert alert-success" style="margin-top: 2rem;">
+          <strong>🎓 Academic Discount:</strong> Research institutions and academic users can request extended free tier limits. Contact us with your .edu email for approval.
+        </div>
+      </section>
+
+      <!-- Code Examples -->
+      <section id="examples">
+        <h2>💻 Quick Integration Examples</h2>
+
+        <div class="card">
+          <h3>Python Quick Start</h3>
+          <pre><code>import requests
+
+# Your API credentials
+API_KEY = "your_api_key_here"
+BASE_URL = "https://api.protein-classifier.com/v1"
+
+# Classify a sequence
+response = requests.post(
+    f"{BASE_URL}/classify",
+    headers={
+        "X-API-Key": API_KEY,
+        "Content-Type": "application/json"
+    },
+    json={
+        "sequences": [
+            {"id": "my_protein", "sequence": "MKVLWAASLLLLASAARA"}
+        ]
+    }
+)
+
+# Parse result
+result = response.json()["results"][0]
+print(f"Classification: {result['classification']}")
+print(f"Confidence: {result['confidence']:.2f}")
+print(f"Conditions met: {result['conditions_met']}/7")</code></pre>
+        </div>
+
+        <div class="card">
+          <h3>Batch Processing Example</h3>
+          <pre><code>import requests
+from typing import List, Dict
+
+def classify_batch(sequences: List[Dict[str, str]], api_key: str) -> List[Dict]:
+    """
+    Classify multiple sequences efficiently using batch processing.
+    
+    Args:
+        sequences: List of dicts with 'id' and 'sequence' keys
+        api_key: Your API key
+        
+    Returns:
+        List of classification results
+    """
+    # Process in batches of 50 (free tier max)
+    batch_size = 50
+    all_results = []
+    
+    for i in range(0, len(sequences), batch_size):
+        batch = sequences[i:i + batch_size]
+        
+        response = requests.post(
+            "https://api.protein-classifier.com/v1/classify",
+            headers={
+                "X-API-Key": api_key,
+                "Content-Type": "application/json"
+            },
+            json={"sequences": batch}
+        )
+        
+        response.raise_for_status()
+        results = response.json()["results"]
+        all_results.extend(results)
+        
+        print(f"Processed {i + len(batch)}/{len(sequences)} sequences")
+    
+    return all_results
+
+# Example usage
+sequences = [
+    {"id": f"protein_{i}", "sequence": seq}
+    for i, seq in enumerate(my_sequence_list)
+]
+
+results = classify_batch(sequences, "your_api_key")
+
+# Analyze results
+disordered = [r for r in results if r["classification"] == "disordered"]
+structured = [r for r in results if r["classification"] == "structured"]
+
+print(f"Disordered: {len(disordered)}, Structured: {len(structured)}")</code></pre>
+        </div>
+
+        <div class="card">
+          <h3>Error Handling Example</h3>
+          <pre><code>import requests
+import time
+
+def classify_with_retry(sequences, api_key, max_retries=3):
+    """
+    Classify sequences with exponential backoff retry logic.
+    """
+    url = "https://api.protein-classifier.com/v1/classify"
+    headers = {
+        "X-API-Key": api_key,
+        "Content-Type": "application/json"
+    }
+    
+    for attempt in range(max_retries):
+        try:
+            response = requests.post(
+                url,
+                headers=headers,
+                json={"sequences": sequences},
+                timeout=30
+            )
+            
+            # Handle rate limiting
+            if response.status_code == 429:
+                retry_after = int(response.headers.get("Retry-After", 60))
+                print(f"Rate limited. Waiting {retry_after}s...")
+                time.sleep(retry_after)
+                continue
+            
+            # Raise for other errors
+            response.raise_for_status()
+            return response.json()
+            
+        except requests.exceptions.RequestException as e:
+            if attempt == max_retries - 1:
+                raise
+            
+            # Exponential backoff
+            wait_time = 2 ** attempt
+            print(f"Error: {e}. Retrying in {wait_time}s...")
+            time.sleep(wait_time)
+    
+    raise Exception("Max retries exceeded")
+
+# Usage
+try:
+    results = classify_with_retry(sequences, "your_api_key")
+    print(f"Successfully classified {len(results['results'])} sequences")
+except Exception as e:
+    print(f"Failed to classify: {e}")</code></pre>
+        </div>
+      </section>
+
+      <!-- Best Practices -->
+      <section id="best-practices">
+        <h2>✨ Best Practices</h2>
+        
+        <div class="card">
+          <h3>1. Validate Sequences Before Sending</h3>
+          <pre><code>def is_valid_sequence(seq: str) -> bool:
+    """Check if sequence contains only valid amino acids."""
+    valid_aa = set("ACDEFGHIKLMNPQRSTVWY")
+    return all(c in valid_aa for c in seq.upper())
+
+# Filter invalid sequences
+valid_sequences = [
+    s for s in sequences 
+    if is_valid_sequence(s["sequence"])
+]</code></pre>
+        </div>
+
+        <div class="card">
+          <h3>2. Use Batch Processing</h3>
+          <ul>
+            <li>Group sequences into batches of 50 (free tier) or 100 (premium)</li>
+            <li>Reduces API calls and improves throughput</li>
+            <li>Faster overall processing time</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>3. Implement Caching</h3>
+          <pre><code>import hashlib
+from functools import lru_cache
+
+@lru_cache(maxsize=10000)
+def get_classification(sequence: str) -> dict:
+    """Cache results for identical sequences."""
+    # Implementation here
+    pass</code></pre>
+        </div>
+
+        <div class="card">
+          <h3>4. Monitor Your Usage</h3>
+          <pre><code># Check usage stats periodically
+response = requests.get(
+    "https://api.protein-classifier.com/v1/stats",
+    headers={"X-API-Key": api_key}
+)
+
+stats = response.json()
+remaining = stats["remaining"]["sequences_today"]
+print(f"Sequences remaining today: {remaining}")</code></pre>
+        </div>
+
+        <div class="card">
+          <h3>5. Handle Rate Limits Gracefully</h3>
+          <ul>
+            <li>Implement exponential backoff for 429 responses</li>
+            <li>Respect <code>Retry-After</code> header</li>
+            <li>Spread requests over time for large datasets</li>
+            <li>Consider upgrading to premium for higher limits</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section id="faq">
+        <h2>❓ Frequently Asked Questions</h2>
+        
+        <div class="card">
+          <h4>How do I get an API key?</h4>
+          <p>This is currently a research project. Please contact <a href="mailto:kmesiab@gmail.com">kmesiab@gmail.com</a> or open an issue on <a href="https://github.com/kmesiab/concept-model-protein-classifier">GitHub</a> to request access.</p>
+        </div>
+
+        <div class="card">
+          <h4>What amino acid codes are supported?</h4>
+          <p>We support the 20 standard amino acids using single-letter codes: A, C, D, E, F, G, H, I, K, L, M, N, P, Q, R, S, T, V, W, Y. Sequences with other characters will be rejected.</p>
+        </div>
+
+        <div class="card">
+          <h4>Can I use this for commercial purposes?</h4>
+          <p>Yes, with a premium or enterprise plan. The free tier is intended for academic research and testing only. Contact us for commercial licensing.</p>
+        </div>
+
+        <div class="card">
+          <h4>How accurate is the classifier?</h4>
+          <p>Our classifier achieves 84.52% accuracy on PDB/DisProt test sets, >75% on homology-aware cross-validation, and >70% on independent MobiDB validation. See our <a href="methodology.html">methodology page</a> for details.</p>
+        </div>
+
+        <div class="card">
+          <h4>What's the maximum sequence length?</h4>
+          <p>We support sequences up to 10,000 amino acids. Most proteins are well below this limit. Very long sequences may have slightly longer processing times.</p>
+        </div>
+
+        <div class="card">
+          <h4>Do you offer per-residue predictions?</h4>
+          <p>Not currently. Our API provides whole-protein binary classification (disordered vs. structured). Per-residue predictions are planned for a future release.</p>
+        </div>
+
+        <div class="card">
+          <h4>Can I run this locally/offline?</h4>
+          <p>The API requires an internet connection. For offline use or on-premise deployment, contact us about our Enterprise plan which includes self-hosted options.</p>
+        </div>
+
+        <div class="card">
+          <h4>How is this different from AlphaFold?</h4>
+          <p>AlphaFold predicts 3D structures (slow, GPU-intensive). We predict disorder (fast, CPU-only). Use our API for quick screening, then AlphaFold for detailed structure on structured proteins. See our <a href="comparison.html">comparison page</a>.</p>
+        </div>
+      </section>
+
+      <!-- Support -->
+      <section id="support">
+        <h2>🆘 Need Help?</h2>
+        
+        <div class="card-grid">
+          <div class="card">
+            <h3>📖 Documentation</h3>
+            <p>Comprehensive API documentation with examples.</p>
+            <a href="api-docs.html" class="btn-secondary" style="margin-top: 1rem;">View API Docs</a>
+          </div>
+
+          <div class="card">
+            <h3>💬 Community</h3>
+            <p>Join discussions and ask questions.</p>
+            <a href="https://github.com/kmesiab/concept-model-protein-classifier/discussions" class="btn-secondary" style="margin-top: 1rem;">GitHub Discussions</a>
+          </div>
+
+          <div class="card">
+            <h3>🐛 Report Issues</h3>
+            <p>Found a bug? Let us know!</p>
+            <a href="https://github.com/kmesiab/concept-model-protein-classifier/issues" class="btn-secondary" style="margin-top: 1rem;">GitHub Issues</a>
+          </div>
+
+          <div class="card">
+            <h3>📧 Email Support</h3>
+            <p>Direct support for premium users.</p>
+            <a href="mailto:kmesiab@gmail.com" class="btn-secondary" style="margin-top: 1rem;">Contact Support</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- CTA -->
+      <section style="text-align: center; background: var(--bg-light); padding: 3rem; border-radius: 8px;">
+        <h2>Ready to Start Classifying?</h2>
+        <p style="font-size: 1.125rem; margin-bottom: 2rem;">Contact us to request API access and start predicting protein disorder</p>
+        <a href="mailto:kmesiab@gmail.com?subject=API%20Access%20Request" class="cta">Request API Access</a>
+        <a href="api-docs.html" class="btn-secondary" style="margin-left: 1rem;">Read Documentation</a>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="footer-section">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="api-docs.html">API Documentation</a></li>
+          <li><a href="getting-started.html">Getting Started</a></li>
+          <li><a href="comparison.html">Comparisons</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="methodology.html">Methodology</a></li>
+          <li><a href="https://github.com/kmesiab/concept-model-protein-classifier">GitHub Repository</a></li>
+          <li><a href="https://github.com/kmesiab/concept-model-protein-classifier/blob/main/docs/VALIDATION.md">Validation Guide</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Community</h4>
+        <ul>
+          <li><a href="https://github.com/kmesiab/concept-model-protein-classifier/issues">Report Issues</a></li>
+          <li><a href="https://github.com/kmesiab/concept-model-protein-classifier/discussions">Discussions</a></li>
+          <li><a href="https://kevinmesiab.substack.com/p/emergent-concept-modeling-a-paradigm">Concept Model</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#">Terms of Service</a></li>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Academic Use</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2025 Protein Disorder Classifier. Built with transparency for the research community.</p>
+    </div>
+  </footer>
+</body>
+</html>
