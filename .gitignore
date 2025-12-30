@@ -16,6 +16,8 @@ parts/
 sdist/
 var/
 wheels/
+pip-wheel-metadata/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
@@ -28,6 +30,24 @@ env/
 .venv
 
 # IDEs
+env/
+ENV/
+.venv/
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+*.mo
+*.pot
+
+# IDE
 .vscode/
 .idea/
 *.swp
@@ -63,3 +83,27 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+.DS_Store
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# Project specific
+*.fasta
+*.fa
+pdb_chains.fasta
+disprot_13000.fasta
+temp_pdb_full.fasta
+reports/
+trivy-results.sarif
+
+# Security
+bandit-report.json
+safety-report.json
+pip-audit-report.json
