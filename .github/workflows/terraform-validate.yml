@@ -199,9 +199,8 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform init
-        run: terraform init
+        run: terraform init -backend=false
         working-directory: terraform
-        continue-on-error: true
 
       - name: Terraform plan
         id: plan
