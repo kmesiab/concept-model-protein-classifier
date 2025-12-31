@@ -64,7 +64,7 @@ variable "container_memory" {
 variable "desired_count" {
   description = "Desired number of container instances"
   type        = number
-  default     = 2
+  default     = 1
 }
 
 variable "health_check_path" {
