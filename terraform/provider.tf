@@ -15,7 +15,7 @@ provider "aws" {
   default_tags {
     tags = {
       Project     = "protein-classifier"
-      Environment = "Prod"
+      Environment = var.environment
       Service     = "protein-classifier"
       ManagedBy   = "Terraform"
       Repository  = var.github_repo

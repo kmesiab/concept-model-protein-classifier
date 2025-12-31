@@ -22,7 +22,7 @@ variable "aws_account_id" {
 variable "environment" {
   description = "Environment name"
   type        = string
-  default     = "prod"
+  default     = "Prod"
 }
 
 variable "github_repo" {

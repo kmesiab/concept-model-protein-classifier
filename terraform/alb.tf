@@ -57,7 +57,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "alb_logs" {
     filter {}
 
     transition {
-      days          = 0
+      days          = 1
       storage_class = "INTELLIGENT_TIERING"
     }
   }
