@@ -44,7 +44,7 @@ The pipeline automatically runs on:
 - ✅ Network security best practices
 - ✅ Secrets management compliance
 
-**Technology:** [tfsec](https://aquasecurity.github.io/tfsec/) by Aqua Security
+**Technology:** [Trivy](https://trivy.dev/) by Aqua Security
 
 **Pass Criteria:** No MEDIUM or higher severity issues
 
@@ -52,6 +52,7 @@ The pipeline automatically runs on:
 
 - Uploads findings to GitHub Security tab (SARIF format)
 - Integrates with GitHub Code Scanning
+- Actively maintained (replaces deprecated tfsec)
 
 ---
 
@@ -122,7 +123,7 @@ graph TD
 The workflow will **block merging** if:
 
 - ❌ TFLint finds errors
-- ❌ tfsec finds MEDIUM+ severity issues
+- ❌ Trivy finds MEDIUM+ severity issues
 
 The workflow will **warn** but allow merging if:
 
@@ -179,10 +180,10 @@ rule "terraform_naming_convention" {
 
 ### Adjust Security Severity
 
-Modify the `additional_args` in the tfsec step:
+Modify the `severity` parameter in the Trivy step:
 
 ```yaml
-additional_args: --minimum-severity HIGH  # Change from MEDIUM
+severity: 'HIGH,CRITICAL'  # Change from MEDIUM,HIGH,CRITICAL
 ```
 
 ### Customize Cost Thresholds
@@ -211,10 +212,17 @@ Add cost threshold checks in the Infracost step:
 **Problem:** "AWS ruleset not found"  
 **Solution:** Verify internet connectivity; TFLint downloads plugins automatically
 
-### tfsec Warnings
+### Trivy Warnings
 
 **Problem:** "False positive security warnings"  
-**Solution:** Add inline exceptions in Terraform code:
+**Solution:** Add exceptions in a `.trivyignore` file in the repository root:
+
+```text
+# Justified reason for ignoring this check
+AVD-AWS-0086
+```
+
+Or use inline exceptions in Terraform code (tfsec-style comments still work):
 
 ```hcl
 #tfsec:ignore:aws-s3-enable-versioning
@@ -245,7 +253,7 @@ Recommended branch protection rules for `main`:
    - ✅ Require branches to be up to date before merging
 4. Select required status checks:
    - `Gate 1 - TFLint`
-   - `Gate 2 - Security Scan (tfsec)`
+   - `Gate 2 - Security Scan (Trivy)`
    - `Validation Summary`
 
 ---
@@ -277,7 +285,7 @@ Recommended branch protection rules for `main`:
 ## Resources
 
 - [TFLint Documentation](https://github.com/terraform-linters/tflint)
-- [tfsec Documentation](https://aquasecurity.github.io/tfsec/)
+- [Trivy Documentation](https://trivy.dev/)
 - [Infracost Documentation](https://www.infracost.io/docs/)
 - [Terraform Best Practices](https://www.terraform-best-practices.com/)
 
