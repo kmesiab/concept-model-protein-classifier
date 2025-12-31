@@ -1,3 +1,6 @@
+# Terraform binaries
+terraform_binary/
+
 # Python
 __pycache__/
 *.py[cod]
