@@ -199,22 +199,14 @@ jobs:
 
       - name: Run Infracost
         id: infracost
-        uses: infracost/actions/breakdown@v3
+        uses: infracost/actions/diff@v3
         with:
           path: terraform
           terraform_init_flags: "-backend=false"
           terraform_plan_flags: "-var=aws_account_id=${{ vars.AWS_ACCOUNT_ID || '462498369025' }}"
-          format: json
-          out-file: infracost.json
         continue-on-error: true
 
-      - name: Post Infracost comment
-        if: steps.infracost.outcome == 'success'
-        uses: infracost/actions/comment@v1
-        with:
-          path: infracost.json
-          behavior: update
-        continue-on-error: true
+
 
       - name: Cost Estimation Summary (Manual)
         if: always()
