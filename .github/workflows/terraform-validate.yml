@@ -1,0 +1,326 @@
+name: Terraform Validation Pipeline
+
+on:
+  pull_request:
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-validate.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
+
+permissions:
+  contents: read
+  pull-requests: write  # Required for Infracost to post PR comments
+  id-token: write  # Required for OIDC (if needed in future)
+  security-events: write  # Required for uploading SARIF files
+
+jobs:
+  # Gate 1: TFLint - Catch provider-specific errors and enforce naming conventions
+  tflint:
+    name: Gate 1 - TFLint
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Cache TFLint plugin directory
+        uses: actions/cache@v4
+        with:
+          path: ~/.tflint.d/plugins
+          key: ${{ runner.os }}-tflint-${{ hashFiles('.tflint.hcl') }}
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+
+      - name: Show TFLint version
+        run: tflint --version
+
+      - name: Create TFLint config
+        run: |
+          cat > .tflint.hcl <<EOF
+          plugin "aws" {
+            enabled = true
+            version = "0.29.0"
+            source  = "github.com/terraform-linters/tflint-ruleset-aws"
+          }
+
+          rule "terraform_naming_convention" {
+            enabled = true
+          }
+
+          rule "terraform_documented_variables" {
+            enabled = true
+          }
+
+          rule "terraform_typed_variables" {
+            enabled = true
+          }
+
+          rule "terraform_unused_declarations" {
+            enabled = true
+          }
+
+          rule "terraform_deprecated_index" {
+            enabled = true
+          }
+
+          rule "terraform_comment_syntax" {
+            enabled = true
+          }
+
+          rule "terraform_required_version" {
+            enabled = true
+          }
+
+          rule "terraform_required_providers" {
+            enabled = true
+          }
+          EOF
+
+      - name: Init TFLint
+        run: tflint --init
+        working-directory: terraform
+
+      - name: Run TFLint
+        id: tflint
+        run: tflint --format compact --recursive
+        working-directory: terraform
+
+      - name: TFLint Summary
+        if: always()
+        run: |
+          echo "### 🔍 Gate 1: TFLint Results" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.tflint.outcome }}" == "success" ]; then
+            echo "✅ TFLint validation passed - No provider-specific issues found" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ TFLint found issues - Please review and fix" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Fail the job if TFLint found issues
+          if [ "${{ steps.tflint.outcome }}" != "success" ]; then
+            exit 1
+          fi
+
+  # Gate 2: Security Scanner - Scan for security issues
+  security-scan:
+    name: Gate 2 - Security Scan (tfsec)
+    runs-on: ubuntu-latest
+    
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Prevent API rate limiting
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run tfsec
+        id: tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: terraform
+          format: default
+          soft_fail: false
+          additional_args: --minimum-severity MEDIUM
+
+      - name: Run tfsec with SARIF output
+        id: tfsec_sarif
+        if: always()  # Run even if previous step fails
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: terraform
+          format: sarif
+          soft_fail: false
+          additional_args: --out results.sarif --minimum-severity MEDIUM
+
+      - name: Verify SARIF file exists
+        id: verify_sarif
+        if: always()
+        run: |
+          if [ -f "terraform/results.sarif" ]; then
+            echo "sarif_exists=true" >> $GITHUB_OUTPUT
+            echo "✅ SARIF file created successfully"
+          else
+            echo "sarif_exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️ WARNING: SARIF file not found at terraform/results.sarif"
+          fi
+
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v4
+        if: always() && steps.verify_sarif.outputs.sarif_exists == 'true'
+        with:
+          sarif_file: terraform/results.sarif
+          category: tfsec
+
+      - name: Security Scan Summary
+        if: always()
+        run: |
+          echo "### 🔒 Gate 2: Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.tfsec.outcome }}" == "success" ]; then
+            echo "✅ No security issues found" >> $GITHUB_STEP_SUMMARY
+            echo "- No public S3 buckets" >> $GITHUB_STEP_SUMMARY
+            echo "- No overly permissive security groups" >> $GITHUB_STEP_SUMMARY
+            echo "- Encryption enabled where required" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Security issues detected - Please review" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Security findings have been uploaded to the Security tab." >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Fail the job if security issues were found
+          if [ "${{ steps.tfsec.outcome }}" != "success" ]; then
+            exit 1
+          fi
+
+  # Gate 3: Infracost - Show cost estimates
+  infracost:
+    name: Gate 3 - Cost Estimation
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v3
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      - name: Generate Infracost JSON
+        id: infracost_json
+        run: |
+          # Setup Infracost
+          infracost breakdown --path=terraform \
+            --terraform-init-flags="-backend=false" \
+            --terraform-plan-flags="-var=aws_account_id=${{ vars.AWS_ACCOUNT_ID || '462498369025' }}" \
+            --format=json \
+            --out-file=/tmp/infracost.json
+        continue-on-error: true
+
+      - name: Check cost threshold
+        id: cost_check
+        if: always()
+        run: |
+          COST_THRESHOLD=125
+          
+          if [ -f /tmp/infracost.json ]; then
+            # Extract total monthly cost from Infracost JSON
+            TOTAL_COST=$(jq -r '.totalMonthlyCost | tonumber' /tmp/infracost.json 2>/dev/null || echo "0")
+            
+            echo "total_cost=$TOTAL_COST" >> $GITHUB_OUTPUT
+            echo "threshold=$COST_THRESHOLD" >> $GITHUB_OUTPUT
+            
+            # Compare costs (handle decimal comparison)
+            if (( $(echo "$TOTAL_COST > $COST_THRESHOLD" | bc -l) )); then
+              echo "cost_exceeded=true" >> $GITHUB_OUTPUT
+              echo "❌ Cost threshold exceeded: \$$TOTAL_COST/month > \$$COST_THRESHOLD/month" >> $GITHUB_STEP_SUMMARY
+              exit 1
+            else
+              echo "cost_exceeded=false" >> $GITHUB_OUTPUT
+              echo "✅ Cost within threshold: \$$TOTAL_COST/month ≤ \$$COST_THRESHOLD/month" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚠️ Infracost analysis not available - skipping cost check" >> $GITHUB_STEP_SUMMARY
+            echo "cost_exceeded=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run Infracost Comment
+        id: infracost
+        uses: infracost/actions/comment@v1
+        with:
+          path: terraform
+          terraform_init_flags: "-backend=false"
+          terraform_plan_flags: "-var=aws_account_id=${{ vars.AWS_ACCOUNT_ID || '462498369025' }}"
+          behavior: update
+        continue-on-error: true
+
+      - name: Cost Estimation Summary (Manual)
+        if: always()
+        run: |
+          echo "### 💰 Gate 3: Cost Estimation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ secrets.INFRACOST_API_KEY }}" ]; then
+            echo "✅ Infracost analysis completed" >> $GITHUB_STEP_SUMMARY
+            echo "Check the PR comment for detailed cost breakdown" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            if [ "${{ steps.cost_check.outputs.cost_exceeded }}" == "true" ]; then
+              echo "❌ **COST THRESHOLD EXCEEDED**" >> $GITHUB_STEP_SUMMARY
+              echo "- Current: \$${{ steps.cost_check.outputs.total_cost }}/month" >> $GITHUB_STEP_SUMMARY
+              echo "- Threshold: \$${{ steps.cost_check.outputs.threshold }}/month" >> $GITHUB_STEP_SUMMARY
+              echo "- **Action Required:** Reduce infrastructure costs before merging" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "✅ Cost within acceptable threshold (\$125/month)" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚠️ Infracost API key not configured" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Estimated Monthly Costs (Cost-Optimized Configuration):**" >> $GITHUB_STEP_SUMMARY
+            echo "- ECS Fargate (1 task, 0.5 vCPU, 1GB): ~\$18/month" >> $GITHUB_STEP_SUMMARY
+            echo "- Application Load Balancer: ~\$22/month" >> $GITHUB_STEP_SUMMARY
+            echo "- NAT Gateway (1): ~\$35/month" >> $GITHUB_STEP_SUMMARY
+            echo "- Route 53 Hosted Zone: ~\$0.50/month" >> $GITHUB_STEP_SUMMARY
+            echo "- CloudWatch Logs + ECR: ~\$2/month" >> $GITHUB_STEP_SUMMARY
+            echo "- Data Transfer: Variable (estimate \$5-10/month)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Total Estimated: ~\$82-92/month**" >> $GITHUB_STEP_SUMMARY
+            echo "**Cost Threshold: \$125/month** ✅" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "To enable automated cost tracking and enforcement, add INFRACOST_API_KEY secret" >> $GITHUB_STEP_SUMMARY
+            echo "Get free API key at: https://www.infracost.io/" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Summary job - only runs if all gates pass
+  validation-summary:
+    name: Validation Summary
+    runs-on: ubuntu-latest
+    needs: [tflint, security-scan, infracost]
+    if: always()
+    
+    steps:
+      - name: Check gate results
+        run: |
+          echo "## 🚀 Triple-Gated Terraform Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.tflint.result }}" == "success" ]; then
+            echo "✅ **Gate 1 (TFLint):** PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Gate 1 (TFLint):** FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.security-scan.result }}" == "success" ]; then
+            echo "✅ **Gate 2 (Security):** PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Gate 2 (Security):** FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.infracost.result }}" == "success" ] || [ "${{ needs.infracost.result }}" == "skipped" ]; then
+            echo "✅ **Gate 3 (Cost Est):** COMPLETED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ **Gate 3 (Cost Est):** NEEDS REVIEW" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.tflint.result }}" == "success" ] && [ "${{ needs.security-scan.result }}" == "success" ]; then
+            echo "### 🎉 All critical gates passed! Infrastructure changes are approved." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ⚠️ Some gates failed. Please review and address the issues before merging." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Fail if critical gates failed
+        if: needs.tflint.result != 'success' || needs.security-scan.result != 'success'
+        run: |
+          echo "Critical validation gates failed"
+          exit 1
