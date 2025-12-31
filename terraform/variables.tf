@@ -12,6 +12,11 @@ variable "aws_account_id" {
     condition     = can(regex("^[0-9]{12}$", var.aws_account_id))
     error_message = "AWS account ID must be exactly 12 digits."
   }
+
+  validation {
+    condition     = can(regex("^[0-9]{12}$", var.aws_account_id))
+    error_message = "AWS account ID must be exactly 12 digits."
+  }
 }
 
 variable "environment" {
