@@ -60,22 +60,32 @@ jobs:
         run: |
           cd terraform
           set +e  # Don't exit on error
-          terraform plan -no-color -var="aws_account_id=${{ vars.AWS_ACCOUNT_ID || '000000000000' }}" -out=tfplan.out
+          terraform plan -detailed-exitcode -no-color -var="aws_account_id=${{ vars.AWS_ACCOUNT_ID || '000000000000' }}" -out=tfplan.out
           PLAN_EXIT_CODE=$?
           set -e  # Re-enable exit on error
           
-          # Terraform plan exit codes:
+          # Terraform plan exit codes with -detailed-exitcode:
           # 0 = No changes
           # 1 = Error occurred
           # 2 = Changes detected (expected for preview)
           
+          echo "Terraform plan exited with code: $PLAN_EXIT_CODE"
+          
           if [ $PLAN_EXIT_CODE -eq 1 ]; then
-            echo "Terraform plan failed with an error"
+            echo "❌ Terraform plan failed with an error"
+            # Still try to show the plan if it exists
+            if [ -f tfplan.out ]; then
+              terraform show -no-color tfplan.out > plan.txt || true
+            fi
             exit 1
           fi
           
-          # Generate plan text output
-          terraform show -no-color tfplan.out > plan.txt
+          # Generate plan text output for exit codes 0 and 2
+          if [ -f tfplan.out ]; then
+            terraform show -no-color tfplan.out > plan.txt
+          else
+            echo "No plan file generated" > plan.txt
+          fi
           
           # Exit codes 0 and 2 are success (no changes or changes detected)
           exit 0
