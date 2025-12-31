@@ -7,7 +7,7 @@ This directory contains the Terraform infrastructure code for deploying the Prot
 All infrastructure changes are automatically validated through our **Triple-Gated CI/CD Pipeline**:
 
 1. 🔍 **Gate 1: TFLint** - Catch provider-specific errors and enforce naming conventions
-2. 🔒 **Gate 2: Security Scanner** - Scan for security issues (tfsec)
+2. 🔒 **Gate 2: Security Scanner** - Scan for security issues (Trivy)
 3. 💰 **Gate 3: Infracost** - Show cost estimates before applying
 
 **[View Pipeline Documentation →](../docs/TERRAFORM_VALIDATION.md)**

@@ -114,59 +114,58 @@ jobs:
 
   # Gate 2: Security Scanner - Scan for security issues
   security-scan:
-    name: Gate 2 - Security Scan (tfsec)
+    name: Gate 2 - Security Scan (Trivy)
     runs-on: ubuntu-latest
-    
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Prevent API rate limiting
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run tfsec
-        id: tfsec
-        uses: aquasecurity/tfsec-action@v1.0.3
+      - name: Run Trivy security scan
+        id: trivy
+        uses: aquasecurity/trivy-action@0.33.1
         with:
-          working_directory: terraform
-          format: default
-          soft_fail: false
-          additional_args: --minimum-severity MEDIUM
+          scan-type: 'config'
+          scan-ref: 'terraform'
+          format: 'table'
+          exit-code: '1'
+          severity: 'MEDIUM,HIGH,CRITICAL'
 
-      - name: Run tfsec with SARIF output
-        id: tfsec_sarif
+      - name: Run Trivy with SARIF output
+        id: trivy_sarif
         if: always()  # Run even if previous step fails
-        uses: aquasecurity/tfsec-action@v1.0.3
+        uses: aquasecurity/trivy-action@0.33.1
         with:
-          working_directory: terraform
-          format: sarif
-          soft_fail: false
-          additional_args: --out results.sarif --minimum-severity MEDIUM
+          scan-type: 'config'
+          scan-ref: 'terraform'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'MEDIUM,HIGH,CRITICAL'
 
       - name: Verify SARIF file exists
         id: verify_sarif
         if: always()
         run: |
-          if [ -f "terraform/results.sarif" ]; then
+          if [ -f "trivy-results.sarif" ]; then
             echo "sarif_exists=true" >> $GITHUB_OUTPUT
             echo "✅ SARIF file created successfully"
           else
             echo "sarif_exists=false" >> $GITHUB_OUTPUT
-            echo "⚠️ WARNING: SARIF file not found at terraform/results.sarif"
+            echo "⚠️ WARNING: SARIF file not found at trivy-results.sarif"
           fi
 
       - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@v4
         if: always() && steps.verify_sarif.outputs.sarif_exists == 'true'
         with:
-          sarif_file: terraform/results.sarif
-          category: tfsec
+          sarif_file: trivy-results.sarif
+          category: trivy-config
 
       - name: Security Scan Summary
         if: always()
         run: |
           echo "### 🔒 Gate 2: Security Scan Results" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ steps.tfsec.outcome }}" == "success" ]; then
+          if [ "${{ steps.trivy.outcome }}" == "success" ]; then
             echo "✅ No security issues found" >> $GITHUB_STEP_SUMMARY
             echo "- No public S3 buckets" >> $GITHUB_STEP_SUMMARY
             echo "- No overly permissive security groups" >> $GITHUB_STEP_SUMMARY
@@ -178,7 +177,7 @@ jobs:
           fi
           
           # Fail the job if security issues were found
-          if [ "${{ steps.tfsec.outcome }}" != "success" ]; then
+          if [ "${{ steps.trivy.outcome }}" != "success" ]; then
             exit 1
           fi
 
