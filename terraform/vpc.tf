@@ -320,7 +320,6 @@ resource "aws_iam_role_policy" "vpc_flow_logs" {
         Sid    = "CloudWatchLogPermissions"
         Effect = "Allow"
         Action = [
-          "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents",
           "logs:DescribeLogGroups",

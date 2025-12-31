@@ -95,7 +95,7 @@ resource "aws_s3_bucket_policy" "alb_logs" {
         Sid    = "AWSLogDeliveryWrite"
         Effect = "Allow"
         Principal = {
-          Service = "elasticloadbalancing.amazonaws.com"
+          AWS = "arn:aws:iam::797873946194:root"
         }
         Action   = "s3:PutObject"
         Resource = "${aws_s3_bucket.alb_logs.arn}/*"
@@ -126,6 +126,7 @@ resource "aws_lb" "main" {
 
   access_logs {
     bucket  = aws_s3_bucket.alb_logs.id
+    prefix  = "alb-logs"
     enabled = true
   }
 
