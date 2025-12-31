@@ -197,7 +197,45 @@ jobs:
         with:
           api-key: ${{ secrets.INFRACOST_API_KEY }}
 
-      - name: Run Infracost
+      - name: Generate Infracost JSON
+        id: infracost_json
+        run: |
+          # Setup Infracost
+          infracost breakdown --path=terraform \
+            --terraform-init-flags="-backend=false" \
+            --terraform-plan-flags="-var=aws_account_id=${{ vars.AWS_ACCOUNT_ID || '462498369025' }}" \
+            --format=json \
+            --out-file=/tmp/infracost.json
+        continue-on-error: true
+
+      - name: Check cost threshold
+        id: cost_check
+        if: always()
+        run: |
+          COST_THRESHOLD=125
+          
+          if [ -f /tmp/infracost.json ]; then
+            # Extract total monthly cost from Infracost JSON
+            TOTAL_COST=$(jq -r '.totalMonthlyCost | tonumber' /tmp/infracost.json 2>/dev/null || echo "0")
+            
+            echo "total_cost=$TOTAL_COST" >> $GITHUB_OUTPUT
+            echo "threshold=$COST_THRESHOLD" >> $GITHUB_OUTPUT
+            
+            # Compare costs (handle decimal comparison)
+            if (( $(echo "$TOTAL_COST > $COST_THRESHOLD" | bc -l) )); then
+              echo "cost_exceeded=true" >> $GITHUB_OUTPUT
+              echo "❌ Cost threshold exceeded: \$$TOTAL_COST/month > \$$COST_THRESHOLD/month" >> $GITHUB_STEP_SUMMARY
+              exit 1
+            else
+              echo "cost_exceeded=false" >> $GITHUB_OUTPUT
+              echo "✅ Cost within threshold: \$$TOTAL_COST/month ≤ \$$COST_THRESHOLD/month" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚠️ Infracost analysis not available - skipping cost check" >> $GITHUB_STEP_SUMMARY
+            echo "cost_exceeded=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run Infracost Comment
         id: infracost
         uses: infracost/actions/comment@v1
         with:
@@ -207,8 +245,6 @@ jobs:
           behavior: update
         continue-on-error: true
 
-
-
       - name: Cost Estimation Summary (Manual)
         if: always()
         run: |
@@ -217,19 +253,30 @@ jobs:
           if [ -n "${{ secrets.INFRACOST_API_KEY }}" ]; then
             echo "✅ Infracost analysis completed" >> $GITHUB_STEP_SUMMARY
             echo "Check the PR comment for detailed cost breakdown" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            if [ "${{ steps.cost_check.outputs.cost_exceeded }}" == "true" ]; then
+              echo "❌ **COST THRESHOLD EXCEEDED**" >> $GITHUB_STEP_SUMMARY
+              echo "- Current: \$${{ steps.cost_check.outputs.total_cost }}/month" >> $GITHUB_STEP_SUMMARY
+              echo "- Threshold: \$${{ steps.cost_check.outputs.threshold }}/month" >> $GITHUB_STEP_SUMMARY
+              echo "- **Action Required:** Reduce infrastructure costs before merging" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "✅ Cost within acceptable threshold (\$125/month)" >> $GITHUB_STEP_SUMMARY
+            fi
           else
             echo "⚠️ Infracost API key not configured" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Estimated Monthly Costs (Manual Calculation):**" >> $GITHUB_STEP_SUMMARY
-            echo "- ECS Fargate (2 tasks, 0.5 vCPU, 1GB): ~\$35-40/month" >> $GITHUB_STEP_SUMMARY
-            echo "- Application Load Balancer: ~\$20-25/month" >> $GITHUB_STEP_SUMMARY
-            echo "- NAT Gateways (2 for HA): ~\$70/month" >> $GITHUB_STEP_SUMMARY
+            echo "**Estimated Monthly Costs (Cost-Optimized Configuration):**" >> $GITHUB_STEP_SUMMARY
+            echo "- ECS Fargate (1 task, 0.5 vCPU, 1GB): ~\$18/month" >> $GITHUB_STEP_SUMMARY
+            echo "- Application Load Balancer: ~\$22/month" >> $GITHUB_STEP_SUMMARY
+            echo "- NAT Gateway (1): ~\$35/month" >> $GITHUB_STEP_SUMMARY
             echo "- Route 53 Hosted Zone: ~\$0.50/month" >> $GITHUB_STEP_SUMMARY
+            echo "- CloudWatch Logs + ECR: ~\$2/month" >> $GITHUB_STEP_SUMMARY
             echo "- Data Transfer: Variable (estimate \$5-10/month)" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Total Estimated: ~\$130-145/month**" >> $GITHUB_STEP_SUMMARY
+            echo "**Total Estimated: ~\$82-92/month**" >> $GITHUB_STEP_SUMMARY
+            echo "**Cost Threshold: \$125/month** ✅" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "To enable automated cost tracking, add INFRACOST_API_KEY secret" >> $GITHUB_STEP_SUMMARY
+            echo "To enable automated cost tracking and enforcement, add INFRACOST_API_KEY secret" >> $GITHUB_STEP_SUMMARY
             echo "Get free API key at: https://www.infracost.io/" >> $GITHUB_STEP_SUMMARY
           fi
 
