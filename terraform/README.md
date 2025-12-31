@@ -239,7 +239,11 @@ aws logs tail /ecs/protein-classifier-api \
 
 ```bash
 aws elbv2 describe-target-health \
-  --target-group-arn $(terraform output -raw alb_target_group_arn) \
+  --target-group-arn $(aws elbv2 describe-target-groups \
+    --names protein-classifier-ecs-tg \
+    --query 'TargetGroups[0].TargetGroupArn' \
+    --output text \
+    --region us-west-2) \
   --region us-west-2
 ```
 
