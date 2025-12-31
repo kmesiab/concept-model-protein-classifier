@@ -160,7 +160,7 @@ resource "aws_route_table" "private_b" {
   vpc_id = aws_vpc.main.id
 
   route {
-    cidr_block     = "0.0.0.0/0"
+    cidr_block = "0.0.0.0/0"
     # Use nat_b if it exists (count=2), otherwise fall back to nat_a (count=1)
     nat_gateway_id = var.nat_gateway_count > 1 ? aws_nat_gateway.nat_b[0].id : aws_nat_gateway.nat_a.id
   }
