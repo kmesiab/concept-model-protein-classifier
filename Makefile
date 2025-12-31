@@ -124,3 +124,34 @@ install: ## Install development dependencies
 	@echo "${YELLOW}Installing dependencies...${NC}"
 	@$(PIP) install -r requirements.txt
 	@echo "${GREEN}✅ Dependencies installed${NC}"
+
+# Terraform targets
+.PHONY: terraform-check terraform-fmt terraform-init terraform-validate terraform-plan
+
+terraform-check: terraform-fmt terraform-init terraform-validate terraform-plan ## Run all Terraform checks (format, init, validate, plan)
+	@echo "${GREEN}✅ All Terraform checks passed!${NC}"
+
+terraform-fmt: ## Check Terraform formatting
+	@echo "${YELLOW}Checking Terraform formatting...${NC}"
+	@terraform fmt -check -recursive terraform/ || (echo "${RED}❌ Terraform formatting check failed${NC}" && echo "${YELLOW}Run 'terraform fmt -recursive terraform/' to fix${NC}" && exit 1)
+	@echo "${GREEN}✅ Terraform formatting check passed${NC}"
+
+terraform-init: ## Initialize Terraform
+	@echo "${YELLOW}Initializing Terraform...${NC}"
+	@terraform -chdir=terraform init -backend=false || (echo "${RED}❌ Terraform init failed${NC}" && exit 1)
+	@echo "${GREEN}✅ Terraform initialized${NC}"
+
+terraform-validate: terraform-init ## Validate Terraform configuration
+	@echo "${YELLOW}Validating Terraform configuration...${NC}"
+	@terraform -chdir=terraform validate || (echo "${RED}❌ Terraform validation failed${NC}" && exit 1)
+	@echo "${GREEN}✅ Terraform validation passed${NC}"
+
+terraform-plan: terraform-init ## Run Terraform plan (requires tfvars)
+	@echo "${YELLOW}Running Terraform plan...${NC}"
+	@if [ ! -f terraform/terraform.tfvars ]; then \
+		echo "${YELLOW}⚠️  terraform.tfvars not found, creating from example...${NC}"; \
+		cp terraform/terraform.tfvars.example terraform/terraform.tfvars; \
+		echo "${YELLOW}⚠️  Please edit terraform/terraform.tfvars with your AWS account ID${NC}"; \
+	fi
+	@terraform -chdir=terraform plan || (echo "${RED}❌ Terraform plan failed${NC}" && exit 1)
+	@echo "${GREEN}✅ Terraform plan completed${NC}"

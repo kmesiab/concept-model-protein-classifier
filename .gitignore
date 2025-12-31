@@ -1,3 +1,6 @@
+# Terraform binaries
+terraform_binary/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -107,3 +110,15 @@ trivy-results.sarif
 bandit-report.json
 safety-report.json
 pip-audit-report.json
+
+# Terraform
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/*.tfvars
+terraform/*.tfvars.json
+terraform/crash.log
+terraform/crash.*.log
+terraform/.terraformrc
+terraform/terraform.rc
