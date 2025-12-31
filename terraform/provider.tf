@@ -16,6 +16,7 @@ provider "aws" {
     tags = {
       Project     = "protein-classifier"
       Environment = var.environment
+      Service     = "protein-classifier"
       ManagedBy   = "Terraform"
       Repository  = var.github_repo
     }

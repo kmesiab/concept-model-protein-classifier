@@ -277,7 +277,7 @@ resource "aws_security_group_rule" "ecs_egress_dns_tcp" {
 
 # CloudWatch Log Group for VPC Flow Logs
 resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
-  name              = "/aws/vpc/protein-classifier"
+  name              = "/aws/vpc/protein-classifier-flow-logs"
   retention_in_days = 7
 
   tags = {
@@ -287,7 +287,7 @@ resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
 
 # IAM Role for VPC Flow Logs
 resource "aws_iam_role" "vpc_flow_logs" {
-  name = "protein-classifier-vpc-flow-logs"
+  name = "protein-classifier-vpc-flow-logs-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -303,19 +303,21 @@ resource "aws_iam_role" "vpc_flow_logs" {
   })
 
   tags = {
-    Name = "protein-classifier-vpc-flow-logs"
+    Name = "protein-classifier-vpc-flow-logs-role"
   }
 }
 
 # IAM Policy for VPC Flow Logs
 resource "aws_iam_role_policy" "vpc_flow_logs" {
-  name = "protein-classifier-vpc-flow-logs"
+  name = "protein-classifier-vpc-flow-logs-policy"
   role = aws_iam_role.vpc_flow_logs.id
 
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
+        Sid    = "CloudWatchLogPermissions"
+        Effect = "Allow"
         Action = [
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
@@ -323,14 +325,13 @@ resource "aws_iam_role_policy" "vpc_flow_logs" {
           "logs:DescribeLogGroups",
           "logs:DescribeLogStreams"
         ]
-        Effect   = "Allow"
-        Resource = "*"
+        Resource = "${aws_cloudwatch_log_group.vpc_flow_logs.arn}:*"
       }
     ]
   })
 }
 
-# VPC Flow Logs
+# VPC Flow Log
 resource "aws_flow_log" "main" {
   vpc_id          = aws_vpc.main.id
   traffic_type    = "ALL"
@@ -338,6 +339,6 @@ resource "aws_flow_log" "main" {
   log_destination = aws_cloudwatch_log_group.vpc_flow_logs.arn
 
   tags = {
-    Name = "protein-classifier-vpc-flow-logs"
+    Name = "protein-classifier-vpc-flow-log"
   }
 }

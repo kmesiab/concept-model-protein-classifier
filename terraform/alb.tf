@@ -7,7 +7,63 @@ resource "aws_s3_bucket" "alb_logs" {
   }
 }
 
-# Block public access to ALB logs bucket
+# S3 Bucket Versioning for ALB Logs
+resource "aws_s3_bucket_versioning" "alb_logs" {
+  bucket = aws_s3_bucket.alb_logs.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+# S3 Bucket Lifecycle Configuration for Cost Optimization
+resource "aws_s3_bucket_lifecycle_configuration" "alb_logs" {
+  bucket = aws_s3_bucket.alb_logs.id
+
+  # Rule 1: Delete incomplete multipart uploads after 7 days
+  rule {
+    id     = "abort-incomplete-multipart-uploads"
+    status = "Enabled"
+
+    filter {}
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
+
+  # Rule 2: Transition non-current versions to Glacier and expire
+  rule {
+    id     = "archive-old-versions"
+    status = "Enabled"
+
+    filter {}
+
+    noncurrent_version_transition {
+      noncurrent_days = 30
+      storage_class   = "GLACIER"
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 90
+    }
+  }
+
+  # Rule 3: Enable Intelligent-Tiering for current objects
+  rule {
+    id     = "intelligent-tiering"
+    status = "Enabled"
+
+    filter {}
+
+    transition {
+      days          = 1
+      storage_class = "INTELLIGENT_TIERING"
+    }
+  }
+}
+
+# S3 Bucket Public Access Block for ALB logs
 resource "aws_s3_bucket_public_access_block" "alb_logs" {
   bucket = aws_s3_bucket.alb_logs.id
 
@@ -15,15 +71,6 @@ resource "aws_s3_bucket_public_access_block" "alb_logs" {
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
-}
-
-# Enable versioning for ALB logs bucket
-resource "aws_s3_bucket_versioning" "alb_logs" {
-  bucket = aws_s3_bucket.alb_logs.id
-
-  versioning_configuration {
-    status = "Enabled"
-  }
 }
 
 # Enable server-side encryption for ALB logs bucket
@@ -81,6 +128,7 @@ resource "aws_lb" "main" {
 
   access_logs {
     bucket  = aws_s3_bucket.alb_logs.id
+    prefix  = "alb-logs"
     enabled = true
   }
 

@@ -35,10 +35,12 @@ This acts as an automated Senior DevOps Reviewer for all Terraform changes.
 - **IAM Role**: GitHub Actions OIDC role with deployment permissions
 - **VPC**: Custom VPC with public and private subnets across 2 AZs
 - **NAT Gateways**: For private subnet internet access
+- **VPC Flow Logs**: CloudWatch log group and flow log for network monitoring
 - **ECR Repository**: `protein-classifier-api` for Docker images
 - **ECS Cluster**: `protein-classifier-api-1-0-0-prod-cluster`
 - **ECS Service**: Fargate service running on port 8000
 - **Application Load Balancer**: HTTPS (443) → ECS (8000)
+- **S3 Bucket**: ALB access logs with lifecycle policies (Intelligent-Tiering, Glacier archival)
 - **ACM Certificate**: SSL certificate for `api.proteinclassifier.com`
 - **Route 53 DNS**: A record pointing to ALB
 - **CloudWatch Logs**: Log group for ECS container logs
@@ -213,8 +215,37 @@ Or update `variables.tf` and reapply.
 ## Monitoring
 
 - **CloudWatch Logs**: `/ecs/protein-classifier-api`
+- **VPC Flow Logs**: `/aws/vpc/protein-classifier-flow-logs` (7-day retention)
 - **ECS Service**: Container Insights enabled
 - **Health Checks**: ALB health check on `/health` endpoint
+
+## Cost Optimization
+
+The infrastructure implements several **FinOps best practices** for cost optimization:
+
+### S3 Lifecycle Policies
+
+The ALB logs S3 bucket includes three lifecycle policies:
+
+1. **Abort Incomplete Multipart Uploads**: Automatically deletes failed uploads after 7 days
+   - **Savings**: 5-10% of S3 costs
+2. **Archive Old Versions**: Transitions non-current object versions to Glacier after 30 days, expires after 90 days
+   - **Savings**: Up to 97% on archived data
+3. **Intelligent-Tiering**: Automatically moves objects between access tiers based on usage patterns
+   - **Savings**: 20-40% on infrequently accessed data
+
+### Resource Tagging
+
+All resources include standardized tags for cost allocation:
+
+- `Environment`: "Prod"
+- `Service`: "protein-classifier"
+- `Project`: "protein-classifier"
+- `ManagedBy`: "Terraform"
+
+### VPC Flow Logs
+
+VPC Flow Logs are configured with a 7-day retention period to balance security monitoring with storage costs.
 
 ## Troubleshooting
 
