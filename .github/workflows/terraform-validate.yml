@@ -123,26 +123,24 @@ jobs:
 
       - name: Run Trivy security scan
         id: trivy
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           scan-type: 'config'
           scan-ref: 'terraform'
           format: 'table'
           exit-code: '1'
           severity: 'MEDIUM,HIGH,CRITICAL'
-          trivyignores: '.trivyignore'
 
       - name: Run Trivy with SARIF output
         id: trivy_sarif
         if: always()  # Run even if previous step fails
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           scan-type: 'config'
           scan-ref: 'terraform'
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'MEDIUM,HIGH,CRITICAL'
-          trivyignores: '.trivyignore'
 
       - name: Verify SARIF file exists
         id: verify_sarif
