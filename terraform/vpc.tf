@@ -317,6 +317,8 @@ resource "aws_iam_role_policy" "vpc_flow_logs" {
     Version = "2012-10-17"
     Statement = [
       {
+        Sid    = "CloudWatchLogPermissions"
+        Effect = "Allow"
         Action = [
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
@@ -324,7 +326,6 @@ resource "aws_iam_role_policy" "vpc_flow_logs" {
           "logs:DescribeLogGroups",
           "logs:DescribeLogStreams"
         ]
-      Effect = "Allow"
         Resource = "${aws_cloudwatch_log_group.vpc_flow_logs.arn}:*"
       }
     ]

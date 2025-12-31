@@ -1,7 +1,3 @@
-# Data source for regional ELB service account
-data "aws_elb_service_account" "main" {}
-
-# S3 Bucket for ALB Logs
 # S3 Bucket for ALB Access Logs
 resource "aws_s3_bucket" "alb_logs" {
   bucket = "protein-classifier-alb-logs-${var.aws_account_id}"
@@ -67,8 +63,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "alb_logs" {
   }
 }
 
-# S3 Bucket Server-Side Encryption
-# Block public access to ALB logs bucket
+# S3 Bucket Public Access Block for ALB logs
 resource "aws_s3_bucket_public_access_block" "alb_logs" {
   bucket = aws_s3_bucket.alb_logs.id
 
