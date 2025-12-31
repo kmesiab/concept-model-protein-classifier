@@ -78,7 +78,7 @@ resource "aws_s3_bucket_public_access_block" "alb_logs" {
   restrict_public_buckets = true
 }
 
- Enable server-side encryption for ALB logs bucket
+# Enable server-side encryption for ALB logs bucket
 # trivy:ignore:AVD-AWS-0132 - AWS-managed encryption sufficient for ALB logs
 resource "aws_s3_bucket_server_side_encryption_configuration" "alb_logs" {
   bucket = aws_s3_bucket.alb_logs.id
