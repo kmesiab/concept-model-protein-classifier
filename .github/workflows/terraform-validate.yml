@@ -199,11 +199,12 @@ jobs:
 
       - name: Run Infracost
         id: infracost
-        uses: infracost/actions/diff@v3
+        uses: infracost/actions/comment@v1
         with:
           path: terraform
           terraform_init_flags: "-backend=false"
           terraform_plan_flags: "-var=aws_account_id=${{ vars.AWS_ACCOUNT_ID || '462498369025' }}"
+          behavior: update
         continue-on-error: true
 
 
