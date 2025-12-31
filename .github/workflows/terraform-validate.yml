@@ -192,51 +192,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.6.0
-          terraform_wrapper: false
-
-      - name: Terraform init
-        run: terraform init -backend=false
-        working-directory: terraform
-
-      - name: Terraform plan
-        id: plan
-        run: |
-          # Use environment variable or fall back to example account ID for validation
-          AWS_ACCOUNT_ID="${{ vars.AWS_ACCOUNT_ID || '462498369025' }}"
-          terraform plan -out=tfplan.binary -var="aws_account_id=$AWS_ACCOUNT_ID" || echo "plan_failed=true" >> $GITHUB_OUTPUT
-        working-directory: terraform
-        continue-on-error: true
-
-      - name: Convert plan to JSON
-        if: steps.plan.outputs.plan_failed != 'true'
-        run: terraform show -json tfplan.binary > plan.json
-        working-directory: terraform
-        continue-on-error: true
-
       - name: Setup Infracost
-        if: steps.plan.outputs.plan_failed != 'true'
         uses: infracost/actions/setup@v3
         with:
           api-key: ${{ secrets.INFRACOST_API_KEY }}
 
-      - name: Generate Infracost JSON
-        if: steps.plan.outputs.plan_failed != 'true'
-        run: |
-          infracost breakdown --path plan.json \
-            --format json \
-            --out-file infracost.json || true
-        working-directory: terraform
+      - name: Run Infracost
+        id: infracost
+        uses: infracost/actions/breakdown@v3
+        with:
+          path: terraform
+          terraform_init_flags: "-backend=false"
+          terraform_plan_flags: "-var=aws_account_id=${{ vars.AWS_ACCOUNT_ID || '462498369025' }}"
+          format: json
+          out-file: infracost.json
         continue-on-error: true
 
       - name: Post Infracost comment
-        if: steps.plan.outputs.plan_failed != 'true'
+        if: steps.infracost.outcome == 'success'
         uses: infracost/actions/comment@v1
         with:
-          path: terraform/infracost.json
+          path: infracost.json
           behavior: update
         continue-on-error: true
 
