@@ -274,3 +274,72 @@ resource "aws_security_group_rule" "ecs_egress_dns_tcp" {
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = aws_security_group.ecs_tasks.id
 }
+
+# CloudWatch Log Group for VPC Flow Logs
+resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
+  name              = "/aws/vpc/protein-classifier-flow-logs"
+  retention_in_days = 7
+
+  tags = {
+    Name = "protein-classifier-vpc-flow-logs"
+  }
+}
+
+# IAM Role for VPC Flow Logs
+resource "aws_iam_role" "vpc_flow_logs" {
+  name = "protein-classifier-vpc-flow-logs-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "VPCFlowLogsAssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "vpc-flow-logs.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+
+  tags = {
+    Name = "protein-classifier-vpc-flow-logs-role"
+  }
+}
+
+# IAM Policy for VPC Flow Logs
+resource "aws_iam_role_policy" "vpc_flow_logs" {
+  name = "protein-classifier-vpc-flow-logs-policy"
+  role = aws_iam_role.vpc_flow_logs.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "CloudWatchLogPermissions"
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# VPC Flow Log
+resource "aws_flow_log" "main" {
+  vpc_id          = aws_vpc.main.id
+  traffic_type    = "ALL"
+  iam_role_arn    = aws_iam_role.vpc_flow_logs.arn
+  log_destination = aws_cloudwatch_log_group.vpc_flow_logs.arn
+
+  tags = {
+    Name = "protein-classifier-vpc-flow-log"
+  }
+}
