@@ -1,3 +1,6 @@
+# Data source for regional ELB service account
+data "aws_elb_service_account" "main" {}
+
 # S3 Bucket for ALB Logs
 resource "aws_s3_bucket" "alb_logs" {
   bucket = "protein-classifier-alb-logs-${var.aws_account_id}"
@@ -95,7 +98,7 @@ resource "aws_s3_bucket_policy" "alb_logs" {
         Sid    = "AWSLogDeliveryWrite"
         Effect = "Allow"
         Principal = {
-          AWS = "arn:aws:iam::797873946194:root"
+          AWS = data.aws_elb_service_account.main.arn
         }
         Action   = "s3:PutObject"
         Resource = "${aws_s3_bucket.alb_logs.arn}/*"
