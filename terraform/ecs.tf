@@ -105,11 +105,6 @@ resource "aws_ecs_service" "api" {
     container_port   = var.container_port
   }
 
-  deployment_configuration {
-    maximum_percent         = 200
-    minimum_healthy_percent = 100
-  }
-
   # IMPORTANT: Deployment Circuit Breaker Behavior
   #
   # The circuit breaker is configured to automatically rollback failed deployments.
@@ -129,9 +124,14 @@ resource "aws_ecs_service" "api" {
   #
   # Consider adding post-deployment verification steps in the GitHub Actions workflow
   # to confirm the desired task definition is actually running.
-  deployment_circuit_breaker {
-    enable   = true
-    rollback = true
+  deployment_configuration {
+    maximum_percent         = 200
+    minimum_healthy_percent = 100
+
+    deployment_circuit_breaker {
+      enable   = true
+      rollback = true
+    }
   }
 
   depends_on = [
