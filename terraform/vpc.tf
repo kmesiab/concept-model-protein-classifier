@@ -28,7 +28,7 @@ resource "aws_subnet" "public_a" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = "10.0.1.0/24"
   availability_zone       = data.aws_availability_zones.available.names[0]
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch = true # trivy:ignore:AVD-AWS-0164 - Public subnet required for internet-facing ALB
 
   tags = {
     Name = "protein-classifier-public-subnet-a"
@@ -40,7 +40,7 @@ resource "aws_subnet" "public_b" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = "10.0.2.0/24"
   availability_zone       = data.aws_availability_zones.available.names[1]
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch = true # trivy:ignore:AVD-AWS-0164 - Public subnet required for internet-facing ALB
 
   tags = {
     Name = "protein-classifier-public-subnet-b"
@@ -251,7 +251,7 @@ resource "aws_security_group_rule" "ecs_egress_https" {
   from_port         = 443
   to_port           = 443
   protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
+  cidr_blocks       = ["0.0.0.0/0"] # trivy:ignore:AVD-AWS-0104 - Required for ECR image pulls and AWS service API calls
   security_group_id = aws_security_group.ecs_tasks.id
 }
 
@@ -261,7 +261,7 @@ resource "aws_security_group_rule" "ecs_egress_dns_udp" {
   from_port         = 53
   to_port           = 53
   protocol          = "udp"
-  cidr_blocks       = ["0.0.0.0/0"]
+  cidr_blocks       = ["0.0.0.0/0"] # trivy:ignore:AVD-AWS-0104 - Required for DNS resolution to AWS services
   security_group_id = aws_security_group.ecs_tasks.id
 }
 
@@ -271,7 +271,7 @@ resource "aws_security_group_rule" "ecs_egress_dns_tcp" {
   from_port         = 53
   to_port           = 53
   protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
+  cidr_blocks       = ["0.0.0.0/0"] # trivy:ignore:AVD-AWS-0104 - Required for DNS resolution to AWS services
   security_group_id = aws_security_group.ecs_tasks.id
 }
 
@@ -293,7 +293,7 @@ resource "aws_iam_role" "vpc_flow_logs" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "VPCFlowLogsAssumeRole"
+        Action = "sts:AssumeRole"
         Effect = "Allow"
         Principal = {
           Service = "vpc-flow-logs.amazonaws.com"
@@ -317,9 +317,8 @@ resource "aws_iam_role_policy" "vpc_flow_logs" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "CloudWatchLogPermissions"
-        Effect = "Allow"
         Action = [
+          "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents",
           "logs:DescribeLogGroups",
