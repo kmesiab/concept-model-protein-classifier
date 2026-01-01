@@ -166,27 +166,94 @@ jobs:
           terraform show -no-color tfplan.out
 
       - name: Import Existing Resources (if any)
-        continue-on-error: true
         run: |
           cd terraform
           echo "🔄 Attempting to import any existing resources..."
-            
-          # Import with || true to continue even if resource doesn't exist or is already in state
-          terraform import aws_s3_bucket.alb_logs protein-classifier-alb-logs-462498369025 2>/dev/null || echo "S3 bucket: already in state or doesn't exist"
           
-          TG_ARN=$(aws elbv2 describe-target-groups --names protein-classifier-ecs-tg --query 'TargetGroups[0].TargetGroupArn' --output text 2>/dev/null || echo "none")
+          # Helper function to safely import resources
+          # Allows "already exists" and "already in state" errors, but fails on auth/network/locking errors
+          safe_import() {
+            local resource_type="$1"
+            local resource_address="$2"
+            local resource_id="$3"
+            local description="$4"
+            
+            local output
+            local exit_code
+            
+            output=$(terraform import "$resource_address" "$resource_id" 2>&1) || exit_code=$?
+            
+            # If import succeeded, we're done
+            if [ -z "$exit_code" ]; then
+              echo "✅ $description: imported successfully"
+              return 0
+            fi
+            
+            # Check for benign errors (already in state or doesn't exist)
+            if echo "$output" | grep -qE "(already|already exists|already imported|already manages|Cannot import non-existent|does not exist|Resource not found)"; then
+              echo "ℹ️  $description: already in state or doesn't exist"
+              return 0
+            fi
+            
+            # Check for critical errors that should fail the workflow
+            if echo "$output" | grep -qiE "(authentication|unauthorized|forbidden|access denied|invalid credentials|ExpiredToken|InvalidClientTokenId|connection|network|timeout|state lock|LockInfo)"; then
+              echo "❌ CRITICAL ERROR importing $description:"
+              echo "$output"
+              echo "::error::Import failed with critical error - check AWS credentials, network, or state locking"
+              return 1
+            fi
+            
+            # Unknown error - fail to be safe
+            echo "⚠️  Unknown error importing $description:"
+            echo "$output"
+            echo "::error::Import failed with unexpected error"
+            return 1
+          }
+          
+          # Helper function to get AWS resource ARN with error checking
+          get_aws_resource() {
+            local aws_cmd="$1"
+            local description="$2"
+            
+            local output
+            local exit_code
+            
+            output=$(eval "$aws_cmd" 2>&1) || exit_code=$?
+            
+            if [ -z "$exit_code" ]; then
+              echo "$output"
+              return 0
+            fi
+            
+            # Check for critical AWS errors
+            if echo "$output" | grep -qiE "(authentication|unauthorized|forbidden|access denied|invalid credentials|ExpiredToken|InvalidClientTokenId|connection|network|timeout)"; then
+              echo "❌ CRITICAL ERROR querying AWS for $description:"
+              echo "$output"
+              echo "::error::AWS query failed with critical error - check credentials and network"
+              return 1
+            fi
+            
+            # Resource not found is acceptable
+            echo "none"
+            return 0
+          }
+          
+          # Import resources with proper error handling
+          safe_import "s3_bucket" "aws_s3_bucket.alb_logs" "protein-classifier-alb-logs-462498369025" "S3 bucket" || exit 1
+          
+          TG_ARN=$(get_aws_resource "aws elbv2 describe-target-groups --names protein-classifier-ecs-tg --query 'TargetGroups[0].TargetGroupArn' --output text" "target group") || exit 1
           if [ "$TG_ARN" != "none" ] && [ "$TG_ARN" != "" ]; then
-            terraform import aws_lb_target_group.ecs "$TG_ARN" 2>/dev/null || echo "Target group: already in state or doesn't exist"
+            safe_import "lb_target_group" "aws_lb_target_group.ecs" "$TG_ARN" "Target group" || exit 1
           fi
           
-          terraform import aws_dynamodb_table.terraform_locks protein-classifier-terraform-locks 2>/dev/null || echo "DynamoDB: already in state or doesn't exist"
-          terraform import aws_ecr_repository.api protein-classifier-api 2>/dev/null || echo "ECR: already in state or doesn't exist"
-          terraform import aws_cloudwatch_log_group.ecs_logs /ecs/protein-classifier-api 2>/dev/null || echo "CW logs (ECS): already in state or doesn't exist"
-          terraform import aws_cloudwatch_log_group.vpc_flow_logs /aws/vpc/protein-classifier-flow-logs 2>/dev/null || echo "CW logs (VPC): already in state or doesn't exist"
-          terraform import aws_iam_role.github_actions protein-classifier-github-actions-role 2>/dev/null || echo "IAM (github): already in state or doesn't exist"
-          terraform import aws_iam_role.ecs_task_execution_role protein-classifier-ecs-task-execution-role 2>/dev/null || echo "IAM (exec): already in state or doesn't exist"
-          terraform import aws_iam_role.ecs_task_role protein-classifier-ecs-task-role 2>/dev/null || echo "IAM (task): already in state or doesn't exist"
-          terraform import aws_iam_role.vpc_flow_logs protein-classifier-vpc-flow-logs-role 2>/dev/null || echo "IAM (vpc): already in state or doesn't exist"
+          safe_import "dynamodb_table" "aws_dynamodb_table.terraform_locks" "protein-classifier-terraform-locks" "DynamoDB table" || exit 1
+          safe_import "ecr_repository" "aws_ecr_repository.api" "protein-classifier-api" "ECR repository" || exit 1
+          safe_import "cloudwatch_log_group" "aws_cloudwatch_log_group.ecs_logs" "/ecs/protein-classifier-api" "CloudWatch logs (ECS)" || exit 1
+          safe_import "cloudwatch_log_group" "aws_cloudwatch_log_group.vpc_flow_logs" "/aws/vpc/protein-classifier-flow-logs" "CloudWatch logs (VPC)" || exit 1
+          safe_import "iam_role" "aws_iam_role.github_actions" "protein-classifier-github-actions-role" "IAM role (GitHub Actions)" || exit 1
+          safe_import "iam_role" "aws_iam_role.ecs_task_execution_role" "protein-classifier-ecs-task-execution-role" "IAM role (ECS execution)" || exit 1
+          safe_import "iam_role" "aws_iam_role.ecs_task_role" "protein-classifier-ecs-task-role" "IAM role (ECS task)" || exit 1
+          safe_import "iam_role" "aws_iam_role.vpc_flow_logs" "protein-classifier-vpc-flow-logs-role" "IAM role (VPC flow logs)" || exit 1
           
           echo "✅ Import step complete"
 
