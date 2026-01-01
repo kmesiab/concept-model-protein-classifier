@@ -57,11 +57,11 @@
 
 ## Team & Contributors
 
-- **kmesiab** (Kevin Mesiab): Primary developer
-- **Copilot**: AI code assistant
-- **CodeRabbit**: Automated code review
-- **dependabot**: Dependency updates
-- **Comet**: DevOps automation assistant
+- **kmesiab** (Kevin Mesiab): Chief architect
+- **Comet**: Agentic browser, deep technical project manager
+- **CodeRabbitAI**: Automated code review
+- **Copilot Reviewer Agent**: AI code review assistant
+- **Copilot Coding Agent**: AI development assistant
 
 ## Reference Links
 
