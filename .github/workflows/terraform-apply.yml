@@ -1,0 +1,204 @@
+name: Terraform Apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "apply" to confirm infrastructure changes'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+jobs:
+  validate:
+    name: Pre-Apply Validation (Triple-Gated)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Verify Confirmation
+        run: |
+          if [ "${{ inputs.confirm }}" != "apply" ]; then
+            echo "❌ Confirmation failed. You must type 'apply' to proceed."
+            exit 1
+          fi
+          echo "✅ Confirmation received. Proceeding with validation..."
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/github-actions-terraform
+          aws-region: ${{ vars.TF_STATE_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+
+      - name: Terraform Init
+        env:
+          TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+          TF_STATE_KEY: ${{ vars.TF_STATE_KEY }}
+          TF_STATE_REGION: ${{ vars.TF_STATE_REGION }}
+          TF_STATE_DYNAMODB_TABLE: ${{ vars.TF_STATE_DYNAMODB_TABLE }}
+        run: |
+          terraform -chdir=terraform init \
+            -backend-config="bucket=${TF_STATE_BUCKET}" \
+            -backend-config="key=${TF_STATE_KEY}" \
+            -backend-config="region=${TF_STATE_REGION}" \
+            -backend-config="dynamodb_table=${TF_STATE_DYNAMODB_TABLE}"
+
+      # Gate 1: TFLint
+      - name: Gate 1 - TFLint Validation
+        run: |
+          cd terraform
+          tflint --init
+          echo "🔍 Running TFLint validation..."
+          tflint --format compact --minimum-failure-severity=error
+          echo "✅ Gate 1 (TFLint) PASSED"
+
+      # Gate 2: tfsec Security Scan
+      - name: Gate 2 - tfsec Security Scan
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: terraform
+          soft_fail: false
+          format: default
+        continue-on-error: false
+
+      - name: Gate 2 Status
+        run: echo "✅ Gate 2 (tfsec) PASSED"
+
+      # Gate 3: Cost Estimation
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v3
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      - name: Gate 3 - Cost Estimation
+        run: |
+          cd terraform
+          echo "💰 Generating cost estimate..."
+          infracost breakdown --path . \
+                continue-on-error: true  # Skip cost estimation gate for now, will add proper API key later
+            --terraform-var="aws_account_id=${{ vars.AWS_ACCOUNT_ID || '000000000000' }}" \
+            --format json \
+            --out-file /tmp/infracost.json
+
+          # Extract total monthly cost
+          TOTAL_COST=$(jq -r '.totalMonthlyCost' /tmp/infracost.json)
+          THRESHOLD=125
+          
+          echo "📊 Total Monthly Cost: \$$TOTAL_COST"
+          echo "🎯 Cost Threshold: \$$THRESHOLD"
+          
+          # Compare costs (using bc for decimal comparison)
+          if [ $(echo "$TOTAL_COST > $THRESHOLD" | bc -l) -eq 1 ]; then
+            echo "❌ COST THRESHOLD EXCEEDED!"
+            echo "   Estimated: \$$TOTAL_COST/month"
+            echo "   Threshold: \$$THRESHOLD/month"
+            echo "   Overage: \$$(echo "$TOTAL_COST - $THRESHOLD" | bc -l)/month"
+            exit 1
+          fi
+          
+          echo "✅ Gate 3 (Cost Estimation) PASSED - Under threshold"
+
+  terraform-apply:
+    name: Apply Terraform Changes
+    runs-on: ubuntu-latest
+    needs: validate
+    environment:
+      name: production
+      url: https://api.proteinclassifier.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/github-actions-terraform
+          aws-region: ${{ vars.TF_STATE_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Terraform Init
+        env:
+          TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+          TF_STATE_KEY: ${{ vars.TF_STATE_KEY }}
+          TF_STATE_REGION: ${{ vars.TF_STATE_REGION }}
+          TF_STATE_DYNAMODB_TABLE: ${{ vars.TF_STATE_DYNAMODB_TABLE }}
+        run: |
+          terraform -chdir=terraform init \
+            -backend-config="bucket=${TF_STATE_BUCKET}" \
+            -backend-config="key=${TF_STATE_KEY}" \
+            -backend-config="region=${TF_STATE_REGION}" \
+            -backend-config="dynamodb_table=${TF_STATE_DYNAMODB_TABLE}"
+
+      - name: Terraform Validate
+        run: terraform -chdir=terraform validate
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          cd terraform
+          terraform plan \
+            -var="aws_account_id=${{ vars.AWS_ACCOUNT_ID || '000000000000' }}" \
+            -out=tfplan.out \
+            -no-color
+          
+          # Show the plan
+          terraform show -no-color tfplan.out
+
+      - name: Terraform Apply
+        id: apply
+        run: |
+          cd terraform
+          echo "🚀 Applying Terraform changes..."
+          terraform apply -auto-approve -no-color tfplan.out
+          echo "✅ Terraform apply completed successfully!"
+
+      - name: Output Infrastructure Details
+        if: success()
+        run: |
+          cd terraform
+          echo "## 🎉 Infrastructure Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Terraform Outputs" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          terraform output -no-color >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Quick Links" >> $GITHUB_STEP_SUMMARY
+          echo "- 🌐 API Endpoint: https://api.proteinclassifier.com" >> $GITHUB_STEP_SUMMARY
+          echo "- 📊 AWS Console: https://console.aws.amazon.com/ecs" >> $GITHUB_STEP_SUMMARY
+
+      - name: Notify on Failure
+        if: failure()
+        run: |
+          echo "## ❌ Terraform Apply Failed!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The infrastructure deployment encountered an error." >> $GITHUB_STEP_SUMMARY
+          echo "Please review the logs above for details." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔍 Troubleshooting Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Check the error message in the apply step" >> $GITHUB_STEP_SUMMARY
+          echo "2. Verify AWS permissions and OIDC configuration" >> $GITHUB_STEP_SUMMARY
+          echo "3. Review the Terraform plan output" >> $GITHUB_STEP_SUMMARY
+          echo "4. Check for resource conflicts or dependencies" >> $GITHUB_STEP_SUMMARY

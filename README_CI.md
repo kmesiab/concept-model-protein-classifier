@@ -69,6 +69,7 @@ Phase 1 of the CI/CD pipeline has been successfully implemented with production-
 ### GitHub Actions Status
 
 The workflows are created and will run on:
+
 - Every push to `main` or `develop` branches
 - Every pull request to `main` or `develop`
 - Security scans: Weekly (Mondays at 9 AM UTC)
@@ -81,7 +82,7 @@ To complete the setup:
 
 1. **Add GitHub Secrets** (optional for enhanced features):
    - `CODECOV_TOKEN` - For Codecov coverage reporting
-   
+
 2. **Enable Branch Protection** on `main`:
    - Require status checks to pass before merging
    - Require pull request reviews (1 approval)
@@ -130,6 +131,7 @@ bandit -r . --exclude ./tests
 ## Repository Quality
 
 This repository now has production-grade CI/CD infrastructure ensuring:
+
 - ✅ Code quality and consistency
 - ✅ Comprehensive test coverage
 - ✅ Security vulnerability detection

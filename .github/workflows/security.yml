@@ -49,8 +49,8 @@ jobs:
         run: |
           echo "Running Bandit security scan..."
           mkdir -p reports
-          bandit -r . -f json -o reports/bandit-report.json --exclude ./tests,./venv,./env,./.venv || true
-          bandit -r . -f txt --exclude ./tests,./venv,./env,./.venv
+          bandit -r . --configfile pyproject.toml -f json -o reports/bandit-report.json || true
+          bandit -r . --configfile pyproject.toml -f txt
         continue-on-error: false
       
       - name: Upload Bandit report

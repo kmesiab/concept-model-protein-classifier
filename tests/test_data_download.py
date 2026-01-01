@@ -5,7 +5,6 @@ import tempfile
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from data_download import download_disprot_sequences, download_pdb_chains, split_fasta
 
 

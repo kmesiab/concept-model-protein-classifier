@@ -27,23 +27,27 @@ This project follows a professional code of conduct. Please be respectful, colla
 ### Initial Setup
 
 1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/kmesiab/concept-model-protein-classifier.git
    cd concept-model-protein-classifier
    ```
 
 2. **Create a virtual environment:**
+
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
 3. **Install dependencies:**
+
    ```bash
    pip install -r requirements.txt
    ```
 
 4. **Install development tools:**
+
    ```bash
    pip install black flake8 pylint mypy isort pytest pytest-cov
    ```
@@ -51,6 +55,7 @@ This project follows a professional code of conduct. Please be respectful, colla
 ## Development Workflow
 
 1. **Create a feature branch:**
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
@@ -58,6 +63,7 @@ This project follows a professional code of conduct. Please be respectful, colla
 2. **Make your changes** following the code style guidelines below
 
 3. **Run formatting and linting:**
+
    ```bash
    # Format code with Black
    black .
@@ -76,11 +82,13 @@ This project follows a professional code of conduct. Please be respectful, colla
    ```
 
 4. **Run tests:**
+
    ```bash
    pytest tests/ -v --cov=. --cov-report=term
    ```
 
 5. **Commit your changes:**
+
    ```bash
    git add .
    git commit -m "feat: add new feature"
@@ -98,6 +106,7 @@ This project follows a professional code of conduct. Please be respectful, colla
 ### Linting Standards
 
 All code must pass:
+
 - **Black:** 100% compliance with Black formatting
 - **Flake8:** No errors or warnings (max complexity: 10)
 - **Pylint:** Score ≥ 9.0/10
@@ -191,7 +200,8 @@ Use the following prefixes for commit messages:
 - `chore:` - Maintenance tasks
 
 Example:
-```
+
+```text
 feat: add protein sequence validation
 
 - Implement amino acid validation
