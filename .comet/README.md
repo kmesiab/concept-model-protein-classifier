@@ -30,7 +30,7 @@ Extended working memory system for AI-human collaboration, specifically for Come
 As AI-human collaboration grows more sophisticated, maintaining context across sessions becomes critical. This directory:
 
 - Keeps collaboration artifacts separate from production code
-- Hidden from casual browsing but accessible when needed
+- Uses a dot-prefixed directory so it is hidden by default in Unix/Linux file browsers while remaining accessible to tools and intentional access
 - Can evolve organically as we discover what works best
 - Doesn't interfere with existing docs/ structure
 
