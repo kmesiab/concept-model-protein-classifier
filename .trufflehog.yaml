@@ -1,0 +1,84 @@
+# TruffleHog Configuration File
+# https://github.com/trufflesecurity/trufflehog
+#
+# This file defines custom patterns, exclusions, and allowlisted secrets
+# for the TruffleHog secret scanning tool.
+
+# Exclude specific paths from scanning
+exclude_paths:
+  # Test files and fixtures that may contain test credentials
+  - tests/
+  - test/
+  - "**/*test*.py"
+  - "**/*_test.py"
+  
+  # Documentation and examples
+  - docs/
+  - examples/
+  - "**/*.md"
+  
+  # Build artifacts and dependencies
+  - node_modules/
+  - venv/
+  - env/
+  - .venv/
+  - __pycache__/
+  - "*.egg-info/"
+  - dist/
+  - build/
+  
+  # IDE and system files
+  - .git/
+  - .idea/
+  - .vscode/
+  - ".DS_Store"
+  
+  # Terraform state (may contain sensitive data but handled separately)
+  - "terraform/*.tfstate"
+  - "terraform/*.tfstate.backup"
+  
+  # Coverage and reports
+  - htmlcov/
+  - coverage.xml
+  - reports/
+  - "*.sarif"
+
+# Allowlisted secrets (false positives)
+# ONLY add entries here with clear justification
+# Format: detector_type: ["hash_of_secret"]
+allowlist:
+  # Example (remove if not needed):
+  # detectors:
+  #   - name: AWS
+  #     keys:
+  #       - "sha256:hash_of_false_positive_here"
+
+# Additional custom detectors (if needed)
+# detectors:
+#   - name: CustomAPIKey
+#     keywords:
+#       - "custom_api_key"
+#     regex:
+#       pattern: "custom-key-[a-zA-Z0-9]{32}"
+
+# Verify credentials where possible
+# This will attempt to validate found secrets against their respective services
+verify: true
+
+# Only report verified secrets (reduces false positives)
+# Set to false if you want to see all potential secrets
+only-verified: true
+
+# Maximum depth to search in git history
+# 0 means unlimited (full history scan)
+max-depth: 0
+
+# Print findings in JSON format (useful for CI/CD integration)
+# json: true
+
+# Exclude specific file types
+# exclude_globs:
+#   - "*.lock"
+#   - "*.sum"
+#   - "yarn.lock"
+#   - "package-lock.json"
