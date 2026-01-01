@@ -165,10 +165,8 @@ jobs:
           # Show the plan
           terraform show -no-color tfplan.out
 
-      - name: Terraform Apply
-
-            - name: Import Existing Resources (if any)
-    continue-on-error: true
+      - name: Import Existing Resources (if any)
+        continue-on-error: true
         run: |
           cd terraform
           echo "🔄 Attempting to import any existing resources..."
@@ -191,6 +189,8 @@ jobs:
           terraform import aws_iam_role.vpc_flow_logs protein-classifier-vpc-flow-logs-role 2>/dev/null || echo "IAM (vpc): already in state or doesn't exist"
           
           echo "✅ Import step complete"
+
+      - name: Terraform Apply
         id: apply
         run: |
           cd terraform
