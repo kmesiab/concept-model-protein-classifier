@@ -171,7 +171,7 @@ jobs:
           echo "🔄 Attempting to import any existing resources..."
           
           # Helper function to safely import resources
-          # Allows "already exists" and "already in state" errors, but fails on auth/network/locking errors
+          # Allows benign "resource already exists" or "resource not found" import errors, but fails on auth/network/locking errors
           safe_import() {
             local resource_address="$1"
             local resource_id="$2"
