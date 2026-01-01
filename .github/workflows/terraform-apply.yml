@@ -11,7 +11,7 @@ on:
 permissions:
   contents: read
   id-token: write
-  pull-request: write
+  pull_request: write
 
 jobs:
   validate:
