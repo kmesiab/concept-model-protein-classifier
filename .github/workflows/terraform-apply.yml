@@ -223,7 +223,7 @@ jobs:
             
             # Temporarily disable 'set -e' to capture the AWS CLI exit code without aborting the step
             set +e
-            output=$(sh -c "$aws_cmd" 2>&1)
+            output=$(eval "$aws_cmd" 2>&1)
             exit_code=$?
             set -e
             
