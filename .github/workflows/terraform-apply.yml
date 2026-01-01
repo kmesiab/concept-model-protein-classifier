@@ -193,7 +193,7 @@ jobs:
             fi
             
             # Check for benign errors (already in state or doesn't exist)
-            if echo "$output" | grep -qE "(already|already exists|already imported|already manages|Cannot import non-existent|does not exist|Resource not found)"; then
+            if echo "$output" | grep -qE "(already exists|already imported|already manages|already|Cannot import non-existent|does not exist|Resource not found)"; then
               echo "ℹ️  $description: already in state or doesn't exist"
               return 0
             fi
