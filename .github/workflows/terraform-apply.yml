@@ -11,13 +11,13 @@ on:
 permissions:
   contents: read
   id-token: write
-  pull-requests: write
+  pull-request: write
 
 jobs:
   validate:
     name: Pre-Apply Validation (Triple-Gated)
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Verify Confirmation
         run: |
@@ -56,11 +56,12 @@ jobs:
           terraform -chdir=terraform init \
             -backend-config="bucket=${TF_STATE_BUCKET}" \
             -backend-config="key=${TF_STATE_KEY}" \
-            -backend-config="region=${TF_STATE_REGION}"
+            -backend-config="region=${TF_STATE_REGION}" \
+            -backend-config="dynamodb_table=${TF_STATE_DYNAMODB_TABLE}"
 
       # Gate 1: TFLint
       - name: Gate 1 - TFLint Validation
-        P: run: |
+        run: |
           cd terraform
           tflint --init
           echo "🔍 Running TFLint validation..."
@@ -74,7 +75,7 @@ jobs:
           working_directory: terraform
           soft_fail: false
           format: default
-        continue-on-error: false
+          continue-on-error: false
 
       - name: Gate 2 Status
         run: echo "✅ Gate 2 (tfsec) PASSED"
@@ -86,7 +87,7 @@ jobs:
           api-key: ${{ secrets.INFRACOST_API_KEY }}
 
       - name: Gate 3 - Cost Estimation
-        continue-on-error: true  # Skip cost estimation gate for now
+        continue-on-error: true # Skip cost estimation gate for now
         run: |
           cd terraform
           echo "💰 Generating cost estimate..."
@@ -94,7 +95,7 @@ jobs:
             --terraform-var="aws_account_id=${{ vars.AWS_ACCOUNT_ID || '000000000000' }}" \
             --format json \
             --out-file /tmp/infracost.json
-
+          
           # Extract total monthly cost
           TOTAL_COST=$(jq -r '.totalMonthlyCost' /tmp/infracost.json)
           THRESHOLD=125
@@ -120,7 +121,7 @@ jobs:
     environment:
       name: production
       url: https://api.proteinclassifier.com
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -178,26 +179,3 @@ jobs:
           cd terraform
           echo "## 🎉 Infrastructure Deployment Successful!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📋 Terraform Outputs" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          terraform output -no-color >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🔗 Quick Links" >> $GITHUB_STEP_SUMMARY
-          echo "- 🌐 API Endpoint: https://api.proteinclassifier.com" >> $GITHUB_STEP_SUMMARY
-          echo "- 📊 AWS Console: https://console.aws.amazon.com/ecs" >> $GITHUB_STEP_SUMMARY
-
-      - name: Notify on Failure
-        if: failure()
-        run: |
-          echo "## ❌ Terraform Apply Failed!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "The infrastructure deployment encountered an error." >> $GITHUB_STEP_SUMMARY
-          echo "Please review the logs above for details." >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🔍 Troubleshooting Steps" >> $GITHUB_STEP_SUMMARY
-          echo "1. Check the error message in the apply step" >> $GITHUB_STEP_SUMMARY
-          echo "2. Verify AWS permissions and OIDC configuration" >> $GITHUB_STEP_SUMMARY
-          echo "3. Review the Terraform plan output" >> $GITHUB_STEP_SUMMARY
-          echo "4. Check for resource conflicts or dependencies" >> $GITHUB_STEP_SUMMARY
