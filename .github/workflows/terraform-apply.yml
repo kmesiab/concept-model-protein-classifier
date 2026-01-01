@@ -173,10 +173,9 @@ jobs:
           # Helper function to safely import resources
           # Allows "already exists" and "already in state" errors, but fails on auth/network/locking errors
           safe_import() {
-            local resource_type="$1"
-            local resource_address="$2"
-            local resource_id="$3"
-            local description="$4"
+            local resource_address="$1"
+            local resource_id="$2"
+            local description="$3"
             
             local output
             local exit_code
@@ -222,9 +221,13 @@ jobs:
             local output
             local exit_code
             
-            output=$(sh -c "$aws_cmd" 2>&1) || exit_code=$?
+            # Temporarily disable 'set -e' to capture the AWS CLI exit code without aborting the step
+            set +e
+            output=$(sh -c "$aws_cmd" 2>&1)
+            exit_code=$?
+            set -e
             
-            if [ -z "$exit_code" ]; then
+            if [ "$exit_code" -eq 0 ]; then
               echo "$output"
               return 0
             fi
@@ -243,21 +246,21 @@ jobs:
           }
           
           # Import resources with proper error handling
-          safe_import "s3_bucket" "aws_s3_bucket.alb_logs" "protein-classifier-alb-logs-462498369025" "S3 bucket" || exit 1
+          safe_import "aws_s3_bucket.alb_logs" "protein-classifier-alb-logs-462498369025" "S3 bucket" || exit 1
           
           TG_ARN=$(get_aws_resource "aws elbv2 describe-target-groups --names protein-classifier-ecs-tg --query 'TargetGroups[0].TargetGroupArn' --output text" "target group") || exit 1
           if [ "$TG_ARN" != "none" ] && [ "$TG_ARN" != "" ]; then
-            safe_import "lb_target_group" "aws_lb_target_group.ecs" "$TG_ARN" "Target group" || exit 1
+            safe_import "aws_lb_target_group.ecs" "$TG_ARN" "Target group" || exit 1
           fi
           
-          safe_import "dynamodb_table" "aws_dynamodb_table.terraform_locks" "protein-classifier-terraform-locks" "DynamoDB table" || exit 1
-          safe_import "ecr_repository" "aws_ecr_repository.api" "protein-classifier-api" "ECR repository" || exit 1
-          safe_import "cloudwatch_log_group" "aws_cloudwatch_log_group.ecs_logs" "/ecs/protein-classifier-api" "CloudWatch logs (ECS)" || exit 1
-          safe_import "cloudwatch_log_group" "aws_cloudwatch_log_group.vpc_flow_logs" "/aws/vpc/protein-classifier-flow-logs" "CloudWatch logs (VPC)" || exit 1
-          safe_import "iam_role" "aws_iam_role.github_actions" "protein-classifier-github-actions-role" "IAM role (GitHub Actions)" || exit 1
-          safe_import "iam_role" "aws_iam_role.ecs_task_execution_role" "protein-classifier-ecs-task-execution-role" "IAM role (ECS execution)" || exit 1
-          safe_import "iam_role" "aws_iam_role.ecs_task_role" "protein-classifier-ecs-task-role" "IAM role (ECS task)" || exit 1
-          safe_import "iam_role" "aws_iam_role.vpc_flow_logs" "protein-classifier-vpc-flow-logs-role" "IAM role (VPC flow logs)" || exit 1
+          safe_import "aws_dynamodb_table.terraform_locks" "protein-classifier-terraform-locks" "DynamoDB table" || exit 1
+          safe_import "aws_ecr_repository.api" "protein-classifier-api" "ECR repository" || exit 1
+          safe_import "aws_cloudwatch_log_group.ecs_logs" "/ecs/protein-classifier-api" "CloudWatch logs (ECS)" || exit 1
+          safe_import "aws_cloudwatch_log_group.vpc_flow_logs" "/aws/vpc/protein-classifier-flow-logs" "CloudWatch logs (VPC)" || exit 1
+          safe_import "aws_iam_role.github_actions" "protein-classifier-github-actions-role" "IAM role (GitHub Actions)" || exit 1
+          safe_import "aws_iam_role.ecs_task_execution_role" "protein-classifier-ecs-task-execution-role" "IAM role (ECS execution)" || exit 1
+          safe_import "aws_iam_role.ecs_task_role" "protein-classifier-ecs-task-role" "IAM role (ECS task)" || exit 1
+          safe_import "aws_iam_role.vpc_flow_logs" "protein-classifier-vpc-flow-logs-role" "IAM role (VPC flow logs)" || exit 1
           
           echo "✅ Import step complete"
 
