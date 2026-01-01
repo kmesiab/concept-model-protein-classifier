@@ -1,6 +1,6 @@
 # Comet Session State
 
-> **Purpose**: Extended working memory for Comet and kmesiab collaboration
+> **Purpose**: Extended working memory for Comet and Kevin Mesiab collaboration
 > **Last Updated**: 2026-01-01 07:00 PST
 
 ## Current Project Context
