@@ -199,7 +199,7 @@ jobs:
             fi
             
             # Check for critical errors that should fail the workflow
-            if echo "$output" | grep -qiE "(authentication|unauthorized|forbidden|access denied|invalid credentials|ExpiredToken|InvalidClientTokenId|connection|network|timeout|state lock|LockInfo)"; then
+            if echo "$output" | grep -qiE "(authentication|unauthorized|forbidden|access denied|invalid credentials|expiredtoken|invalidclienttokenid|connection|network|timeout|state lock|lockinfo)"; then
               echo "❌ CRITICAL ERROR importing $description:"
               echo "$output"
               echo "::error::Import failed with critical error - check AWS credentials, network, state locking, or Terraform state access"
