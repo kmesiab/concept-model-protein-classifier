@@ -246,7 +246,7 @@ jobs:
           }
           
           # Import resources with proper error handling
-          safe_import "aws_s3_bucket.alb_logs" "protein-classifier-alb-logs-462498369025" "S3 bucket" || exit 1
+          safe_import "aws_s3_bucket.alb_logs" "protein-classifier-alb-logs-${{ vars.AWS_ACCOUNT_ID }}" "S3 bucket" || exit 1
           
           TG_ARN=$(get_aws_resource "aws elbv2 describe-target-groups --names protein-classifier-ecs-tg --query 'TargetGroups[0].TargetGroupArn' --output text" "target group") || exit 1
           if [ "$TG_ARN" != "none" ] && [ "$TG_ARN" != "" ]; then
