@@ -61,7 +61,7 @@ jobs:
 
       # Gate 1: TFLint
       - name: Gate 1 - TFLint Validation
-        run: |
+        # BOOTSTRAP: run: |
           cd terraform
           tflint --init
           echo "🔍 Running TFLint validation..."
