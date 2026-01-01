@@ -172,7 +172,7 @@ jobs:
         run: |
           cd terraform
           echo "🔄 Attempting to import any existing resources..."
-          
+            
           # Import with || true to continue even if resource doesn't exist or is already in state
           terraform import aws_s3_bucket.alb_logs protein-classifier-alb-logs-462498369025 2>/dev/null || echo "S3 bucket: already in state or doesn't exist"
           
