@@ -222,7 +222,7 @@ jobs:
             local output
             local exit_code
             
-            output=$(eval "$aws_cmd" 2>&1) || exit_code=$?
+            output=$(sh -c "$aws_cmd" 2>&1) || exit_code=$?
             
             if [ -z "$exit_code" ]; then
               echo "$output"
