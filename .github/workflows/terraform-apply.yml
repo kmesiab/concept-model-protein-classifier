@@ -87,8 +87,8 @@ jobs:
           api-key: ${{ secrets.INFRACOST_API_KEY }}
 
       - name: Gate 3 - Cost Estimation
+        continue-on-error: true  # Skip cost estimation gate for now
         run: |
-              continue-on-error: true  # Skip cost estimation gate for now, will add proper API key later
           cd terraform
           echo "💰 Generating cost estimate..."
           infracost breakdown --path . \
