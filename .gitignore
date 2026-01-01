@@ -122,3 +122,7 @@ terraform/crash.log
 terraform/crash.*.log
 terraform/.terraformrc
 terraform/terraform.rc
+
+# Comet AI assistant session state (keep local)
+.comet/*
+!.comet/README.md
