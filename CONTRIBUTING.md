@@ -248,7 +248,7 @@ All code changes are automatically scanned for accidentally committed secrets us
 
 ```bash
 # Install TruffleHog locally (optional but recommended)
-pip install truffleHog
+pip install trufflehog
 
 # Scan your changes before committing
 trufflehog filesystem . --config=.trufflehog.yaml --only-verified
