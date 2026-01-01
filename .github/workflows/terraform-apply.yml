@@ -181,10 +181,14 @@ jobs:
             local output
             local exit_code
             
-            output=$(terraform import "$resource_address" "$resource_id" 2>&1) || exit_code=$?
+            # Temporarily disable 'set -e' to capture the import exit code without aborting the step
+            set +e
+            output=$(terraform import "$resource_address" "$resource_id" 2>&1)
+            exit_code=$?
+            set -e
             
             # If import succeeded, we're done
-            if [ -z "$exit_code" ]; then
+            if [ "$exit_code" -eq 0 ]; then
               echo "✅ $description: imported successfully"
               return 0
             fi
