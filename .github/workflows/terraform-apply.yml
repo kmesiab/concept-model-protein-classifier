@@ -202,7 +202,7 @@ jobs:
             if echo "$output" | grep -qiE "(authentication|unauthorized|forbidden|access denied|invalid credentials|ExpiredToken|InvalidClientTokenId|connection|network|timeout|state lock|LockInfo)"; then
               echo "❌ CRITICAL ERROR importing $description:"
               echo "$output"
-              echo "::error::Import failed with critical error - check AWS credentials, network, or state locking"
+              echo "::error::Import failed with critical error - check AWS credentials, network, state locking, or Terraform state access"
               return 1
             fi
             
