@@ -1,3 +1,6 @@
+# Terraform binaries
+terraform_binary/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -25,6 +28,11 @@ MANIFEST
 
 # Virtual environments
 venv/
+ENV/
+env/
+.venv
+
+# IDEs
 env/
 ENV/
 .venv/
@@ -48,6 +56,36 @@ coverage.xml
 *.swp
 *.swo
 *~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Environment
+.env
+.env.local
+
+# Data files (large FASTA files)
+*.fasta
+pdb_chains.fasta
+disprot_13000.fasta
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Redis
+dump.rdb
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
 .DS_Store
 
 # MyPy
@@ -72,3 +110,15 @@ trivy-results.sarif
 bandit-report.json
 safety-report.json
 pip-audit-report.json
+
+# Terraform
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/*.tfvars
+terraform/*.tfvars.json
+terraform/crash.log
+terraform/crash.*.log
+terraform/.terraformrc
+terraform/terraform.rc

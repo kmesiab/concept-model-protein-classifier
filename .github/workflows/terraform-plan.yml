@@ -1,0 +1,215 @@
+name: Terraform Plan Preview
+
+on:
+  pull_request:
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-plan.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  terraform-plan:
+    name: Preview Terraform Changes
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/github-actions-terraform
+          aws-region: ${{ vars.TF_STATE_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Terraform Format Check
+        id: fmt
+        run: terraform -chdir=terraform fmt -check -recursive
+        continue-on-error: true
+
+      - name: Terraform Init
+        id: init
+        env:
+          TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+          TF_STATE_KEY: ${{ vars.TF_STATE_KEY }}
+          TF_STATE_REGION: ${{ vars.TF_STATE_REGION }}
+          TF_STATE_DYNAMODB_TABLE: ${{ vars.TF_STATE_DYNAMODB_TABLE }}
+        run: |
+          terraform -chdir=terraform init \
+            -backend-config="bucket=${TF_STATE_BUCKET}" \
+            -backend-config="key=${TF_STATE_KEY}" \
+            -backend-config="region=${TF_STATE_REGION}" \
+            -backend-config="dynamodb_table=${TF_STATE_DYNAMODB_TABLE}"
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform -chdir=terraform validate -no-color
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          cd terraform
+          set +e  # Don't exit on error
+          terraform plan -detailed-exitcode -no-color -var="aws_account_id=${{ vars.AWS_ACCOUNT_ID || '000000000000' }}" -out=tfplan.out
+          PLAN_EXIT_CODE=$?
+          set -e  # Re-enable exit on error
+          
+          # Terraform plan exit codes with -detailed-exitcode:
+          # 0 = No changes
+          # 1 = Error occurred
+          # 2 = Changes detected (expected for preview)
+          
+          echo "Terraform plan exited with code: $PLAN_EXIT_CODE"
+          
+          if [ $PLAN_EXIT_CODE -eq 1 ]; then
+            echo "❌ Terraform plan failed with an error"
+            # Still try to show the plan if it exists
+            if [ -f tfplan.out ]; then
+              terraform show -no-color tfplan.out > plan.txt || true
+            fi
+            exit 1
+          fi
+          
+          # Generate plan text output for exit codes 0 and 2
+          if [ -f tfplan.out ]; then
+            terraform show -no-color tfplan.out > plan.txt
+          else
+            echo "No plan file generated" > plan.txt
+          fi
+          
+          # Exit codes 0 and 2 are success (no changes or changes detected)
+          exit 0
+
+      - name: Format Plan Output
+        id: format-plan
+        if: always()
+        run: |
+          cd terraform
+          
+          # Create formatted plan summary
+          echo "## 📋 Terraform Plan Summary" > plan-summary.md
+          echo "" >> plan-summary.md
+          
+          if [ -f plan.txt ]; then
+            # Extract resource changes
+            echo "### Resource Changes" >> plan-summary.md
+            echo "" >> plan-summary.md
+            
+            # Count changes
+            TO_ADD=$(grep -c "will be created" plan.txt || echo "0")
+            TO_CHANGE=$(grep -c "will be updated" plan.txt || echo "0")
+            TO_DESTROY=$(grep -c "will be destroyed" plan.txt || echo "0")
+            
+            echo "- ✅ **Resources to Add:** $TO_ADD" >> plan-summary.md
+            echo "- 🔄 **Resources to Change:** $TO_CHANGE" >> plan-summary.md
+            echo "- ❌ **Resources to Destroy:** $TO_DESTROY" >> plan-summary.md
+            echo "" >> plan-summary.md
+            
+            # Add plan details in collapsible section
+            echo "<details>" >> plan-summary.md
+            echo "<summary>📄 Full Plan Output (click to expand)</summary>" >> plan-summary.md
+            echo "" >> plan-summary.md
+            echo '```terraform' >> plan-summary.md
+            cat plan.txt >> plan-summary.md
+            echo '```' >> plan-summary.md
+            echo "</details>" >> plan-summary.md
+            echo "" >> plan-summary.md
+            
+            # Extract and highlight key changes
+            echo "### 🔍 Key Changes Detected" >> plan-summary.md
+            echo "" >> plan-summary.md
+            
+            # Look for specific resource types
+            if grep -q "aws_ecs_service" plan.txt; then
+              echo "- 🐳 **ECS Service** changes detected" >> plan-summary.md
+            fi
+            if grep -q "aws_lb" plan.txt; then
+              echo "- ⚖️ **Load Balancer** changes detected" >> plan-summary.md
+            fi
+            if grep -q "aws_security_group" plan.txt; then
+              echo "- 🔒 **Security Group** changes detected" >> plan-summary.md
+            fi
+            if grep -q "aws_iam" plan.txt; then
+              echo "- 🔑 **IAM** changes detected" >> plan-summary.md
+            fi
+            if grep -q "aws_nat_gateway" plan.txt; then
+              echo "- 🌐 **NAT Gateway** changes detected" >> plan-summary.md
+            fi
+            
+          else
+            echo "⚠️ Plan file not generated" >> plan-summary.md
+          fi
+          
+          echo "" >> plan-summary.md
+          
+          # Add validation status
+          echo "### ✅ Validation Status" >> plan-summary.md
+          echo "" >> plan-summary.md
+          echo "- **Format Check:** ${{ steps.fmt.outcome == 'success' && '✅ Pass' || '⚠️ Needs formatting' }}" >> plan-summary.md
+          echo "- **Init:** ${{ steps.init.outcome == 'success' && '✅ Pass' || '❌ Failed' }}" >> plan-summary.md
+          echo "- **Validate:** ${{ steps.validate.outcome == 'success' && '✅ Pass' || '❌ Failed' }}" >> plan-summary.md
+          echo "- **Plan:** ${{ steps.plan.outcome == 'success' && '✅ Pass' || '❌ Failed' }}" >> plan-summary.md
+          
+          cat plan-summary.md
+
+      - name: Post Plan Comment
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const planSummary = fs.readFileSync('terraform/plan-summary.md', 'utf8');
+            
+            const comment = `## 🏗️ Terraform Plan Preview
+            
+            ${planSummary}
+            
+            ---
+            <sub>💡 This plan preview helps you review infrastructure changes before applying them.</sub>
+            `;
+            
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('🏗️ Terraform Plan Preview')
+            );
+            
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }
+
+      - name: Generate Job Summary
+        if: always()
+        run: |
+          cd terraform
+          cat plan-summary.md >> $GITHUB_STEP_SUMMARY
