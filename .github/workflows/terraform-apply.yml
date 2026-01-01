@@ -168,7 +168,7 @@ jobs:
       - name: Terraform Apply
 
             - name: Import Existing Resources (if any)
-        continue-on-error: true
+    continue-on-error: true
         run: |
           cd terraform
           echo "🔄 Attempting to import any existing resources..."
