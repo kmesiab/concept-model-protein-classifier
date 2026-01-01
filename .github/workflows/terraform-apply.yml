@@ -170,6 +170,28 @@ jobs:
           cd terraform
           echo "🔄 Attempting to import any existing resources..."
           
+          # Helper function to sanitize sensitive information from error output
+          sanitize_output() {
+            local output="$1"
+            # Redact AWS account IDs (12-digit numbers)
+            output=$(echo "$output" | sed -E 's/[0-9]{12}/************/g')
+            # Redact ARNs
+            output=$(echo "$output" | sed -E 's/arn:aws:[a-z0-9-]+:[a-z0-9-]*:[0-9]{12}:[^ ]*/arn:aws:***:***:************:***/g')
+            # Redact resource IDs that look like AWS IDs (e.g., i-xxxxx, vpc-xxxxx)
+            output=$(echo "$output" | sed -E 's/(i|vpc|subnet|sg|igw|rtb|nat|eni|vol|snap|ami)-[a-z0-9]+/\1-***/g')
+            echo "$output"
+          }
+          
+          # Helper function to check if error output contains critical errors
+          # Returns 0 if critical error found, 1 otherwise
+          check_critical_error() {
+            local output="$1"
+            if echo "$output" | grep -qiE "(authentication|unauthorized|forbidden|access denied|invalid credentials|expiredtoken|invalidclienttokenid|connection|network|timeout|state lock|lockinfo)"; then
+              return 0
+            fi
+            return 1
+          }
+          
           # Helper function to safely import resources
           # Allows benign "resource already exists" or "resource not found" import errors, but fails on auth/network/locking errors
           safe_import() {
@@ -199,31 +221,32 @@ jobs:
             fi
             
             # Check for critical errors that should fail the workflow
-            if echo "$output" | grep -qiE "(authentication|unauthorized|forbidden|access denied|invalid credentials|expiredtoken|invalidclienttokenid|connection|network|timeout|state lock|lockinfo)"; then
+            if check_critical_error "$output"; then
               echo "❌ CRITICAL ERROR importing $description:"
-              echo "$output"
+              sanitize_output "$output"
               echo "::error::Import failed with critical error - check AWS credentials, network, state locking, or Terraform state access"
               return 1
             fi
             
             # Unknown error - fail to be safe
             echo "⚠️  Unknown error importing $description:"
-            echo "$output"
+            sanitize_output "$output"
             echo "::error::Import failed with unexpected error"
             return 1
           }
           
           # Helper function to get AWS resource ARN with error checking
           get_aws_resource() {
-            local aws_cmd="$1"
-            local description="$2"
+            local description="$1"
+            shift
+            local aws_cmd=("$@")
             
             local output
             local exit_code
             
             # Temporarily disable 'set -e' to capture the AWS CLI exit code without aborting the step
             set +e
-            output=$(eval "$aws_cmd" 2>&1)
+            output=$("${aws_cmd[@]}" 2>&1)
             exit_code=$?
             set -e
             
@@ -233,9 +256,9 @@ jobs:
             fi
             
             # Check for critical AWS errors
-            if echo "$output" | grep -qiE "(authentication|unauthorized|forbidden|access denied|invalid credentials|ExpiredToken|InvalidClientTokenId|connection|network|timeout)"; then
+            if check_critical_error "$output"; then
               echo "❌ CRITICAL ERROR querying AWS for $description:"
-              echo "$output"
+              sanitize_output "$output"
               echo "::error::AWS query failed with critical error - check credentials and network"
               return 1
             fi
@@ -248,7 +271,7 @@ jobs:
           # Import resources with proper error handling
           safe_import "aws_s3_bucket.alb_logs" "protein-classifier-alb-logs-${{ vars.AWS_ACCOUNT_ID }}" "S3 bucket" || exit 1
           
-          TG_ARN=$(get_aws_resource "aws elbv2 describe-target-groups --names protein-classifier-ecs-tg --query 'TargetGroups[0].TargetGroupArn' --output text" "target group") || exit 1
+          TG_ARN=$(get_aws_resource "target group" aws elbv2 describe-target-groups --names protein-classifier-ecs-tg --query 'TargetGroups[0].TargetGroupArn' --output text) || exit 1
           if [ "$TG_ARN" != "none" ] && [ "$TG_ARN" != "" ]; then
             safe_import "aws_lb_target_group.ecs" "$TG_ARN" "Target group" || exit 1
           fi
