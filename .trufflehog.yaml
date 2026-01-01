@@ -1,0 +1,44 @@
+# TruffleHog Configuration File
+# https://github.com/trufflesecurity/trufflehog
+#
+# This file defines custom patterns, exclusions, and allowlisted secrets
+# for the TruffleHog secret scanning tool.
+
+# Exclude specific paths from scanning
+exclude_paths:
+  # Test files and fixtures that may contain test credentials
+  - tests/
+  - test/
+  - "**/*test*.py"
+  - "**/*_test.py"
+  
+  # Documentation and examples
+  - docs/
+  - examples/
+  - "**/*.md"
+  
+  # Build artifacts and dependencies
+  - node_modules/
+  - venv/
+  - env/
+  - .venv/
+  - __pycache__/
+  - "*.egg-info/"
+  - dist/
+  - build/
+  
+  # IDE and system files
+  - .git/
+  - .idea/
+  - .vscode/
+  - ".DS_Store"
+  
+  # Terraform state (may contain sensitive data but handled separately)
+  - "terraform/*.tfstate"
+  - "terraform/*.tfstate.backup"
+  
+  # Coverage and reports
+  - htmlcov/
+  - coverage.xml
+  - reports/
+  - "*.sarif"

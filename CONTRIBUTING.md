@@ -232,8 +232,55 @@ All PRs must pass the following quality gates before merging:
 | Test coverage | pytest-cov | ≥80% |
 | Security | Bandit | No HIGH/CRITICAL |
 | Dependencies | Safety, pip-audit | No known vulnerabilities |
+| Secret scanning | TruffleHog | No verified secrets |
 
 ## Security
+
+### Secret Scanning
+
+All code changes are automatically scanned for accidentally committed secrets using TruffleHog:
+
+- **Automated Scanning:** Runs on every push, PR, and weekly schedule
+- **Full History Scan:** Checks entire git history, not just new commits
+- **Blocking:** PRs with detected secrets will be blocked from merging
+
+**Before Committing:**
+
+```bash
+# Install TruffleHog locally (optional but recommended)
+pip install trufflehog
+
+# Scan your changes before committing
+trufflehog filesystem . --config=.trufflehog.yaml --only-verified
+```
+
+**If Secrets Are Detected:**
+
+1. **DO NOT** push the commit
+2. **Immediately revoke** the exposed credential
+3. **Remove from git history:**
+
+   ```bash
+   # For the most recent commit
+   git reset --soft HEAD~1
+   # Edit files to remove secrets
+   # Recommit without the secrets
+   
+   # For older commits, use git filter-repo or BFG Repo-Cleaner
+   ```
+
+4. **Use environment variables** or secrets management tools
+5. **Regenerate credentials** and store securely
+
+**False Positives:**
+
+If TruffleHog flags a false positive:
+
+1. Verify it's truly a false positive (not a real secret)
+2. Add to `.trufflehog.yaml` with clear justification
+3. Document why it's safe in the PR description
+
+### General Security Practices
 
 - **Never commit secrets** (API keys, passwords, tokens)
 - **Use environment variables** for configuration

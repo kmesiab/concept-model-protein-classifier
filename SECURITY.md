@@ -74,6 +74,9 @@ When contributing to this project:
 
    # pip-audit - Additional dependency check
    pip-audit
+   
+   # TruffleHog - Secret scanning
+   trufflehog filesystem . --config=.trufflehog.yaml --only-verified
    ```
 
 4. **Keep dependencies updated:**
@@ -108,12 +111,13 @@ This project implements the following security measures:
 - ✅ Dependency vulnerability scanning (Safety, pip-audit)
 - ✅ Container vulnerability scanning (Trivy)
 - ✅ Static Application Security Testing (SAST)
+- ✅ Secret scanning (TruffleHog)
 
 ### CI/CD Security
 
 - ✅ Automated security scans on every PR
 - ✅ Dependency updates via Dependabot
-- ✅ No secrets in code (enforced by pre-commit hooks)
+- ✅ Secret scanning with TruffleHog (blocks PRs if secrets detected)
 - ✅ Security reports uploaded to GitHub Security tab
 
 ### Runtime Security
@@ -147,9 +151,9 @@ Legend: ✅ Implemented | 🔄 Planned
 
 ## Security Scanning Schedule
 
-- **On Every Commit:** Bandit, Safety, pip-audit
-- **Weekly:** Scheduled Trivy scans
-- **On PR:** Full security suite
+- **On Every Commit:** Bandit, Safety, pip-audit, TruffleHog
+- **On PR:** Full security suite including secret scanning
+- **Weekly:** Scheduled Trivy scans and TruffleHog full history scan
 - **Monthly:** Manual security review
 - **Quarterly:** External security audit (planned)
 
