@@ -223,14 +223,14 @@ jobs:
             # Check for critical errors that should fail the workflow
             if check_critical_error "$output"; then
               echo "❌ CRITICAL ERROR importing $description:"
-              sanitize_output "$output"
+              echo "$(sanitize_output "$output")"
               echo "::error::Import failed with critical error - check AWS credentials, network, state locking, or Terraform state access"
               return 1
             fi
             
             # Unknown error - fail to be safe
             echo "⚠️  Unknown error importing $description:"
-            sanitize_output "$output"
+            echo "$(sanitize_output "$output")"
             echo "::error::Import failed with unexpected error"
             return 1
           }
@@ -258,7 +258,7 @@ jobs:
             # Check for critical AWS errors
             if check_critical_error "$output"; then
               echo "❌ CRITICAL ERROR querying AWS for $description:"
-              sanitize_output "$output"
+              echo "$(sanitize_output "$output")"
               echo "::error::AWS query failed with critical error - check credentials and network"
               return 1
             fi
