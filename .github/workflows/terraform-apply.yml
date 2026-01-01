@@ -56,12 +56,11 @@ jobs:
           terraform -chdir=terraform init \
             -backend-config="bucket=${TF_STATE_BUCKET}" \
             -backend-config="key=${TF_STATE_KEY}" \
-            -backend-config="region=${TF_STATE_REGION}" \
-            -backend-config="dynamodb_table=${TF_STATE_DYNAMODB_TABLE}"
+            -backend-config="region=${TF_STATE_REGION}"
 
       # Gate 1: TFLint
       - name: Gate 1 - TFLint Validation
-        # BOOTSTRAP: run: |
+        P: run: |
           cd terraform
           tflint --init
           echo "🔍 Running TFLint validation..."
