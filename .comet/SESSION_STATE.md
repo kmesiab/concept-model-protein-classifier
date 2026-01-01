@@ -27,8 +27,8 @@
 
 ### AWS Resources
 - **Region**: us-east-1 (primary), us-west-2 (S3 state)
-- **S3**: protein-classifier-terraform-state bucket for Terraform state
-- **IAM**: github-actions-terraform role for GitHub Actions
+- **S3**: ${var.terraform_state_bucket} for Terraform state
+- **IAM**: ${var.github_actions_role} for GitHub Actions
 - **EC2**: Load balancers configured
 - **Deployment**: 15 total deployments, production + github-pages active
 
@@ -57,11 +57,12 @@
 
 ## Team & Contributors
 
-- **kmesiab** (Kevin Mesiab): Primary developer
-- **Copilot**: AI code assistant
-- **CodeRabbit**: Automated code review
+- **Kevin Mesiab**: Chief Architect
+- **Comet**: Agentic browser, deep technical project manager
+- **Copilot Coding Agent**: Full-fledged coding agent
+- **Copilot Reviewer Agent**: Code review agent
+- **CodeRabbitAI**: Automated code review
 - **dependabot**: Dependency updates
-- **Comet**: DevOps automation assistant
 
 ## Reference Links
 
