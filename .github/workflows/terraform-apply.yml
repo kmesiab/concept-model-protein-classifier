@@ -7,6 +7,11 @@ on:
         description: 'Type "apply" to confirm infrastructure changes'
         required: true
         type: string
+              plan_run_id:
+        description: 'Optional: Workflow run ID containing cached Terraform plan'
+        required: false
+        type: string
+        default: ''
 
         # Prevent concurrent Terraform runs to avoid state lock conflicts
 concurrency:
@@ -156,9 +161,19 @@ jobs:
             -backend-config="dynamodb_table=${TF_STATE_DYNAMODB_TABLE}"
 
       - name: Terraform Validate
-        run: terraform -chdir=terraform validate
+        run: terraform -chdir=te
+        
+              - name: Download Cached Terraform Plan
+        if: inputs.plan_run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-plan
+          run-id: ${{ inputs.plan_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: terraform/rraform validate
 
       - name: Terraform Plan
+              if: inputs.plan_run_id == ''
         id: plan
         run: |
           cd terraform
@@ -169,6 +184,14 @@ jobs:
           
           # Show the plan
           terraform show -no-color tfplan.out
+
+                - name: Upload Terraform Plan Artifact
+        if: inputs.plan_run_id == ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan
+          path: terraform/tfplan.out
+          retention-days: 7
 
       - name: Import Existing Resources (if any)
         run: |
