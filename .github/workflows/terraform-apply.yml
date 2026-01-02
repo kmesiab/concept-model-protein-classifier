@@ -125,7 +125,7 @@ jobs:
                 echo ""
                 echo "Running Trivy with detailed output:"
                 echo ""
-                docker run --rm -v "$PWD:/src" aquasec/trivy:latest config /src/terraform
+                docker run --rm -v "${GITHUB_WORKSPACE:-$PWD}:/src" aquasec/trivy:latest config /src/terraform
                 echo ""
                 echo "❌ Gate 2 (Trivy) FAILED"
                 echo "❌ Security issues detected" >> $GITHUB_STEP_SUMMARY
