@@ -174,6 +174,11 @@ resource "aws_kms_key_policy" "ecr" {
           "kms:DescribeKey"
         ]
         Resource = "*"
+        Condition = {
+          StringEquals = {
+            "kms:EncryptionContext:aws:ecr:repositoryArn" = "arn:aws:ecr:${var.aws_region}:${var.aws_account_id}:repository/protein-classifier-api"
+          }
+        }
       }
     ]
   })
