@@ -275,10 +275,27 @@ resource "aws_security_group_rule" "ecs_egress_dns_tcp" {
   security_group_id = aws_security_group.ecs_tasks.id
 }
 
+# KMS key for CloudWatch log encryption
+resource "aws_kms_key" "cloudwatch_logs" {
+  description             = "KMS key for CloudWatch log group encryption"
+  deletion_window_in_days = 10
+  enable_key_rotation     = true
+
+  tags = {
+    Name = "cloudwatch-logs-key"
+  }
+}
+
+resource "aws_kms_alias" "cloudwatch_logs_alias" {
+  name          = "alias/cloudwatch-logs"
+  target_key_id = aws_kms_key.cloudwatch_logs.key_id
+}
+
 # CloudWatch Log Group for VPC Flow Logs
 resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
   name              = "/aws/vpc/protein-classifier-flow-logs"
   retention_in_days = 7
+  kms_key_id        = aws_kms_key.cloudwatch_logs.arn
 
   tags = {
     Name = "protein-classifier-vpc-flow-logs"
