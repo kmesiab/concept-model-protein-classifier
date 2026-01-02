@@ -174,6 +174,14 @@ resource "aws_kms_key_policy" "dynamodb" {
           "kms:DescribeKey"
         ]
         Resource = "*"
+        Condition = {
+          StringEquals = {
+            "kms:ViaService" = "dynamodb.${var.aws_region}.amazonaws.com"
+          }
+          StringLike = {
+            "kms:EncryptionContext:aws:dynamodb:table-name" = "protein-classifier-*"
+          }
+        }
       }
     ]
   })
