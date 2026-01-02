@@ -262,7 +262,8 @@ jobs:
         run: |
           cd terraform
           echo "🔄 Attempting to import any existing resources..."
-          
+
+                if: false  # TODO: Fix hanging import step
           # Helper function to sanitize sensitive information from error output
           sanitize_output() {
             local output="$1"
