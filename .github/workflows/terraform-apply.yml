@@ -81,7 +81,7 @@ jobs:
       # Gate 2: Trivy Terraform Security Scan
       - name: Gate 2 - Trivy Terraform Scan
         id: trivy
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           scan-type: 'config'
           scan-ref: 'terraform'
