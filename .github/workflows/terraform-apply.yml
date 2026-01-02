@@ -8,6 +8,11 @@ on:
         required: true
         type: string
 
+        # Prevent concurrent Terraform runs to avoid state lock conflicts
+concurrency:
+  group: terraform-apply
+  cancel-in-progress: false
+
 permissions:
   contents: read
   id-token: write
