@@ -80,15 +80,33 @@ jobs:
 
       # Gate 2: tfsec Security Scan
       - name: Gate 2 - tfsec Security Scan
+        id: tfsec
         uses: aquasecurity/tfsec-action@v1.0.3
-        continue-on-error: false
+        continue-on-error: true
         with:
           working_directory: terraform
-          soft_fail: false
+          soft_fail: true
           format: default
 
       - name: Gate 2 Status
-        run: echo "✅ Gate 2 (tfsec) PASSED"
+        if: always()
+        run: |
+          echo "### 🔒 Gate 2: tfsec Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.tfsec.conclusion }}" == "success" ]; then
+            echo "✅ No security issues found" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Gate 2 (tfsec) PASSED"
+          else
+            echo "❌ Security issues detected" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Security findings must be addressed before applying infrastructure changes.**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Please review the tfsec scan output above for details on the security issues found." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "❌ Gate 2 (tfsec) FAILED"
+            exit 1
+          fi
 
       # Gate 3: Cost Estimation
       - name: Setup Infracost
