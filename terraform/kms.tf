@@ -131,9 +131,20 @@ resource "aws_kms_key" "dynamodb" {
   description             = "KMS key for DynamoDB table encryption"
   deletion_window_in_days = 10
   enable_key_rotation     = true
-
+  
   tags = {
     Name = "dynamodb-encryption-key"
+  }
+}
+
+# KMS Key for ECR Repository Encryption
+resource "aws_kms_key" "ecr" {
+  description             = "KMS key for ECR repository encryption"
+  deletion_window_in_days = 10
+  enable_key_rotation     = true
+
+  tags = {
+    Name = "ecr-encryption-key"
   }
 }
 
@@ -146,6 +157,14 @@ resource "aws_kms_alias" "dynamodb" {
 # KMS Key Policy to allow DynamoDB to use the key
 resource "aws_kms_key_policy" "dynamodb" {
   key_id = aws_kms_key.dynamodb.id
+resource "aws_kms_alias" "ecr" {
+  name          = "alias/ecr-encryption"
+  target_key_id = aws_kms_key.ecr.key_id
+}
+
+# KMS Key Policy to allow ECR to use the key
+resource "aws_kms_key_policy" "ecr" {
+  key_id = aws_kms_key.ecr.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -164,6 +183,10 @@ resource "aws_kms_key_policy" "dynamodb" {
         Effect = "Allow"
         Principal = {
           Service = "dynamodb.amazonaws.com"
+        Sid    = "Allow ECR to use the key"
+        Effect = "Allow"
+        Principal = {
+          Service = "ecr.amazonaws.com"
         }
         Action = [
           "kms:Encrypt",
@@ -180,6 +203,7 @@ resource "aws_kms_key_policy" "dynamodb" {
           }
           StringLike = {
             "kms:EncryptionContext:aws:dynamodb:table-name" = "protein-classifier-*"
+            "kms:EncryptionContext:aws:ecr:repositoryArn" = "arn:aws:ecr:${var.aws_region}:${var.aws_account_id}:repository/protein-classifier-api"
           }
         }
       }
