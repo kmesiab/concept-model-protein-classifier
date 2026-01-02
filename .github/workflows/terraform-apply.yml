@@ -71,11 +71,11 @@ jobs:
       # Gate 2: tfsec Security Scan
       - name: Gate 2 - tfsec Security Scan
         uses: aquasecurity/tfsec-action@v1.0.3
+        continue-on-error: false
         with:
           working_directory: terraform
           soft_fail: false
           format: default
-          continue-on-error: false
 
       - name: Gate 2 Status
         run: echo "✅ Gate 2 (tfsec) PASSED"
