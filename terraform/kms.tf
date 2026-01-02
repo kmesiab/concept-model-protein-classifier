@@ -44,6 +44,11 @@ resource "aws_kms_key_policy" "alb_logs_s3" {
           "kms:DescribeKey"
         ]
         Resource = "*"
+        Condition = {
+          StringEquals = {
+            "kms:EncryptionContext:aws:s3:arn" = "arn:aws:s3:::protein-classifier-alb-logs-${var.aws_account_id}/*"
+          }
+        }
       }
     ]
   })
