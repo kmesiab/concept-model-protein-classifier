@@ -214,6 +214,14 @@ jobs:
               return 0
             fi
             
+            # Check if the operation timed out (timeout command returns 124)
+            if [ "$exit_code" -eq 124 ]; then
+              echo "❌ TIMEOUT importing $description:"
+              echo "The terraform import operation exceeded the 300 second timeout"
+              echo "::error::Import operation timed out after 300 seconds"
+              return 1
+            fi
+            
             # Check for benign errors (already in state or doesn't exist)
             if echo "$output" | grep -qE "(already exists|already imported|already manages|already|Cannot import non-existent|does not exist|Resource not found)"; then
               echo "ℹ️  $description: already in state or doesn't exist"
