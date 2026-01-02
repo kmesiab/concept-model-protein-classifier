@@ -119,6 +119,9 @@ jobs:
                 echo "❌ Security issues detected"
                 echo "**Security findings must be addressed before applying infrastructure changes.**"
                 echo "❌ Gate 2 (tfsec) FAILED"
+                echo ""
+                echo "Running tfsec with detailed output for debugging:"
+                cd terraform && tfsec . || true
                 echo "❌ Security issues detected" >> $GITHUB_STEP_SUMMARY
                 echo "**Security findings must be addressed before applying infrastructure changes.**" >> $GITHUB_STEP_SUMMARY
                 echo "❌ Gate 2 (tfsec) FAILED" >> $GITHUB_STEP_SUMMARY
