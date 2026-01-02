@@ -1,23 +1,23 @@
-# KMS Key for S3 Bucket Encryption
-resource "aws_kms_key" "s3" {
-  description             = "KMS key for S3 bucket encryption"
+# KMS Key for ALB Logs S3 Bucket Encryption
+resource "aws_kms_key" "alb_logs_s3" {
+  description             = "KMS key for ALB logs S3 bucket encryption"
   deletion_window_in_days = 10
   enable_key_rotation     = true
 
   tags = {
-    Name = "s3-encryption-key"
+    Name = "alb-logs-s3-encryption-key"
   }
 }
 
 # KMS Key Alias for easier identification
-resource "aws_kms_alias" "s3" {
-  name          = "alias/s3-encryption"
-  target_key_id = aws_kms_key.s3.key_id
+resource "aws_kms_alias" "alb_logs_s3" {
+  name          = "alias/alb-logs-s3-encryption"
+  target_key_id = aws_kms_key.alb_logs_s3.key_id
 }
 
-# KMS Key Policy to allow S3 service to use the key
-resource "aws_kms_key_policy" "s3" {
-  key_id = aws_kms_key.s3.id
+# KMS Key Policy to allow ELB service to encrypt ALB logs in S3
+resource "aws_kms_key_policy" "alb_logs_s3" {
+  key_id = aws_kms_key.alb_logs_s3.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -32,15 +32,14 @@ resource "aws_kms_key_policy" "s3" {
         Resource = "*"
       },
       {
-        Sid    = "Allow S3 to use the key"
+        Sid    = "AllowELBToUseTheKeyForALBLogs"
         Effect = "Allow"
         Principal = {
-          Service = "s3.amazonaws.com"
+          Service = "elasticloadbalancing.amazonaws.com"
         }
         Action = [
           "kms:Encrypt",
           "kms:Decrypt",
-          "kms:ReEncrypt*",
           "kms:GenerateDataKey*",
           "kms:DescribeKey"
         ]
