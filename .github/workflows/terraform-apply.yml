@@ -204,7 +204,7 @@ jobs:
             
             # Temporarily disable 'set -e' to capture the import exit code without aborting the step
             set +e
-            output=$(ttimeout 300 erraform import "$resource_address" "$resource_id" 2>&1)
+            output=$(timeout 300 terraform
             exit_code=$?
             set -e
             
