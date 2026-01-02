@@ -73,14 +73,14 @@ resource "aws_s3_bucket_public_access_block" "alb_logs" {
   restrict_public_buckets = true
 }
 
-# Enable server-side encryption for ALB logs bucket
-# trivy:ignore:AVD-AWS-0132 - AWS-managed encryption sufficient for ALB logs
+# Enable server-side encryption for ALB logs bucket with KMS
 resource "aws_s3_bucket_server_side_encryption_configuration" "alb_logs" {
   bucket = aws_s3_bucket.alb_logs.id
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+      sse_algorithm     = "aws:kms"
+      kms_master_key_id = aws_kms_key.s3.arn
     }
   }
 }
