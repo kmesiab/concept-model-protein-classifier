@@ -123,8 +123,9 @@ jobs:
                 echo "  - MEDIUM: $MEDIUM"
                 echo "  - LOW: $LOW"
                 echo ""
-                echo "Detailed findings:"
-                jq -r '.Results[]?.Misconfigurations // [] | .[] | "[\(.Severity)] \(.Title) - \(.CauseMetadata.Resource // "unknown"):\(.CauseMetadata.StartLine // "?")"' "$REPORT"
+                echo "Running Trivy with detailed output:"
+                echo ""
+                docker run --rm -v "$PWD:/src" aquasec/trivy:latest config /src/terraform
                 echo ""
                 echo "❌ Gate 2 (Trivy) FAILED"
                 echo "❌ Security issues detected" >> $GITHUB_STEP_SUMMARY
