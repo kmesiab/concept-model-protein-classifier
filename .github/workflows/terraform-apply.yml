@@ -81,7 +81,15 @@ jobs:
         if: always()  # Run even if previous step fails
         run: |
           cd terraform
-          tfsec . --format sarif --out ../tfsec-results.sarif --minimum-severity MEDIUM --force-all-dirs || true
+          # Run tfsec and allow exit code 1 (findings) but fail on other errors
+          set +e
+          tfsec . --format sarif --out ../tfsec-results.sarif --minimum-severity MEDIUM --force-all-dirs
+          tfsec_exit_code=$?
+          set -e
+          if [ "$tfsec_exit_code" -ne 0 ] && [ "$tfsec_exit_code" -ne 1 ]; then
+            echo "Error: tfsec failed with exit code $tfsec_exit_code"
+            exit "$tfsec_exit_code"
+          fi
 
       - name: Verify SARIF file exists
         id: verify_sarif
