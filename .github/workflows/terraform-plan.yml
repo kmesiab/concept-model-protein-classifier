@@ -60,8 +60,11 @@ jobs:
         run: |
           cd terraform
           set +e  # Don't exit on error
-          # Use -lock=false to avoid acquiring a remote state lock during plan
-          # This prevents contention with apply jobs; plan does not write state
+          # Use -lock=false to avoid acquiring a remote state lock during plan.
+          # Note: while plan itself does not write state, disabling locking means the
+          # plan can be generated from stale state if an apply operation is running
+          # concurrently and updating the same backend. The terraform-apply workflow
+          # uses a concurrency group to prevent overlapping executions, reducing this risk.
           terraform plan -detailed-exitcode -lock=false -no-color -var="aws_account_id=${{ vars.AWS_ACCOUNT_ID || '000000000000' }}" -out=tfplan.out
           PLAN_EXIT_CODE=$?
           set -e  # Re-enable exit on error
