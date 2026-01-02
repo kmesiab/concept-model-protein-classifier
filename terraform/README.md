@@ -223,6 +223,18 @@ Or update `variables.tf` and reapply.
 
 The infrastructure implements several **FinOps best practices** for cost optimization:
 
+### ARM64/Graviton Architecture
+
+ECS tasks run on **AWS Graviton (ARM64)** processors for maximum cost efficiency:
+
+- **CPU Architecture**: ARM64 instead of x86_64
+- **Cost Savings**: ~20% reduction on ECS compute costs
+- **Performance**: Better price/performance ratio with Graviton processors
+- **Sustainability**: ARM-based instances are more energy-efficient
+- **Implementation**: Multi-architecture Docker images (linux/amd64, linux/arm64) built automatically
+
+The task definition specifies `runtime_platform.cpu_architecture = ARM64` to leverage Graviton processors.
+
 ### S3 Lifecycle Policies
 
 The ALB logs S3 bucket includes three lifecycle policies:
