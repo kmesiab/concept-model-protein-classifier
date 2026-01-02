@@ -97,12 +97,12 @@ jobs:
 
           REPORT=trivy-terraform.json
           if [ -f "$REPORT" ]; then
-            TOTAL=$(jq -r '[.Results[]?.Misconfigurations // [] | .[]] | length' "$REPORT")
+            TOTAL=$(jq -r '(.Results // []) | map(.Misconfigurations // []) | flatten | length' "$REPORT")
             # Count findings by severity level
-            CRITICAL=$(jq -r '[.Results[]?.Misconfigurations // [] | .[] | select(.Severity=="CRITICAL")] | length' "$REPORT")
-            HIGH=$(jq -r '[.Results[]?.Misconfigurations // [] | .[] | select(.Severity=="HIGH")] | length' "$REPORT")
-            MEDIUM=$(jq -r '[.Results[]?.Misconfigurations // [] | .[] | select(.Severity=="MEDIUM")] | length' "$REPORT")
-            LOW=$(jq -r '[.Results[]?.Misconfigurations // [] | .[] | select(.Severity=="LOW")] | length' "$REPORT")
+            CRITICAL=$(jq -r '(.Results // []) | map(.Misconfigurations // []) | flatten | map(select(.Severity=="CRITICAL")) | length' "$REPORT")
+            HIGH=$(jq -r '(.Results // []) | map(.Misconfigurations // []) | flatten | map(select(.Severity=="HIGH")) | length' "$REPORT")
+            MEDIUM=$(jq -r '(.Results // []) | map(.Misconfigurations // []) | flatten | map(select(.Severity=="MEDIUM")) | length' "$REPORT")
+            LOW=$(jq -r '(.Results // []) | map(.Misconfigurations // []) | flatten | map(select(.Severity=="LOW")) | length' "$REPORT")
 
             echo "- Findings: $TOTAL" >> $GITHUB_STEP_SUMMARY
             echo "  - CRITICAL: $CRITICAL" >> $GITHUB_STEP_SUMMARY
@@ -146,20 +146,13 @@ jobs:
               exit 1
             fi
           else
-            # Fallback to step conclusion if report wasn't generated
-            if [ "${{ steps.trivy.conclusion }}" = "success" ]; then
-              echo "✅ No security issues found (no report file)"
-              echo "✅ Gate 2 (Trivy) PASSED"
-              echo "✅ No security issues found (no report file)" >> $GITHUB_STEP_SUMMARY
-              echo "✅ Gate 2 (Trivy) PASSED" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "❌ Trivy step reported failure (no report file)"
-              echo "❌ Gate 2 (Trivy) FAILED"
-              echo "" >> $GITHUB_STEP_SUMMARY
-              echo "❌ Trivy step reported failure (no report file)" >> $GITHUB_STEP_SUMMARY
-              echo "❌ Gate 2 (Trivy) FAILED" >> $GITHUB_STEP_SUMMARY
-              exit 1
-            fi
+            # Report file is missing - this is an error condition
+            echo "❌ Trivy report file not found"
+            echo "❌ Gate 2 (Trivy) FAILED"
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "❌ Trivy report file not found - cannot verify security posture" >> $GITHUB_STEP_SUMMARY
+            echo "❌ Gate 2 (Trivy) FAILED" >> $GITHUB_STEP_SUMMARY
+            exit 1
           fi
 
       # Gate 3: Cost Estimation
