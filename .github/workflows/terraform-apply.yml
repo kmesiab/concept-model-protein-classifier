@@ -94,7 +94,7 @@ jobs:
           echo "### 🔒 Gate 2: tfsec Security Scan Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          if [ "${{ steps.tfsec.outcome }}" == "success" ]; then
+          if [ "${{ steps.tfsec.conclusion }}" == "success" ]; then
             echo "✅ No security issues found" >> $GITHUB_STEP_SUMMARY
             echo "✅ Gate 2 (tfsec) PASSED"
           else
