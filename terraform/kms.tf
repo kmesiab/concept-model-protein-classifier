@@ -125,3 +125,56 @@ resource "aws_kms_key_policy" "cloudwatch_logs" {
     ]
   })
 }
+
+# KMS Key for DynamoDB Encryption
+resource "aws_kms_key" "dynamodb" {
+  description             = "KMS key for DynamoDB table encryption"
+  deletion_window_in_days = 10
+  enable_key_rotation     = true
+
+  tags = {
+    Name = "dynamodb-encryption-key"
+  }
+}
+
+# KMS Key Alias for easier identification
+resource "aws_kms_alias" "dynamodb" {
+  name          = "alias/dynamodb-encryption"
+  target_key_id = aws_kms_key.dynamodb.key_id
+}
+
+# KMS Key Policy to allow DynamoDB to use the key
+resource "aws_kms_key_policy" "dynamodb" {
+  key_id = aws_kms_key.dynamodb.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "Enable IAM User Permissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${var.aws_account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "Allow DynamoDB to use the key"
+        Effect = "Allow"
+        Principal = {
+          Service = "dynamodb.amazonaws.com"
+        }
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:CreateGrant",
+          "kms:DescribeKey"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
