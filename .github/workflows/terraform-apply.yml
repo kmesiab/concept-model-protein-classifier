@@ -69,26 +69,11 @@ jobs:
           echo "✅ Gate 1 (TFLint) PASSED"
 
       # Gate 2: tfsec Security Scan
-      - name: Setup tfsec
+      - name: Gate 2 - tfsec Security Scan
         uses: aquasecurity/tfsec-action@v1.0.3
         with:
-          setup-only: true
-
-      - name: Gate 2 - tfsec Security Scan
-        run: |
-          cd terraform
-          echo "🔐 Running tfsec security scan..."
-          # Disable immediate exit so we can capture tfsec's exit code explicitly
-          set +e
-          tfsec . --format default --minimum-severity MEDIUM --force-all-dirs
-          TFSEC_EXIT_CODE=$?
-          # Re-enable immediate exit for subsequent commands
-          set -e
-          if [ $TFSEC_EXIT_CODE -ne 0 ]; then
-            echo "❌ Gate 2 (tfsec) FAILED - Security issues detected"
-            exit 1
-          fi
-          echo "✅ Gate 2 (tfsec) PASSED - No security issues found"
+          working_directory: terraform
+          additional_args: --minimum-severity MEDIUM --force-all-dirs
 
       # Gate 3: Cost Estimation
       - name: Setup Infracost
