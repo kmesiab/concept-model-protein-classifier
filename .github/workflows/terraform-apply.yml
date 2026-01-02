@@ -95,7 +95,7 @@ jobs:
           echo "### 🔒 Gate 2: tfsec Security Scan Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          REPORT=terraform/tfsec.json
+          REPORT=tfsec.json
           if [ -f "$REPORT" ]; then
             TOTAL=$(jq -r '.results // [] | length' "$REPORT")
             # Count findings by severity level
