@@ -131,36 +131,21 @@ resource "aws_kms_key" "dynamodb" {
   description             = "KMS key for DynamoDB table encryption"
   deletion_window_in_days = 10
   enable_key_rotation     = true
-  
+
   tags = {
     Name = "dynamodb-encryption-key"
   }
 }
 
-# KMS Key for ECR Repository Encryption
-resource "aws_kms_key" "ecr" {
-  description             = "KMS key for ECR repository encryption"
-  deletion_window_in_days = 10
-  enable_key_rotation     = true
-
-  tags = {
-    Name = "ecr-encryption-key"
-  }
+# KMS Key Alias for DynamoDB encryption
+resource "aws_kms_alias" "dynamodb" {
+  name          = "alias/dynamodb-encryption"
+  target_key_id = aws_kms_key.dynamodb.key_id
 }
 
-# KMS Key Policy to allow DynamoDB to use the key
+# KMS Key Policy for DynamoDB encryption
 resource "aws_kms_key_policy" "dynamodb" {
   key_id = aws_kms_key.dynamodb.id
-}
-
-resource "aws_kms_alias" "ecr" {
-  name          = "alias/ecr-encryption"
-  target_key_id = aws_kms_key.ecr.key_id
-}
-
-# KMS Key Policy to allow ECR to use the key
-resource "aws_kms_key_policy" "ecr" {
-  key_id = aws_kms_key.ecr.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -179,10 +164,6 @@ resource "aws_kms_key_policy" "ecr" {
         Effect = "Allow"
         Principal = {
           Service = "dynamodb.amazonaws.com"
-        Sid    = "Allow ECR to use the key"
-        Effect = "Allow"
-        Principal = {
-          Service = "ecr.amazonaws.com"
         }
         Action = [
           "kms:Encrypt",
@@ -199,6 +180,63 @@ resource "aws_kms_key_policy" "ecr" {
           }
           StringLike = {
             "kms:EncryptionContext:aws:dynamodb:table-name" = "protein-classifier-*"
+          }
+        }
+      }
+    ]
+  })
+}
+
+# KMS Key for ECR Repository Encryption
+resource "aws_kms_key" "ecr" {
+  description             = "KMS key for ECR repository encryption"
+  deletion_window_in_days = 10
+  enable_key_rotation     = true
+
+  tags = {
+    Name = "ecr-encryption-key"
+  }
+}
+
+# KMS Key Alias for ECR encryption
+resource "aws_kms_alias" "ecr" {
+  name          = "alias/ecr-encryption"
+  target_key_id = aws_kms_key.ecr.key_id
+}
+
+# KMS Key Policy for ECR encryption
+resource "aws_kms_key_policy" "ecr" {
+  key_id = aws_kms_key.ecr.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "Enable IAM User Permissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${var.aws_account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "Allow ECR to use the key"
+        Effect = "Allow"
+        Principal = {
+          Service = "ecr.amazonaws.com"
+        }
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:CreateGrant",
+          "kms:DescribeKey"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
             "kms:EncryptionContext:aws:ecr:repositoryArn" = "arn:aws:ecr:${var.aws_region}:${var.aws_account_id}:repository/protein-classifier-api"
           }
         }
