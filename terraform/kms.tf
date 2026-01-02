@@ -148,15 +148,11 @@ resource "aws_kms_key" "ecr" {
   }
 }
 
-# KMS Key Alias for easier identification
-resource "aws_kms_alias" "dynamodb" {
-  name          = "alias/dynamodb-encryption"
-  target_key_id = aws_kms_key.dynamodb.key_id
-}
-
 # KMS Key Policy to allow DynamoDB to use the key
 resource "aws_kms_key_policy" "dynamodb" {
   key_id = aws_kms_key.dynamodb.id
+}
+
 resource "aws_kms_alias" "ecr" {
   name          = "alias/ecr-encryption"
   target_key_id = aws_kms_key.ecr.key_id
