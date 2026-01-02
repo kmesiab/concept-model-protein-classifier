@@ -275,58 +275,6 @@ resource "aws_security_group_rule" "ecs_egress_dns_tcp" {
   security_group_id = aws_security_group.ecs_tasks.id
 }
 
-# KMS key for CloudWatch log encryption
-resource "aws_kms_key" "cloudwatch_logs" {
-  description             = "KMS key for CloudWatch log group encryption"
-  deletion_window_in_days = 10
-  enable_key_rotation     = true
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "Enable IAM User Permissions"
-        Effect = "Allow"
-        Principal = {
-          AWS = "arn:aws:iam::${var.aws_account_id}:root"
-        }
-        Action   = "kms:*"
-        Resource = "*"
-      },
-      {
-        Sid    = "Allow CloudWatch Logs to use the key"
-        Effect = "Allow"
-        Principal = {
-          Service = "logs.${var.aws_region}.amazonaws.com"
-        }
-        Action = [
-          "kms:Encrypt",
-          "kms:Decrypt",
-          "kms:ReEncrypt*",
-          "kms:GenerateDataKey*",
-          "kms:CreateGrant",
-          "kms:DescribeKey"
-        ]
-        Resource = "*"
-        Condition = {
-          ArnLike = {
-            "kms:EncryptionContext:aws:logs:arn" = "arn:aws:logs:${var.aws_region}:${var.aws_account_id}:log-group:*"
-          }
-        }
-      }
-    ]
-  })
-
-  tags = {
-    Name = "cloudwatch-logs-key"
-  }
-}
-
-resource "aws_kms_alias" "cloudwatch_logs_alias" {
-  name          = "alias/cloudwatch-logs"
-  target_key_id = aws_kms_key.cloudwatch_logs.key_id
-}
-
 # CloudWatch Log Group for VPC Flow Logs
 resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
   name              = "/aws/vpc/protein-classifier-flow-logs"
