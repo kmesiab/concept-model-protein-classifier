@@ -69,46 +69,46 @@ jobs:
           tflint --format compact --minimum-failure-severity=error
           echo "✅ Gate 1 (TFLint) PASSED"
 
-      # Gate 2: tfsec Security Scan
-      - name: Gate 2 - tfsec Security Scan
-        uses: aquasecurity/tfsec-action@v1.0.3
+      # Gate 2: Trivy Security Scan
+      - name: Gate 2 - Trivy Security Scan
+        id: trivy
+        uses: aquasecurity/trivy-action@0.33.1
         with:
-          working_directory: terraform
-          additional_args: --minimum-severity MEDIUM --force-all-dirs
+          scan-type: 'config'
+          scan-ref: 'terraform'
+          format: 'table'
+          exit-code: '1'
+          severity: 'MEDIUM,HIGH,CRITICAL'
 
-      - name: Run tfsec with SARIF output
-        id: tfsec_sarif
+      - name: Run Trivy with SARIF output
+        id: trivy_sarif
         if: always()  # Run even if previous step fails
-        run: |
-          cd terraform
-          # Run tfsec and allow exit code 1 (findings) but fail on other errors
-          set +e
-          tfsec . --format sarif --out ../tfsec-results.sarif --minimum-severity MEDIUM --force-all-dirs
-          tfsec_exit_code=$?
-          set -e
-          if [ "$tfsec_exit_code" -ne 0 ] && [ "$tfsec_exit_code" -ne 1 ]; then
-            echo "Error: tfsec failed with exit code $tfsec_exit_code"
-            exit "$tfsec_exit_code"
-          fi
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: 'config'
+          scan-ref: 'terraform'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'MEDIUM,HIGH,CRITICAL'
 
       - name: Verify SARIF file exists
         id: verify_sarif
         if: always()
         run: |
-          if [ -f "tfsec-results.sarif" ]; then
+          if [ -f "trivy-results.sarif" ]; then
             echo "sarif_exists=true" >> $GITHUB_OUTPUT
             echo "✅ SARIF file created successfully"
           else
             echo "sarif_exists=false" >> $GITHUB_OUTPUT
-            echo "⚠️ WARNING: SARIF file not found at tfsec-results.sarif"
+            echo "⚠️ WARNING: SARIF file not found at trivy-results.sarif"
           fi
 
       - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@v4
         if: always() && steps.verify_sarif.outputs.sarif_exists == 'true'
         with:
-          sarif_file: tfsec-results.sarif
-          category: tfsec-terraform-apply
+          sarif_file: trivy-results.sarif
+          category: trivy-terraform-apply
 
       # Gate 3: Cost Estimation
       - name: Setup Infracost
