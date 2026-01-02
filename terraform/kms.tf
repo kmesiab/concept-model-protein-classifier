@@ -1,3 +1,59 @@
+# KMS Key for ALB Logs S3 Bucket Encryption
+resource "aws_kms_key" "alb_logs_s3" {
+  description             = "KMS key for ALB logs S3 bucket encryption"
+  deletion_window_in_days = 10
+  enable_key_rotation     = true
+
+  tags = {
+    Name = "alb-logs-s3-encryption-key"
+  }
+}
+
+# KMS Key Alias for easier identification
+resource "aws_kms_alias" "alb_logs_s3" {
+  name          = "alias/alb-logs-s3-encryption"
+  target_key_id = aws_kms_key.alb_logs_s3.key_id
+}
+
+# KMS Key Policy to allow ELB service to encrypt ALB logs in S3
+resource "aws_kms_key_policy" "alb_logs_s3" {
+  key_id = aws_kms_key.alb_logs_s3.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "Enable IAM User Permissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${var.aws_account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowELBToUseTheKeyForALBLogs"
+        Effect = "Allow"
+        Principal = {
+          Service = "elasticloadbalancing.amazonaws.com"
+        }
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "kms:EncryptionContext:aws:s3:arn" = "arn:aws:s3:::protein-classifier-alb-logs-${var.aws_account_id}/*"
+          }
+        }
+      }
+    ]
+  })
+}
+
 # KMS Key for CloudWatch Logs Encryption
 resource "aws_kms_key" "cloudwatch_logs" {
   description             = "KMS key for CloudWatch log group encryption"
