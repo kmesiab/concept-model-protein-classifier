@@ -86,26 +86,52 @@ jobs:
         with:
           working_directory: terraform
           soft_fail: true
-          format: default
+          format: json
+          additional_args: --out tfsec.json
 
       - name: Gate 2 Status
         if: always()
         run: |
           echo "### 🔒 Gate 2: tfsec Security Scan Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
-          if [ "${{ steps.tfsec.conclusion }}" == "success" ]; then
-            echo "✅ No security issues found" >> $GITHUB_STEP_SUMMARY
-            echo "✅ Gate 2 (tfsec) PASSED"
+          echo "You can read more here: https://github.com/aquasecurity/tfsec/discussions/1994" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          REPORT=terraform/tfsec.json
+          if [ -f "$REPORT" ]; then
+            TOTAL=$(jq -r '.results | length' "$REPORT")
+            # Initialize severity counters to 0
+            CRITICAL=$(jq -r '[.results[]? | select(.severity=="CRITICAL")] | length' "$REPORT")
+            HIGH=$(jq -r '[.results[]? | select(.severity=="HIGH")] | length' "$REPORT")
+            MEDIUM=$(jq -r '[.results[]? | select(.severity=="MEDIUM")] | length' "$REPORT")
+            LOW=$(jq -r '[.results[]? | select(.severity=="LOW")] | length' "$REPORT")
+
+            echo "- Findings: $TOTAL" >> $GITHUB_STEP_SUMMARY
+            echo "  - CRITICAL: $CRITICAL" >> $GITHUB_STEP_SUMMARY
+            echo "  - HIGH:     $HIGH" >> $GITHUB_STEP_SUMMARY
+            echo "  - MEDIUM:   $MEDIUM" >> $GITHUB_STEP_SUMMARY
+            echo "  - LOW:      $LOW" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            if [ "$TOTAL" -gt 0 ]; then
+              echo "❌ Security issues detected" >> $GITHUB_STEP_SUMMARY
+              echo "**Security findings must be addressed before applying infrastructure changes.**" >> $GITHUB_STEP_SUMMARY
+              echo "❌ Gate 2 (tfsec) FAILED" >> $GITHUB_STEP_SUMMARY
+              exit 1
+            else
+              echo "✅ No security issues found" >> $GITHUB_STEP_SUMMARY
+              echo "✅ Gate 2 (tfsec) PASSED" >> $GITHUB_STEP_SUMMARY
+            fi
           else
-            echo "❌ Security issues detected" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Security findings must be addressed before applying infrastructure changes.**" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Please review the tfsec scan output above for details on the security issues found." >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "❌ Gate 2 (tfsec) FAILED"
-            exit 1
+            # Fallback to step conclusion if report wasn't generated
+            if [ "${{ steps.tfsec.conclusion }}" = "success" ]; then
+              echo "✅ No security issues found (no report file)" >> $GITHUB_STEP_SUMMARY
+              echo "✅ Gate 2 (tfsec) PASSED" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ tfsec step reported failure (no report file)" >> $GITHUB_STEP_SUMMARY
+              echo "❌ Gate 2 (tfsec) FAILED" >> $GITHUB_STEP_SUMMARY
+              exit 1
+            fi
           fi
 
       # Gate 3: Cost Estimation
