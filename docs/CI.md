@@ -423,8 +423,10 @@ Re-runs all validation gates before apply:
 7. **Gate 1 - TFLint Validation** - `tflint --format compact --minimum-failure-severity=error`
 8. **Gate 2 - tfsec Security Scan** - `aquasecurity/tfsec-action@v1.0.3`
    - Working directory: `terraform`
-   - Soft fail: false (hard fail on issues)
-9. **Gate 2 Status** - Confirms tfsec pass
+   - Captures scan outcome for validation
+9. **Gate 2 Status** - Validates tfsec results and fails on security issues
+   - Displays findings in GitHub step summary
+   - Exits with error if security issues detected
 10. **Setup Infracost** - For cost validation
 11. **Gate 3 - Cost Estimation** - Validates cost under $125/month
     - Extracts `totalMonthlyCost` from Infracost JSON
