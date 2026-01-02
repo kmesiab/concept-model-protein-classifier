@@ -2,6 +2,7 @@
 resource "aws_cloudwatch_log_group" "ecs_logs" {
   name              = "/ecs/protein-classifier-api"
   retention_in_days = 7
+  kms_key_id        = aws_kms_key.cloudwatch_logs.arn
 
   tags = {
     Name = "protein-classifier-ecs-logs"
