@@ -49,6 +49,20 @@ resource "aws_kms_key_policy" "alb_logs_s3" {
             "kms:EncryptionContext:aws:s3:arn" = "arn:aws:s3:::protein-classifier-alb-logs-${var.aws_account_id}/*"
           }
         }
+      },
+      {
+        Sid    = "AllowS3ToUseTheKeyForAccessLogs"
+        Effect = "Allow"
+        Principal = {
+          Service = "s3.amazonaws.com"
+        }
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey"
+        ]
+        Resource = "*"
       }
     ]
   })
