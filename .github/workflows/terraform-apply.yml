@@ -78,31 +78,31 @@ jobs:
           tflint --format compact --minimum-failure-severity=error
           echo "✅ Gate 1 (TFLint) PASSED"
 
-      # Gate 2: tfsec Security Scan
-      - name: Gate 2 - tfsec Security Scan
-        id: tfsec
-        uses: aquasecurity/tfsec-action@v1.0.3
-        continue-on-error: true
+      # Gate 2: Trivy Terraform Security Scan
+      - name: Gate 2 - Trivy Terraform Scan
+        id: trivy
+        uses: aquasecurity/trivy-action@0.28.0
         with:
-          working_directory: terraform
-          soft_fail: true
-          format: json
-          additional_args: --out tfsec.json
+          scan-type: 'config'
+          scan-ref: 'terraform'
+          format: 'json'
+          output: 'trivy-terraform.json'
+          exit-code: '0'  # Don't fail the action itself, we'll parse results
 
       - name: Gate 2 Status
         if: always()
         run: |
-          echo "### 🔒 Gate 2: tfsec Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔒 Gate 2: Trivy Terraform Security Scan Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          REPORT=terraform/tfsec.json
+          REPORT=trivy-terraform.json
           if [ -f "$REPORT" ]; then
-            TOTAL=$(jq -r '.results // [] | length' "$REPORT")
+            TOTAL=$(jq -r '[.Results[]?.Misconfigurations // [] | .[]] | length' "$REPORT")
             # Count findings by severity level
-            CRITICAL=$(jq -r '[(.results // [])[] | select(.severity=="CRITICAL")] | length' "$REPORT")
-            HIGH=$(jq -r '[(.results // [])[] | select(.severity=="HIGH")] | length' "$REPORT")
-            MEDIUM=$(jq -r '[(.results // [])[] | select(.severity=="MEDIUM")] | length' "$REPORT")
-            LOW=$(jq -r '[(.results // [])[] | select(.severity=="LOW")] | length' "$REPORT")
+            CRITICAL=$(jq -r '[.Results[]?.Misconfigurations // [] | .[] | select(.Severity=="CRITICAL")] | length' "$REPORT")
+            HIGH=$(jq -r '[.Results[]?.Misconfigurations // [] | .[] | select(.Severity=="HIGH")] | length' "$REPORT")
+            MEDIUM=$(jq -r '[.Results[]?.Misconfigurations // [] | .[] | select(.Severity=="MEDIUM")] | length' "$REPORT")
+            LOW=$(jq -r '[.Results[]?.Misconfigurations // [] | .[] | select(.Severity=="LOW")] | length' "$REPORT")
 
             echo "- Findings: $TOTAL" >> $GITHUB_STEP_SUMMARY
             echo "  - CRITICAL: $CRITICAL" >> $GITHUB_STEP_SUMMARY
@@ -110,45 +110,54 @@ jobs:
             echo "  - MEDIUM:   $MEDIUM" >> $GITHUB_STEP_SUMMARY
             echo "  - LOW:      $LOW" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Note: tfsec is being migrated to Trivy. You can read more here: https://github.com/aquasecurity/tfsec/discussions/1994" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
 
             # Validate TOTAL is a number before comparison
             if [[ "$TOTAL" =~ ^[0-9]+$ ]]; then
               if [ "$TOTAL" -gt 0 ]; then
                 echo "❌ Security issues detected"
                 echo "**Security findings must be addressed before applying infrastructure changes.**"
-                echo "❌ Gate 2 (tfsec) FAILED"
+                echo ""
+                echo "Security findings breakdown:"
+                echo "  - CRITICAL: $CRITICAL"
+                echo "  - HIGH: $HIGH"
+                echo "  - MEDIUM: $MEDIUM"
+                echo "  - LOW: $LOW"
+                echo ""
+                echo "Running Trivy with detailed output:"
+                echo ""
+                docker run --rm -v "$PWD:/src" aquasec/trivy:latest config /src/terraform
+                echo ""
+                echo "❌ Gate 2 (Trivy) FAILED"
                 echo "❌ Security issues detected" >> $GITHUB_STEP_SUMMARY
                 echo "**Security findings must be addressed before applying infrastructure changes.**" >> $GITHUB_STEP_SUMMARY
-                echo "❌ Gate 2 (tfsec) FAILED" >> $GITHUB_STEP_SUMMARY
+                echo "❌ Gate 2 (Trivy) FAILED" >> $GITHUB_STEP_SUMMARY
                 exit 1
               else
                 echo "✅ No security issues found"
-                echo "✅ Gate 2 (tfsec) PASSED"
+                echo "✅ Gate 2 (Trivy) PASSED"
                 echo "✅ No security issues found" >> $GITHUB_STEP_SUMMARY
-                echo "✅ Gate 2 (tfsec) PASSED" >> $GITHUB_STEP_SUMMARY
+                echo "✅ Gate 2 (Trivy) PASSED" >> $GITHUB_STEP_SUMMARY
               fi
             else
-              echo "⚠️ Unable to parse tfsec findings count from report (TOTAL=\"$TOTAL\")."
-              echo "❌ Gate 2 (tfsec) FAILED"
-              echo "⚠️ Unable to parse tfsec findings count from report (TOTAL=\"$TOTAL\")." >> $GITHUB_STEP_SUMMARY
-              echo "❌ Gate 2 (tfsec) FAILED" >> $GITHUB_STEP_SUMMARY
+              echo "⚠️ Unable to parse Trivy findings count from report (TOTAL=\"$TOTAL\")."
+              echo "❌ Gate 2 (Trivy) FAILED"
+              echo "⚠️ Unable to parse Trivy findings count from report (TOTAL=\"$TOTAL\")." >> $GITHUB_STEP_SUMMARY
+              echo "❌ Gate 2 (Trivy) FAILED" >> $GITHUB_STEP_SUMMARY
               exit 1
             fi
           else
             # Fallback to step conclusion if report wasn't generated
-            if [ "${{ steps.tfsec.conclusion }}" = "success" ]; then
+            if [ "${{ steps.trivy.conclusion }}" = "success" ]; then
               echo "✅ No security issues found (no report file)"
-              echo "✅ Gate 2 (tfsec) PASSED"
+              echo "✅ Gate 2 (Trivy) PASSED"
               echo "✅ No security issues found (no report file)" >> $GITHUB_STEP_SUMMARY
-              echo "✅ Gate 2 (tfsec) PASSED" >> $GITHUB_STEP_SUMMARY
+              echo "✅ Gate 2 (Trivy) PASSED" >> $GITHUB_STEP_SUMMARY
             else
-              echo "❌ tfsec step reported failure (no report file)"
-              echo "❌ Gate 2 (tfsec) FAILED"
+              echo "❌ Trivy step reported failure (no report file)"
+              echo "❌ Gate 2 (Trivy) FAILED"
               echo "" >> $GITHUB_STEP_SUMMARY
-              echo "❌ tfsec step reported failure (no report file)" >> $GITHUB_STEP_SUMMARY
-              echo "❌ Gate 2 (tfsec) FAILED" >> $GITHUB_STEP_SUMMARY
+              echo "❌ Trivy step reported failure (no report file)" >> $GITHUB_STEP_SUMMARY
+              echo "❌ Gate 2 (Trivy) FAILED" >> $GITHUB_STEP_SUMMARY
               exit 1
             fi
           fi
