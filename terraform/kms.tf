@@ -192,6 +192,11 @@ resource "aws_kms_key_policy" "dynamodb" {
         }
       },
       {
+        # GitHub Actions principal statement intentionally omits encryption context condition.
+        # IAM principals accessing DynamoDB directly for state locking don't provide the same
+        # encryption context that DynamoDB service operations use. The encryption context
+        # condition on the service principal above ensures server-side encryption, while
+        # this statement allows GitHub Actions client-side access to the encrypted table.
         Sid    = "AllowGitHubActionsToUseDynamoDBKey"
         Effect = "Allow"
         Principal = {
