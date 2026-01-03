@@ -261,6 +261,48 @@ VPC Flow Logs are configured with a 7-day retention period to balance security m
 
 ## Troubleshooting
 
+### DynamoDB Table Already Exists Error
+
+If you encounter this error during `terraform apply`:
+
+```text
+Error: creating AWS DynamoDB Table (protein-classifier-terraform-locks): 
+operation error DynamoDB: CreateTable, https response error StatusCode: 400, 
+ResourceInUseException: Table already exists: protein-classifier-terraform-locks
+```
+
+This means the DynamoDB table was manually created outside of Terraform management. To fix:
+
+**Option 1: Import the Existing Table (Preferred)**
+
+Use the provided import script:
+
+```bash
+cd terraform
+./import-dynamodb-table.sh
+```
+
+Or manually import:
+
+```bash
+cd terraform
+terraform init  # Ensure Terraform is initialized first
+terraform import aws_dynamodb_table.terraform_locks protein-classifier-terraform-locks
+```
+
+After import, verify with:
+
+```bash
+terraform plan  # Should show no changes for DynamoDB table
+```
+
+**Option 2: Delete and Recreate (Alternative)**
+
+⚠️ **Warning**: Only use this option if you're sure no other Terraform operations are running.
+
+1. Delete the manually created table in AWS Console
+2. Run `terraform apply` to let Terraform create it
+
 ### Check ECS Service Status
 
 ```bash
