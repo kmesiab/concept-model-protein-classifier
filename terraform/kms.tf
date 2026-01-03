@@ -44,11 +44,6 @@ resource "aws_kms_key_policy" "alb_logs_s3" {
           "kms:DescribeKey"
         ]
         Resource = "*"
-        Condition = {
-          StringEquals = {
-            "kms:EncryptionContext:aws:s3:arn" = "arn:aws:s3:::protein-classifier-alb-logs-${var.aws_account_id}/*"
-          }
-        }
       },
       {
         Sid    = "AllowS3ToUseTheKeyForAccessLogs"
@@ -61,6 +56,19 @@ resource "aws_kms_key_policy" "alb_logs_s3" {
           "kms:Decrypt",
           "kms:GenerateDataKey*",
           "kms:DescribeKey"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowGitHubActionsToManageKey"
+        Effect = "Allow"
+        Principal = {
+          AWS = aws_iam_role.github_actions.arn
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey",
+          "kms:GenerateDataKey"
         ]
         Resource = "*"
       }
@@ -182,6 +190,19 @@ resource "aws_kms_key_policy" "dynamodb" {
             "kms:EncryptionContext:aws:dynamodb:table-name" = "protein-classifier-*"
           }
         }
+      },
+      {
+        Sid    = "AllowGitHubActionsToUseDynamoDBKey"
+        Effect = "Allow"
+        Principal = {
+          AWS = aws_iam_role.github_actions.arn
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey",
+          "kms:GenerateDataKey"
+        ]
+        Resource = "*"
       }
     ]
   })
