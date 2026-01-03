@@ -35,7 +35,10 @@ echo "🔄 Importing DynamoDB table: protein-classifier-terraform-locks"
 echo ""
 
 # Attempt to import the DynamoDB table
-if terraform import aws_dynamodb_table.terraform_locks protein-classifier-terraform-locks; then
+terraform import aws_dynamodb_table.terraform_locks protein-classifier-terraform-locks
+import_exit_code=$?
+
+if [ $import_exit_code -eq 0 ]; then
   echo ""
   echo "✅ SUCCESS: DynamoDB table imported into Terraform state"
   echo ""
@@ -46,9 +49,8 @@ if terraform import aws_dynamodb_table.terraform_locks protein-classifier-terraf
   echo "  3. Reconfigure backend: terraform init -reconfigure"
   echo ""
 else
-  exit_code=$?
   echo ""
-  echo "❌ FAILED: Import failed with exit code $exit_code"
+  echo "❌ FAILED: Import failed with exit code $import_exit_code"
   echo ""
   echo "Possible reasons:"
   echo "  • The table is already in Terraform state (check: terraform state list)"
@@ -59,5 +61,5 @@ else
   echo "To check if already imported:"
   echo "  terraform state list | grep terraform_locks"
   echo ""
-  exit $exit_code
+  exit $import_exit_code
 fi

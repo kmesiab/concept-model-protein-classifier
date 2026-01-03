@@ -286,6 +286,7 @@ Or manually import:
 
 ```bash
 cd terraform
+terraform init  # Ensure Terraform is initialized first
 terraform import aws_dynamodb_table.terraform_locks protein-classifier-terraform-locks
 ```
 
