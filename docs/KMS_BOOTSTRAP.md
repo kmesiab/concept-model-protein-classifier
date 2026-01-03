@@ -32,6 +32,9 @@ This is the **easiest and safest** approach. A one-time GitHub Actions workflow 
 
 - Access to GitHub Actions in this repository
 - AWS role with permission to modify KMS key policies (e.g., `github-actions-terraform-admin`)
+  - **Note:** The workflow uses `github-actions-terraform-admin` role by default
+  - If this role doesn't exist, you'll need to use Option 2, 3, 4, or 5 with appropriate credentials
+  - Or create the admin role with `kms:PutKeyPolicy` permission
 
 **Steps:**
 
