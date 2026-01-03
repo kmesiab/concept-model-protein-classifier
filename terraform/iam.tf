@@ -144,6 +144,7 @@ resource "aws_iam_role_policy" "github_actions_policy" {
         Action = [
           "kms:Decrypt",
           "kms:Encrypt",
+          "kms:Encrypt",
           "kms:DescribeKey",
           "kms:GenerateDataKey"
         ]
