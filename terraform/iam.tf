@@ -103,7 +103,6 @@ resource "aws_iam_role_policy" "github_actions_policy" {
           "logs:DescribeLogStreams"
         ]
         Resource = "${aws_cloudwatch_log_group.ecs_logs.arn}:*"
-      }
       },
       {
         Sid    = "KMSKeyManagement"
@@ -123,12 +122,14 @@ resource "aws_iam_role_policy" "github_actions_policy" {
           "kms:UpdateAlias",
           "kms:ListAliases"
         ]
-        Resource = "*"
+        Resource = [
+          "arn:aws:kms:${var.aws_region}:${var.aws_account_id}:key/*",
+          "arn:aws:kms:${var.aws_region}:${var.aws_account_id}:alias/*"
+        ]
       }
     ]
   })
 }
-
 # ECS Task Execution Role
 resource "aws_iam_role" "ecs_task_execution_role" {
   name = "protein-classifier-ecs-task-execution-role"
