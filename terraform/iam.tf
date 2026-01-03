@@ -139,6 +139,18 @@ resource "aws_iam_role_policy" "github_actions_policy" {
         Resource = aws_kms_key.dynamodb.arn
       },
       {
+        Sid    = "KMSALBLogsEncryption"
+        Effect = "Allow"
+        Action = [
+          "kms:Decrypt",
+          "kms:Encrypt",
+          "kms:Encrypt",
+          "kms:DescribeKey",
+          "kms:GenerateDataKey"
+        ]
+        Resource = aws_kms_key.alb_logs_s3.arn
+      },
+      {
         Sid    = "TerraformDynamoDBStateLocking"
         Effect = "Allow"
         Action = [
