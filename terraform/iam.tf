@@ -137,6 +137,16 @@ resource "aws_iam_role_policy" "github_actions_policy" {
           "kms:DescribeKey"
         ]
         Resource = aws_kms_key.dynamodb.arn
+      },
+      {
+        Sid    = "TerraformDynamoDBStateLocking"
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:DeleteItem"
+        ]
+        Resource = "arn:aws:dynamodb:${var.aws_region}:${var.aws_account_id}:table/terraform-locks"
       }
     ]
   })
