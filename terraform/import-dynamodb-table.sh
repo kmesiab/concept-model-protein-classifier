@@ -35,8 +35,11 @@ echo "🔄 Importing DynamoDB table: protein-classifier-terraform-locks"
 echo ""
 
 # Attempt to import the DynamoDB table
+# Temporarily disable exit-on-error to capture the exit code
+set +e
 terraform import aws_dynamodb_table.terraform_locks protein-classifier-terraform-locks
 import_exit_code=$?
+set -e
 
 if [ $import_exit_code -eq 0 ]; then
   echo ""
