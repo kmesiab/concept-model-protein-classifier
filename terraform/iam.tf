@@ -126,6 +126,27 @@ resource "aws_iam_role_policy" "github_actions_policy" {
           "arn:aws:kms:${var.aws_region}:${var.aws_account_id}:key/*",
           "arn:aws:kms:${var.aws_region}:${var.aws_account_id}:alias/*"
         ]
+      },
+      {
+        Sid    = "KMSDynamoDBEncryption"
+        Effect = "Allow"
+        Action = [
+          "kms:Decrypt",
+          "kms:Encrypt",
+          "kms:GenerateDataKey",
+          "kms:DescribeKey"
+        ]
+        Resource = aws_kms_key.dynamodb.arn
+      },
+      {
+        Sid    = "TerraformDynamoDBStateLocking"
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:DeleteItem"
+        ]
+        Resource = "arn:aws:dynamodb:${var.aws_region}:${var.aws_account_id}:table/terraform-locks"
       }
     ]
   })
