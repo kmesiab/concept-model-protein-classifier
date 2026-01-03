@@ -65,6 +65,28 @@ terraform/
 
 ## Deployment Instructions
 
+### ⚠️ KMS Permissions Bootstrap (One-Time Required)
+
+**IMPORTANT**: If you're experiencing KMS decrypt errors when running Terraform Apply, you need to run the bootstrap process first.
+
+**Error you might see:**
+
+```text
+KMS key access denied error:
+User: arn:aws:sts::462498369025:assumed-role/github-actions-terraform/GitHubActions
+is not authorized to perform: kms:Decrypt
+```
+
+**Solution:** See **[KMS Bootstrap Guide](../docs/KMS_BOOTSTRAP.md)** for detailed instructions.
+
+**Quick start:**
+
+1. Go to Actions → Bootstrap KMS Permissions workflow
+2. Run the workflow (type "bootstrap" to confirm)
+3. After success, run Terraform Apply
+
+This only needs to be done once to break the chicken-and-egg deadlock.
+
 ### Bootstrap Process (First-Time Setup)
 
 **Note**: There's a chicken-and-egg problem with the DynamoDB state lock table. The backend configuration references the DynamoDB table before it exists. Follow these steps for initial setup:
@@ -260,6 +282,21 @@ All resources include standardized tags for cost allocation:
 VPC Flow Logs are configured with a 7-day retention period to balance security monitoring with storage costs.
 
 ## Troubleshooting
+
+### KMS Decrypt Permission Error
+
+If you encounter this error when running Terraform:
+
+```text
+table "protein-classifier-terraform-locks": operation error DynamoDB: GetItem
+KMS key access denied error:
+User: arn:aws:sts::462498369025:assumed-role/github-actions-terraform/GitHubActions
+is not authorized to perform: kms:Decrypt
+```
+
+**Solution:** Run the KMS permissions bootstrap process. See **[KMS Bootstrap Guide](../docs/KMS_BOOTSTRAP.md)** for detailed instructions.
+
+This is a one-time operation that grants the GitHub Actions role permission to decrypt the DynamoDB state lock table.
 
 ### DynamoDB Table Already Exists Error
 

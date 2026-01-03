@@ -2,6 +2,22 @@
 
 This guide provides instructions for deploying the Protein Classifier API to AWS ECS Fargate using Terraform and GitHub Actions.
 
+## ⚠️ Important: KMS Permissions Bootstrap
+
+**Before deploying**, if you encounter KMS decrypt errors during Terraform Apply, you need to run the one-time bootstrap process:
+
+**Error you might see:**
+
+```text
+KMS key access denied error:
+User: arn:aws:sts::462498369025:assumed-role/github-actions-terraform/GitHubActions
+is not authorized to perform: kms:Decrypt
+```
+
+**Solution:** See **[KMS Bootstrap Guide](KMS_BOOTSTRAP.md)** for complete instructions.
+
+This only needs to be done once to grant the GitHub Actions role permission to access encrypted resources.
+
 ## Prerequisites
 
 ### Already Configured
