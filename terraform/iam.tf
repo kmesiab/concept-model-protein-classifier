@@ -122,7 +122,10 @@ resource "aws_iam_role_policy" "github_actions_policy" {
           "kms:UpdateAlias",
           "kms:ListAliases"
         ]
-        Resource = "*"
+        Resource = [
+          "arn:aws:kms:${var.aws_region}:${var.aws_account_id}:key/*",
+          "arn:aws:kms:${var.aws_region}:${var.aws_account_id}:alias/*"
+        ]
       }
     ]
   })
