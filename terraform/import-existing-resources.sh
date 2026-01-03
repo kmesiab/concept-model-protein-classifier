@@ -28,6 +28,14 @@ else
   echo "Target group not found or AWS CLI not configured"
 fi
 
+# Import Application Load Balancer
+echo "Importing ALB..."
+terraform import aws_lb.main arn:aws:elasticloadbalancing:us-west-2:462498369025:loadbalancer/app/protein-classifier-alb/c580c95b9504da26 || true
+
+# Import DynamoDB Table
+echo "Importing DynamoDB table..."
+terraform import aws_dynamodb_table.terraform_locks protein-classifier-terraform-locks || true
+
 # Import KMS Keys - these require the key ID
 echo "Importing KMS keys..."
 echo "Note: KMS keys need to be imported with their key ID. You'll need to find these manually:"
