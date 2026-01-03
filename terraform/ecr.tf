@@ -1,6 +1,7 @@
 resource "aws_ecr_repository" "api" {
   name                 = "protein-classifier-api"
   image_tag_mutability = "IMMUTABLE"
+  force_delete         = true  # Required for Terraform-managed repository replacement (e.g., KMS encryption changes); allows deletion even with images present, mitigated by lifecycle policy and rebuild-from-source workflows.
 
   image_scanning_configuration {
     scan_on_push = true
