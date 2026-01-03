@@ -8,7 +8,7 @@
 #   2. Run terraform init first (with dynamodb_table commented out in backend.tf if needed)
 #   3. Run this script: ./import-dynamodb-table.sh
 #   4. Uncomment dynamodb_table in backend.tf
-#   5. Run terraform init -reconfigure
+#   5. Run terraform init --reconfigure
 
 set -e
 
@@ -49,7 +49,7 @@ if [ $import_exit_code -eq 0 ]; then
   echo "  1. Verify the import: terraform plan"
   echo "     (Should show no changes for the DynamoDB table)"
   echo "  2. If backend.tf has dynamodb_table commented out, uncomment it"
-  echo "  3. Reconfigure backend: terraform init -reconfigure"
+  echo "  3. Reconfigure backend: terraform init --reconfigure"
   echo ""
 else
   echo ""
