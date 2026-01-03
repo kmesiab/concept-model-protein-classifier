@@ -126,6 +126,17 @@ resource "aws_iam_role_policy" "github_actions_policy" {
           "arn:aws:kms:${var.aws_region}:${var.aws_account_id}:key/*",
           "arn:aws:kms:${var.aws_region}:${var.aws_account_id}:alias/*"
         ]
+      },
+      {
+        Sid    = "KMSDynamoDBEncryption"
+        Effect = "Allow"
+        Action = [
+          "kms:Decrypt",
+          "kms:Encrypt",
+          "kms:GenerateDataKey",
+          "kms:DescribeKey"
+        ]
+        Resource = aws_kms_key.dynamodb.arn
       }
     ]
   })
