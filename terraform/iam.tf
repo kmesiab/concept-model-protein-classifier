@@ -128,6 +128,7 @@ resource "aws_iam_role_policy" "github_actions_policy" {
   })
 }
 
+      }
 # ECS Task Execution Role
 resource "aws_iam_role" "ecs_task_execution_role" {
   name = "protein-classifier-ecs-task-execution-role"
