@@ -120,6 +120,15 @@ resource "aws_s3_bucket_policy" "alb_logs" {
         Resource = aws_s3_bucket.alb_logs.arn
       },
       {
+        Sid    = "ELBAccountWrite"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::797873946194:root"
+        }
+        Action   = "s3:PutObject"
+        Resource = "${aws_s3_bucket.alb_logs.arn}/*"
+      },
+      {
         Sid    = "S3ServerAccessLogsPolicy"
         Effect = "Allow"
         Principal = {

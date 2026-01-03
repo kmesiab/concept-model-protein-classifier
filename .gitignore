@@ -126,3 +126,4 @@ terraform/terraform.rc
 # Comet AI assistant session state (keep local)
 .comet/*
 !.comet/README.md
+.terraform/
