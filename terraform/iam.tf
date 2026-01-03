@@ -104,6 +104,26 @@ resource "aws_iam_role_policy" "github_actions_policy" {
         ]
         Resource = "${aws_cloudwatch_log_group.ecs_logs.arn}:*"
       }
+      },
+      {
+        Sid    = "KMSKeyManagement"
+        Effect = "Allow"
+        Action = [
+          "kms:CreateKey",
+          "kms:DescribeKey",
+          "kms:GetKeyPolicy",
+          "kms:GetKeyRotationStatus",
+          "kms:ListResourceTags",
+          "kms:TagResource",
+          "kms:UntagResource",
+          "kms:PutKeyPolicy",
+          "kms:EnableKeyRotation",
+          "kms:CreateAlias",
+          "kms:DeleteAlias",
+          "kms:UpdateAlias",
+          "kms:ListAliases"
+        ]
+        Resource = "*"
     ]
   })
 }
