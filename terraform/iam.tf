@@ -103,11 +103,66 @@ resource "aws_iam_role_policy" "github_actions_policy" {
           "logs:DescribeLogStreams"
         ]
         Resource = "${aws_cloudwatch_log_group.ecs_logs.arn}:*"
+      },
+      {
+        Sid    = "KMSKeyManagement"
+        Effect = "Allow"
+        Action = [
+          "kms:CreateKey",
+          "kms:DescribeKey",
+          "kms:GetKeyPolicy",
+          "kms:GetKeyRotationStatus",
+          "kms:ListResourceTags",
+          "kms:TagResource",
+          "kms:UntagResource",
+          "kms:PutKeyPolicy",
+          "kms:EnableKeyRotation",
+          "kms:CreateAlias",
+          "kms:DeleteAlias",
+          "kms:UpdateAlias",
+          "kms:ListAliases"
+        ]
+        Resource = [
+          "arn:aws:kms:${var.aws_region}:${var.aws_account_id}:key/*",
+          "arn:aws:kms:${var.aws_region}:${var.aws_account_id}:alias/*"
+        ]
+      },
+      {
+        Sid    = "KMSDynamoDBEncryption"
+        Effect = "Allow"
+        Action = [
+          "kms:Decrypt",
+          "kms:Encrypt",
+          "kms:GenerateDataKey",
+          "kms:DescribeKey"
+        ]
+        Resource = aws_kms_key.dynamodb.arn
+      },
+      {
+        Sid    = "KMSALBLogsEncryption"
+        Effect = "Allow"
+        Action = [
+          "kms:Decrypt",
+          "kms:Encrypt",
+          "kms:Encrypt",
+          "kms:DescribeKey",
+          "kms:GenerateDataKey"
+        ]
+        Resource = aws_kms_key.alb_logs_s3.arn
+      },
+      {
+        Sid    = "TerraformDynamoDBStateLocking"
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:DeleteItem"
+        ]
+        Resource = "arn:aws:dynamodb:${var.aws_region}:${var.aws_account_id}:table/terraform-locks"
       }
     ]
   })
 }
-
 # ECS Task Execution Role
 resource "aws_iam_role" "ecs_task_execution_role" {
   name = "protein-classifier-ecs-task-execution-role"

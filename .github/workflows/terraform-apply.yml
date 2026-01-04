@@ -258,6 +258,136 @@ jobs:
           path: terraform/tfplan.out
           retention-days: 7
 
+      - name: Import Existing Resources (if any)
+        if: false  # TODO: Fix hanging import step
+        run: |
+          cd terraform
+          echo "🔄 Attempting to import any existing resources..."
+          # Helper function to sanitize sensitive information from error output
+          sanitize_output() {
+            local output="$1"
+            # Redact AWS account IDs (12-digit numbers)
+            output=$(echo "$output" | sed -E 's/[0-9]{12}/************/g')
+            # Redact ARNs
+            output=$(echo "$output" | sed -E 's/arn:aws:[a-z0-9-]+:[a-z0-9-]*:[0-9]{12}:[^ ]*/arn:aws:***:***:************:***/g')
+            # Redact resource IDs that look like AWS IDs (e.g., i-xxxxx, vpc-xxxxx)
+            output=$(echo "$output" | sed -E 's/(i|vpc|subnet|sg|igw|rtb|nat|eni|vol|snap|ami)-[a-z0-9]+/\1-***/g')
+            echo "$output"
+          }
+          
+          # Helper function to check if error output contains critical errors
+          # Returns 0 if critical error found, 1 otherwise
+          check_critical_error() {
+            local output="$1"
+            if echo "$output" | grep -qiE "(authentication|unauthorized|forbidden|access denied|invalid credentials|expiredtoken|invalidclienttokenid|connection|network|timeout|state lock|lockinfo)"; then
+              return 0
+            fi
+            return 1
+          }
+          
+          # Helper function to safely import resources
+          # Allows benign "resource already exists" or "resource not found" import errors, but fails on auth/network/locking errors
+          safe_import() {
+            local resource_address="$1"
+            local resource_id="$2"
+            local description="$3"
+            
+            local output
+            local exit_code
+            
+            # Temporarily disable 'set -e' to capture the import exit code without aborting the step
+            set +e
+            output=$(timeout 300 terraform import "$resource_address" "$resource_id" 2>&1)
+            exit_code=$?
+            set -e
+            
+            # If import succeeded, we're done
+            if [ "$exit_code" -eq 0 ]; then
+              echo "✅ $description: imported successfully"
+              return 0
+            fi
+            
+            # Check if the operation timed out (timeout command returns 124)
+            if [ "$exit_code" -eq 124 ]; then
+              echo "❌ TIMEOUT importing $description:"
+              echo "The terraform import operation exceeded the 300 second timeout"
+              echo "::error::Import operation timed out after 300 seconds"
+              return 1
+            fi
+            
+            # Check for benign errors (already in state or doesn't exist)
+            if echo "$output" | grep -qE "(already exists|already imported|already manages|already|Cannot import non-existent|does not exist|Resource not found)"; then
+              echo "ℹ️  $description: already in state or doesn't exist"
+              return 0
+            fi
+            
+            # Check for critical errors that should fail the workflow
+            if check_critical_error "$output"; then
+              echo "❌ CRITICAL ERROR importing $description:"
+              echo "$(sanitize_output "$output")"
+              echo "::error::Import failed with critical error - check AWS credentials, network, state locking, or Terraform state access"
+              return 1
+            fi
+            
+            # Unknown error - fail to be safe
+            echo "⚠️  Unknown error importing $description:"
+            echo "$(sanitize_output "$output")"
+            echo "::error::Import failed with unexpected error"
+            return 1
+          }
+          
+          # Helper function to get AWS resource ARN with error checking
+          get_aws_resource() {
+            local description="$1"
+            shift
+            local aws_cmd=("$@")
+            
+            local output
+            local exit_code
+            
+            # Temporarily disable 'set -e' to capture the AWS CLI exit code without aborting the step
+            set +e
+            output=$("${aws_cmd[@]}" 2>&1)
+            exit_code=$?
+            set -e
+            
+            if [ "$exit_code" -eq 0 ]; then
+              echo "$output"
+              return 0
+            fi
+            
+            # Check for critical AWS errors
+            if check_critical_error "$output"; then
+              echo "❌ CRITICAL ERROR querying AWS for $description:"
+              echo "$(sanitize_output "$output")"
+              echo "::error::AWS query failed with critical error - check credentials and network"
+              return 1
+            fi
+            
+            # Resource not found is acceptable
+            echo "none"
+            return 0
+          }
+          
+          # Import resources with proper error handling
+          safe_import "aws_s3_bucket.alb_logs" "protein-classifier-alb-logs-${{ vars.AWS_ACCOUNT_ID }}" "S3 bucket" || exit 1
+          
+          TG_ARN=$(get_aws_resource "target group" aws elbv2 describe-target-groups --names protein-classifier-ecs-tg --query 'TargetGroups[0].TargetGroupArn' --output text) || exit 1
+          if [ "$TG_ARN" != "none" ] && [ "$TG_ARN" != "" ]; then
+            safe_import "aws_lb_target_group.ecs" "$TG_ARN" "Target group" || exit 1
+          fi
+          
+          safe_import "aws_dynamodb_table.terraform_locks" "protein-classifier-terraform-locks" "DynamoDB table" || exit 1
+          safe_import "aws_ecr_repository.api" "protein-classifier-api" "ECR repository" || exit 1
+          safe_import "aws_cloudwatch_log_group.ecs_logs" "/ecs/protein-classifier-api" "CloudWatch logs (ECS)" || exit 1
+          safe_import "aws_cloudwatch_log_group.vpc_flow_logs" "/aws/vpc/protein-classifier-flow-logs" "CloudWatch logs (VPC)" || exit 1
+          safe_import "aws_iam_role.github_actions" "protein-classifier-github-actions-role" "IAM role (GitHub Actions)" || exit 1
+          safe_import "aws_iam_role.ecs_task_execution_role" "protein-classifier-ecs-task-execution-role" "IAM role (ECS execution)" || exit 1
+          safe_import "aws_iam_role.ecs_task_role" "protein-classifier-ecs-task-role" "IAM role (ECS task)" || exit 1
+          safe_import "aws_iam_role.vpc_flow_logs" "protein-classifier-vpc-flow-logs-role" "IAM role (VPC flow logs)" || exit 1
+          
+          echo "✅ Import step complete"
+
       - name: Terraform Apply
         id: apply
         run: |

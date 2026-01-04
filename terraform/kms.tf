@@ -44,11 +44,6 @@ resource "aws_kms_key_policy" "alb_logs_s3" {
           "kms:DescribeKey"
         ]
         Resource = "*"
-        Condition = {
-          StringEquals = {
-            "kms:EncryptionContext:aws:s3:arn" = "arn:aws:s3:::protein-classifier-alb-logs-${var.aws_account_id}/*"
-          }
-        }
       },
       {
         Sid    = "AllowS3ToUseTheKeyForAccessLogs"
@@ -61,6 +56,19 @@ resource "aws_kms_key_policy" "alb_logs_s3" {
           "kms:Decrypt",
           "kms:GenerateDataKey*",
           "kms:DescribeKey"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowGitHubActionsToManageKey"
+        Effect = "Allow"
+        Principal = {
+          AWS = aws_iam_role.github_actions.arn
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey",
+          "kms:GenerateDataKey"
         ]
         Resource = "*"
       }
@@ -182,6 +190,24 @@ resource "aws_kms_key_policy" "dynamodb" {
             "kms:EncryptionContext:aws:dynamodb:table-name" = "protein-classifier-*"
           }
         }
+      },
+      {
+        # GitHub Actions principal statement intentionally omits encryption context condition.
+        # IAM principals accessing DynamoDB directly for state locking don't provide the same
+        # encryption context that DynamoDB service operations use. The encryption context
+        # condition on the service principal above ensures server-side encryption, while
+        # this statement allows GitHub Actions client-side access to the encrypted table.
+        Sid    = "AllowGitHubActionsToUseDynamoDBKey"
+        Effect = "Allow"
+        Principal = {
+          AWS = aws_iam_role.github_actions.arn
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey",
+          "kms:GenerateDataKey"
+        ]
+        Resource = "*"
       }
     ]
   })

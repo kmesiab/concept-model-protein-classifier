@@ -65,6 +65,28 @@ terraform/
 
 ## Deployment Instructions
 
+### ⚠️ KMS Permissions Bootstrap (One-Time Required)
+
+**IMPORTANT**: If you're experiencing KMS decrypt errors when running Terraform Apply, you need to run the bootstrap process first.
+
+**Error you might see:**
+
+```text
+KMS key access denied error:
+User: arn:aws:sts::462498369025:assumed-role/github-actions-terraform/GitHubActions
+is not authorized to perform: kms:Decrypt
+```
+
+**Solution:** See **[KMS Bootstrap Guide](../docs/KMS_BOOTSTRAP.md)** for detailed instructions.
+
+**Quick start:**
+
+1. Go to Actions → Bootstrap KMS Permissions workflow
+2. Run the workflow (type "bootstrap" to confirm)
+3. After success, run Terraform Apply
+
+This only needs to be done once to break the chicken-and-egg deadlock.
+
 ### Bootstrap Process (First-Time Setup)
 
 **Note**: There's a chicken-and-egg problem with the DynamoDB state lock table. The backend configuration references the DynamoDB table before it exists. Follow these steps for initial setup:
@@ -260,6 +282,63 @@ All resources include standardized tags for cost allocation:
 VPC Flow Logs are configured with a 7-day retention period to balance security monitoring with storage costs.
 
 ## Troubleshooting
+
+### KMS Decrypt Permission Error
+
+If you encounter this error when running Terraform:
+
+```text
+table "protein-classifier-terraform-locks": operation error DynamoDB: GetItem
+KMS key access denied error:
+User: arn:aws:sts::462498369025:assumed-role/github-actions-terraform/GitHubActions
+is not authorized to perform: kms:Decrypt
+```
+
+**Solution:** Run the KMS permissions bootstrap process. See **[KMS Bootstrap Guide](../docs/KMS_BOOTSTRAP.md)** for detailed instructions.
+
+This is a one-time operation that grants the GitHub Actions role permission to decrypt the DynamoDB state lock table.
+
+### DynamoDB Table Already Exists Error
+
+If you encounter this error during `terraform apply`:
+
+```text
+Error: creating AWS DynamoDB Table (protein-classifier-terraform-locks): 
+operation error DynamoDB: CreateTable, https response error StatusCode: 400, 
+ResourceInUseException: Table already exists: protein-classifier-terraform-locks
+```
+
+This means the DynamoDB table was manually created outside of Terraform management. To fix:
+
+**Option 1: Import the Existing Table (Preferred)**
+
+Use the provided import script:
+
+```bash
+cd terraform
+./import-dynamodb-table.sh
+```
+
+Or manually import:
+
+```bash
+cd terraform
+terraform init  # Ensure Terraform is initialized first
+terraform import aws_dynamodb_table.terraform_locks protein-classifier-terraform-locks
+```
+
+After import, verify with:
+
+```bash
+terraform plan  # Should show no changes for DynamoDB table
+```
+
+**Option 2: Delete and Recreate (Alternative)**
+
+⚠️ **Warning**: Only use this option if you're sure no other Terraform operations are running.
+
+1. Delete the manually created table in AWS Console
+2. Run `terraform apply` to let Terraform create it
 
 ### Check ECS Service Status
 
