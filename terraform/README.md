@@ -25,8 +25,6 @@ All resources follow a standardized naming convention for clear ownership and ea
 
 This ensures all resources are immediately identifiable in the AWS Console and supports proper cost allocation and security auditing.
 
-**See [MIGRATION.md](MIGRATION.md) for details on the naming standardization migration.**
-
 ## 🚀 Triple-Gated Validation Pipeline
 
 All infrastructure changes are automatically validated through our **Triple-Gated CI/CD Pipeline**:
