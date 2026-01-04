@@ -211,6 +211,65 @@ Two workflows are configured in `.github/workflows/`:
   - Deploys to ECS service
   - Waits for service stability
 
+### 3. Terraform Apply with Automatic Rollback (`terraform-apply.yml`)
+
+- **Trigger**: Manual workflow dispatch with confirmation
+- **Authentication**: OIDC (no AWS secrets required)
+- **Features**:
+  - Triple-gated validation (TFLint, Trivy security scan, cost estimation)
+  - **Automatic Rollback Mechanism** for failed deployments
+  - Clear logging and GitHub Actions summary
+
+#### Automatic Rollback Mechanism
+
+The Terraform Apply workflow includes an automatic rollback mechanism to prevent partial/inconsistent infrastructure states:
+
+**How it Works:**
+
+1. **Pre-Apply Backup**: Before running `terraform apply`, the workflow:
+   - Backs up current Terraform state to `/tmp/terraform-state-backup.json`
+   - Records list of existing resources for comparison
+
+2. **Apply Execution**: Runs `terraform apply` with the pre-generated plan
+
+3. **Automatic Rollback on Failure**: If the apply fails, the workflow automatically:
+   - Identifies resources created during the failed apply (by comparing before/after state)
+   - Executes targeted `terraform destroy` for **only** newly created resources
+   - Leaves existing infrastructure untouched
+   - Provides detailed logging in GitHub Actions summary
+
+**Rollback Scenarios:**
+
+- ✅ **No New Resources**: If apply fails before creating resources, rollback exits cleanly
+- ✅ **Successful Rollback**: All new resources destroyed, infrastructure restored to previous state
+- ⚠️ **Partial Rollback Failure**: Provides manual recovery instructions with specific commands
+
+**Benefits:**
+
+- Prevents resource drift and inconsistent states
+- Avoids wasted AWS resources and costs
+- Simplifies troubleshooting and recovery
+- Maintains infrastructure hygiene
+
+**Example Output:**
+
+When rollback is triggered, the GitHub Actions summary shows:
+
+```text
+🔄 Automatic Rollback Triggered
+
+Resources to Rollback:
+- aws_security_group.new_sg
+- aws_instance.new_instance
+
+✅ Successfully destroyed: aws_security_group.new_sg
+✅ Successfully destroyed: aws_instance.new_instance
+
+✅ Rollback Successful
+All newly created resources have been destroyed.
+Infrastructure has been restored to previous stable state.
+```
+
 ## Security
 
 ### OIDC Authentication
