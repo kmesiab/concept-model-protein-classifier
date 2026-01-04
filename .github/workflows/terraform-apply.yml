@@ -433,14 +433,32 @@ jobs:
           
           # Get list of resources after failed apply
           echo "📋 Identifying resources created in failed apply..."
-          terraform state list > /tmp/terraform-resources-after.txt 2>/dev/null || true
+          if terraform state list > /tmp/terraform-resources-after.txt 2>&1; then
+            echo "✅ Successfully retrieved post-apply state"
+          else
+            echo "⚠️  Warning: Could not retrieve post-apply state"
+            echo "This may indicate state corruption or early apply failure"
+            # Create empty file to allow comparison to proceed
+            touch /tmp/terraform-resources-after.txt
+          fi
           
           # Compare states to find newly created resources
           # These are resources that exist in 'after' but not in 'before'
           echo "🔍 Comparing states to identify new resources..."
-          NEW_RESOURCES=$(comm -13 \
-            <(sort /tmp/terraform-resources-before.txt) \
-            <(sort /tmp/terraform-resources-after.txt) || echo "")
+          
+          # Ensure both files exist before comparison
+          if [ ! -f /tmp/terraform-resources-before.txt ]; then
+            echo "❌ Error: Pre-apply state backup not found"
+            exit 1
+          fi
+          
+          # Use safer comparison with explicit file checks
+          NEW_RESOURCES=""
+          if [ -f /tmp/terraform-resources-after.txt ]; then
+            NEW_RESOURCES=$(comm -13 \
+              <(sort /tmp/terraform-resources-before.txt 2>/dev/null || echo "") \
+              <(sort /tmp/terraform-resources-after.txt 2>/dev/null || echo "") || echo "")
+          fi
           
           if [ -z "$NEW_RESOURCES" ]; then
             echo "ℹ️  No new resources found to rollback" | tee -a $GITHUB_STEP_SUMMARY
@@ -464,10 +482,16 @@ jobs:
           while IFS= read -r resource; do
             if [ -n "$resource" ]; then
               echo "  Destroying: $resource"
-              if terraform destroy -auto-approve -target="$resource" -no-color; then
+              # Add timeout to prevent hanging on stuck resources (5 minutes per resource)
+              if timeout 300 terraform destroy -auto-approve -target="$resource" -no-color; then
                 echo "    ✅ Successfully destroyed: $resource" | tee -a $GITHUB_STEP_SUMMARY
               else
-                echo "    ❌ Failed to destroy: $resource" | tee -a $GITHUB_STEP_SUMMARY
+                DESTROY_EXIT=$?
+                if [ $DESTROY_EXIT -eq 124 ]; then
+                  echo "    ⏱️  Timeout destroying: $resource (exceeded 5 minutes)" | tee -a $GITHUB_STEP_SUMMARY
+                else
+                  echo "    ❌ Failed to destroy: $resource (exit code: $DESTROY_EXIT)" | tee -a $GITHUB_STEP_SUMMARY
+                fi
                 ROLLBACK_FAILED=true
               fi
             fi
