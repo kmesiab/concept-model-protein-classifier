@@ -1,4 +1,4 @@
-# Import existing DynamoDB table if it exists
+# Import existing DynamoDB table into Terraform state
 import {
   to = aws_dynamodb_table.terraform_locks
   id = "protein-classifier-terraform-locks"
