@@ -127,3 +127,4 @@ terraform/terraform.rc
 .comet/*
 !.comet/README.md
 .terraform/
+*.zip
