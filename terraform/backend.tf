@@ -10,6 +10,9 @@
 # 5. Run: terraform init --reconfigure
 #
 # See terraform/README.md for detailed bootstrap instructions.
+#
+# MIGRATION: If migrating from old table name (prop-insights-terraform-lock),
+# see terraform/DYNAMODB_MIGRATION.md or run ./migrate-dynamodb-table.sh
 
 terraform {
   backend "s3" {

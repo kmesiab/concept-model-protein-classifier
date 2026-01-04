@@ -306,6 +306,19 @@ VPC Flow Logs are configured with a 7-day retention period to balance security m
 
 ## Troubleshooting
 
+### DynamoDB Table Name Migration
+
+If you're migrating from the old table name (`prop-insights-terraform-lock`) to the new standardized name (`protein-classifier-terraform-locks`), see the **[DynamoDB Migration Guide](DYNAMODB_MIGRATION.md)** for detailed instructions.
+
+**Quick start:**
+
+```bash
+cd terraform
+./migrate-dynamodb-table.sh
+```
+
+This automated script handles the entire migration process.
+
 ### KMS Decrypt Permission Error
 
 If you encounter this error when running Terraform:

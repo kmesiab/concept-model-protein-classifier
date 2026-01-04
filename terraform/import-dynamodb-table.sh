@@ -3,6 +3,9 @@
 # Script to import the manually created DynamoDB terraform-locks table into Terraform state
 # This resolves the error: "Table already exists: protein-classifier-terraform-locks"
 #
+# NOTE: If you need to migrate from the old table name (prop-insights-terraform-lock),
+#       use ./migrate-dynamodb-table.sh instead.
+#
 # Usage:
 #   1. Ensure you're in the terraform directory
 #   2. Run terraform init first (with dynamodb_table commented out in backend.tf if needed)
