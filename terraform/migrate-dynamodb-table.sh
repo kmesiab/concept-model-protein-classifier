@@ -139,6 +139,8 @@ elif [ "$OLD_TABLE_STATUS" != "NOT_FOUND" ] && [ "$NEW_TABLE_STATUS" = "NOT_FOUN
     echo "   Creating backup of backend.tf..."
     cp backend.tf backend.tf.backup
     echo "   Commenting out dynamodb_table line..."
+    # Pattern: Adds "# " before dynamodb_table and appends comment marker
+    # Example: "    dynamodb_table = ..." becomes "    # dynamodb_table = ...  # TEMP: Disabled for migration"
     sed -i.tmp 's/^\([[:space:]]*\)dynamodb_table\([[:space:]]*=.*\)/\1# dynamodb_table\2  # TEMP: Disabled for migration/' backend.tf
     rm -f backend.tf.tmp
     echo -e "${GREEN}✅ State locking temporarily disabled${NC}"
@@ -184,7 +186,9 @@ elif [ "$OLD_TABLE_STATUS" != "NOT_FOUND" ] && [ "$NEW_TABLE_STATUS" = "NOT_FOUN
     echo -e "${GREEN}✅ State locking re-enabled${NC}"
   else
     echo "   Uncommenting dynamodb_table line..."
-    # Pattern: captures indentation, removes "# ", keeps rest, removes comment
+    # Pattern: Removes "# " prefix and the temporary comment marker
+    # Preserves original indentation captured in group \1
+    # Example: "    # dynamodb_table = ...  # TEMP: Disabled for migration" becomes "    dynamodb_table = ..."
     sed -i.tmp 's/^\([[:space:]]*\)# \(dynamodb_table[[:space:]]*=.*\)[[:space:]]*#.*TEMP:.*migration/\1\2/' backend.tf
     rm -f backend.tf.tmp
     echo -e "${GREEN}✅ State locking re-enabled${NC}"
