@@ -175,7 +175,7 @@ resource "aws_lb" "main" {
     Name = "protein-classifier-alb"
   }
 
-  depends_on = [aws_s3_bucket_policy.alb_logs]
+  depends_on = [aws_s3_bucket_policy.alb_logs, aws_kms_key_policy.alb_logs_s3]
 }
 
 # Target Group for ECS
