@@ -76,6 +76,17 @@ resource "aws_s3_bucket_public_access_block" "alb_logs" {
   restrict_public_buckets = true
 }
 
+# S3 Bucket Ownership Controls - enforce bucket owner for all objects
+# This disables ACLs and ensures all objects are owned by the bucket owner
+# Simplifies permissions and prevents accidental public access via ACLs
+resource "aws_s3_bucket_ownership_controls" "alb_logs" {
+  bucket = aws_s3_bucket.alb_logs.id
+
+  rule {
+    object_ownership = "BucketOwnerEnforced"
+  }
+}
+
 # S3 Bucket Logging for ALB logs bucket
 resource "aws_s3_bucket_logging" "alb_logs" {
   bucket = aws_s3_bucket.alb_logs.id

@@ -34,8 +34,9 @@ resource "aws_kms_key_policy" "alb_logs_s3" {
         Resource = "*"
       },
       {
-        # ELB service requires all these permissions for ALB log delivery to KMS-encrypted S3
-        # These were explicitly added after terraform apply failures and are necessary
+        # ELB service requires comprehensive permissions for ALB log delivery to KMS-encrypted S3
+        # Includes CreateGrant for S3 server-side encryption operations
+        # Scoped to ELB service via ViaService condition for security
         Sid    = "AllowELBToUseTheKeyForALBLogs"
         Effect = "Allow"
         Principal = {
@@ -45,14 +46,21 @@ resource "aws_kms_key_policy" "alb_logs_s3" {
           "kms:Encrypt",
           "kms:Decrypt",
           "kms:GenerateDataKey*",
+          "kms:CreateGrant",
           "kms:DescribeKey"
         ]
         Resource = "*"
+        Condition = {
+          StringEquals = {
+            "kms:ViaService" = "elasticloadbalancing.${var.aws_region}.amazonaws.com"
+          }
+        }
       },
       {
         # Regional ELB service account requires KMS permissions to encrypt logs
         # This matches the S3 bucket policy which grants write access to this account
         # Without this, the ELB service account can write to S3 but cannot encrypt the objects
+        # Includes CreateGrant for S3 server-side encryption operations
         Sid    = "AllowRegionalELBAccountToUseTheKey"
         Effect = "Allow"
         Principal = {
@@ -62,14 +70,19 @@ resource "aws_kms_key_policy" "alb_logs_s3" {
           "kms:Encrypt",
           "kms:Decrypt",
           "kms:GenerateDataKey*",
+          "kms:CreateGrant",
           "kms:DescribeKey"
         ]
         Resource = "*"
       },
       {
-        # S3 service needs encrypt/decrypt/generate for server-side encryption
-        # Server access logging requires both read and write encryption operations
-        Sid    = "AllowS3ToUseTheKeyForAccessLogs"
+        # S3 service needs comprehensive permissions for server-side encryption
+        # - Encrypt/Decrypt: Basic encryption operations
+        # - GenerateDataKey: Envelope encryption for new objects
+        # - CreateGrant: Required for S3 bucket keys (bucket_key_enabled = true)
+        # - ReEncrypt: Required for lifecycle transitions (GLACIER, INTELLIGENT_TIERING)
+        # - DescribeKey: Metadata operations
+        Sid    = "AllowS3ToUseTheKeyForServerSideEncryption"
         Effect = "Allow"
         Principal = {
           Service = "s3.amazonaws.com"
@@ -77,10 +90,41 @@ resource "aws_kms_key_policy" "alb_logs_s3" {
         Action = [
           "kms:Encrypt",
           "kms:Decrypt",
+          "kms:ReEncrypt*",
           "kms:GenerateDataKey*",
+          "kms:CreateGrant",
           "kms:DescribeKey"
         ]
         Resource = "*"
+        Condition = {
+          StringEquals = {
+            "kms:ViaService" = "s3.${var.aws_region}.amazonaws.com"
+          }
+        }
+      },
+      {
+        # S3 Logging service is separate from general S3 service
+        # Requires same comprehensive permissions for encrypting access logs
+        # This matches the S3 bucket policy which grants write access to this service
+        Sid    = "AllowS3LoggingToUseTheKeyForAccessLogs"
+        Effect = "Allow"
+        Principal = {
+          Service = "logging.s3.amazonaws.com"
+        }
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:CreateGrant",
+          "kms:DescribeKey"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "kms:ViaService" = "s3.${var.aws_region}.amazonaws.com"
+          }
+        }
       },
       {
         # GitHub Actions needs decrypt/describe/generate for Terraform state access
