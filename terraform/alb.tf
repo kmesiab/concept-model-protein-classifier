@@ -98,6 +98,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "alb_logs" {
 }
 
 # Bucket policy to allow ALB to write logs and S3 logging service to write access logs
+# LEAST PRIVILEGE: Policies are scoped to specific prefixes and actions required for operation
 resource "aws_s3_bucket_policy" "alb_logs" {
   bucket = aws_s3_bucket.alb_logs.id
 
@@ -105,15 +106,19 @@ resource "aws_s3_bucket_policy" "alb_logs" {
     Version = "2012-10-17"
     Statement = [
       {
+        # LEAST PRIVILEGE: ALB service principal can only PutObject to the ALB logs prefix path
+        # Scoped to AWSLogs/<account-id>/* to prevent writes outside the designated log location
         Sid    = "AWSLogDeliveryWrite"
         Effect = "Allow"
         Principal = {
           Service = "elasticloadbalancing.amazonaws.com"
         }
         Action   = "s3:PutObject"
-        Resource = "${aws_s3_bucket.alb_logs.arn}/*"
+        Resource = "${aws_s3_bucket.alb_logs.arn}/alb-logs/AWSLogs/${var.aws_account_id}/*"
       },
       {
+        # LEAST PRIVILEGE: ALB requires GetBucketAcl at bucket root to verify permissions
+        # This is a required permission per AWS documentation and cannot be further restricted
         Sid    = "AWSLogDeliveryAclCheck"
         Effect = "Allow"
         Principal = {
@@ -123,15 +128,19 @@ resource "aws_s3_bucket_policy" "alb_logs" {
         Resource = aws_s3_bucket.alb_logs.arn
       },
       {
+        # LEAST PRIVILEGE: Regional ELB service account can only PutObject to ALB logs prefix
+        # Uses parameterized account ID to avoid hardcoding and scopes to specific path
         Sid    = "ELBAccountWrite"
         Effect = "Allow"
         Principal = {
           AWS = data.aws_elb_service_account.main.arn
         }
         Action   = "s3:PutObject"
-        Resource = "${aws_s3_bucket.alb_logs.arn}/*"
+        Resource = "${aws_s3_bucket.alb_logs.arn}/alb-logs/AWSLogs/${var.aws_account_id}/*"
       },
       {
+        # LEAST PRIVILEGE: S3 logging service can only write to dedicated access-logs prefix
+        # This prevents S3 access logs from mixing with ALB logs
         Sid    = "S3ServerAccessLogsPolicy"
         Effect = "Allow"
         Principal = {
@@ -141,6 +150,8 @@ resource "aws_s3_bucket_policy" "alb_logs" {
         Resource = "${aws_s3_bucket.alb_logs.arn}/access-logs/*"
       },
       {
+        # LEAST PRIVILEGE: S3 logging service requires GetBucketAcl at bucket root
+        # This is a required permission per AWS documentation for S3 server access logging
         Sid    = "S3ServerAccessLogsAclCheck"
         Effect = "Allow"
         Principal = {
@@ -166,7 +177,9 @@ resource "aws_lb" "main" {
   drop_invalid_header_fields = true
 
   access_logs {
-    bucket  = aws_s3_bucket.alb_logs.id
+    # Use .bucket property (bucket name) instead of .id for ALB access logs configuration
+    # This ensures ALB can properly reference the bucket for log delivery
+    bucket  = aws_s3_bucket.alb_logs.bucket
     prefix  = "alb-logs"
     enabled = true
   }

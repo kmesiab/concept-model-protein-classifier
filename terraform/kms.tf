@@ -16,6 +16,7 @@ resource "aws_kms_alias" "alb_logs_s3" {
 }
 
 # KMS Key Policy to allow ELB service to encrypt ALB logs in S3
+# LEAST PRIVILEGE: Minimal permissions required for log delivery operations
 resource "aws_kms_key_policy" "alb_logs_s3" {
   key_id = aws_kms_key.alb_logs_s3.id
 
@@ -23,6 +24,8 @@ resource "aws_kms_key_policy" "alb_logs_s3" {
     Version = "2012-10-17"
     Statement = [
       {
+        # LEAST PRIVILEGE: Root account has full admin permissions for key management
+        # Required for key administration by account owner/repository maintainers
         Sid    = "Enable IAM User Permissions"
         Effect = "Allow"
         Principal = {
@@ -32,6 +35,9 @@ resource "aws_kms_key_policy" "alb_logs_s3" {
         Resource = "*"
       },
       {
+        # LEAST PRIVILEGE: ELB service only needs encrypt/generate permissions for log delivery
+        # Removed kms:Decrypt and kms:DescribeKey as they are not required for writing logs
+        # Only write operations (encrypt, generate data key) are needed for ALB log delivery
         Sid    = "AllowELBToUseTheKeyForALBLogs"
         Effect = "Allow"
         Principal = {
@@ -39,13 +45,13 @@ resource "aws_kms_key_policy" "alb_logs_s3" {
         }
         Action = [
           "kms:Encrypt",
-          "kms:Decrypt",
-          "kms:GenerateDataKey*",
-          "kms:DescribeKey"
+          "kms:GenerateDataKey*"
         ]
         Resource = "*"
       },
       {
+        # LEAST PRIVILEGE: S3 service needs encrypt/decrypt/generate for server-side encryption
+        # S3 server access logging requires both read and write encryption operations
         Sid    = "AllowS3ToUseTheKeyForAccessLogs"
         Effect = "Allow"
         Principal = {
@@ -60,6 +66,8 @@ resource "aws_kms_key_policy" "alb_logs_s3" {
         Resource = "*"
       },
       {
+        # LEAST PRIVILEGE: GitHub Actions needs decrypt/describe/generate for state access
+        # Required for Terraform operations that read/write to S3 backend state
         Sid    = "AllowGitHubActionsToManageKey"
         Effect = "Allow"
         Principal = {
