@@ -11,6 +11,16 @@ resource "aws_s3_bucket" "alb_logs" {
   }
 }
 
+# S3 Bucket Ownership Controls for ALB logs bucket
+# Set to BucketOwnerPreferred to enable ACLs which are required for ALB log delivery to KMS-encrypted buckets
+resource "aws_s3_bucket_ownership_controls" "alb_logs" {
+  bucket = aws_s3_bucket.alb_logs.id
+
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
 # S3 Bucket Versioning for ALB Logs
 resource "aws_s3_bucket_versioning" "alb_logs" {
   bucket = aws_s3_bucket.alb_logs.id
@@ -192,6 +202,7 @@ resource "aws_lb" "main" {
   depends_on = [
     aws_s3_bucket_policy.alb_logs,
     aws_s3_bucket_public_access_block.alb_logs,
+    aws_s3_bucket_ownership_controls.alb_logs,
     aws_s3_bucket_server_side_encryption_configuration.alb_logs,
     aws_kms_key_policy.alb_logs_s3
   ]
