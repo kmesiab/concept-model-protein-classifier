@@ -76,7 +76,7 @@ resource "aws_kms_key_policy" "alb_logs_s3" {
         Sid    = "AllowGitHubActionsToManageKey"
         Effect = "Allow"
         Principal = {
-          AWS = aws_iam_role.github_actions.arn
+          AWS = data.aws_iam_role.github_actions.arn
         }
         Action = [
           "kms:Decrypt",
@@ -223,7 +223,7 @@ resource "aws_kms_key_policy" "dynamodb" {
         Sid    = "AllowGitHubActionsToUseDynamoDBKey"
         Effect = "Allow"
         Principal = {
-          AWS = aws_iam_role.github_actions.arn
+          AWS = data.aws_iam_role.github_actions.arn
         }
         Action = [
           "kms:Decrypt",
