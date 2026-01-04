@@ -1,6 +1,6 @@
 # GitHub Actions OIDC Role
 resource "aws_iam_role" "github_actions" {
-  name = "protein-classifier-github-actions-role"
+  name = "github-actions-terraform"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -24,7 +24,7 @@ resource "aws_iam_role" "github_actions" {
   })
 
   tags = {
-    Name        = "protein-classifier-github-actions-role"
+    Name        = "github-actions-terraform"
     Description = "IAM role for GitHub Actions OIDC authentication"
   }
 }
