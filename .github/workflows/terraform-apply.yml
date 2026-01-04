@@ -454,10 +454,14 @@ jobs:
           
           # Use safer comparison with explicit file checks
           NEW_RESOURCES=""
-          if [ -f /tmp/terraform-resources-after.txt ]; then
-            NEW_RESOURCES=$(comm -13 \
-              <(sort /tmp/terraform-resources-before.txt 2>/dev/null || echo "") \
-              <(sort /tmp/terraform-resources-after.txt 2>/dev/null || echo "") || echo "")
+          if [ -f /tmp/terraform-resources-after.txt ] && [ -s /tmp/terraform-resources-before.txt ]; then
+            # Use temporary sorted files for more robust comparison
+            sort /tmp/terraform-resources-before.txt > /tmp/resources-before-sorted.txt 2>/dev/null || touch /tmp/resources-before-sorted.txt
+            sort /tmp/terraform-resources-after.txt > /tmp/resources-after-sorted.txt 2>/dev/null || touch /tmp/resources-after-sorted.txt
+            
+            # Compare to find new resources and save to file
+            comm -13 /tmp/resources-before-sorted.txt /tmp/resources-after-sorted.txt > /tmp/new-resources.txt 2>/dev/null || touch /tmp/new-resources.txt
+            NEW_RESOURCES=$(cat /tmp/new-resources.txt)
           fi
           
           if [ -z "$NEW_RESOURCES" ]; then
@@ -479,6 +483,7 @@ jobs:
           echo "🗑️  Rolling back newly created resources..."
           ROLLBACK_FAILED=false
           
+          # Read from file to avoid subshell issues with while loop
           while IFS= read -r resource; do
             if [ -n "$resource" ]; then
               echo "  Destroying: $resource"
@@ -495,7 +500,7 @@ jobs:
                 ROLLBACK_FAILED=true
               fi
             fi
-          done <<< "$NEW_RESOURCES"
+          done < /tmp/new-resources.txt
           
           echo "" >> $GITHUB_STEP_SUMMARY
           
