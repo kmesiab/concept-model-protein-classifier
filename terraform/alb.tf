@@ -189,7 +189,12 @@ resource "aws_lb" "main" {
     Description = "Application Load Balancer for protein classifier API"
   }
 
-  depends_on = [aws_s3_bucket_policy.alb_logs, aws_kms_key_policy.alb_logs_s3]
+  depends_on = [
+    aws_s3_bucket_policy.alb_logs,
+    aws_s3_bucket_public_access_block.alb_logs,
+    aws_s3_bucket_server_side_encryption_configuration.alb_logs,
+    aws_kms_key_policy.alb_logs_s3
+  ]
 }
 
 # Target Group for ECS
