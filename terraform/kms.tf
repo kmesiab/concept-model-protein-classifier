@@ -39,9 +39,9 @@ resource "aws_kms_key_policy" "alb_logs_s3" {
         Resource = "*"
       },
       {
-        # ELB service requires all these permissions for ALB log delivery to KMS-encrypted S3
-        # These were explicitly added after terraform apply failures and are necessary
-        Sid    = "AllowELBToUseTheKeyForALBLogs"
+        # ELB service requires these permissions for ALB log delivery to KMS-encrypted S3
+        # Service principal grants permissions to the ELB service
+        Sid    = "AllowELBServiceToUseTheKeyForALBLogs"
         Effect = "Allow"
         Principal = {
           Service = "elasticloadbalancing.amazonaws.com"
@@ -51,6 +51,20 @@ resource "aws_kms_key_policy" "alb_logs_s3" {
           "kms:Decrypt",
           "kms:GenerateDataKey*",
           "kms:DescribeKey"
+        ]
+        Resource = "*"
+      },
+      {
+        # Regional ELB service account requires Encrypt and GenerateDataKey for ALB log delivery
+        # This is the region-specific AWS account that writes ALB access logs
+        Sid    = "AllowELBAccountToWriteALBLogs"
+        Effect = "Allow"
+        Principal = {
+          AWS = data.aws_elb_service_account.main.arn
+        }
+        Action = [
+          "kms:Encrypt",
+          "kms:GenerateDataKey"
         ]
         Resource = "*"
       },
