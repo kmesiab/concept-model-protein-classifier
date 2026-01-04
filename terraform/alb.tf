@@ -107,14 +107,14 @@ resource "aws_s3_bucket_policy" "alb_logs" {
     Statement = [
       {
         # ALB service can only write to the designated log prefix path
-        # Scoped to AWSLogs/<account-id>/* to prevent writes outside the log location
+        # AWS ALB automatically appends /AWSLogs/<account-id>/ to the prefix
         Sid    = "AWSLogDeliveryWrite"
         Effect = "Allow"
         Principal = {
           Service = "elasticloadbalancing.amazonaws.com"
         }
         Action   = "s3:PutObject"
-        Resource = "${aws_s3_bucket.alb_logs.arn}/alb-logs/AWSLogs/${var.aws_account_id}/*"
+        Resource = "${aws_s3_bucket.alb_logs.arn}/alb-logs/*"
       },
       {
         # ALB requires GetBucketAcl at bucket root to verify permissions
@@ -129,14 +129,14 @@ resource "aws_s3_bucket_policy" "alb_logs" {
       },
       {
         # Regional ELB service account writes to the same ALB logs prefix
-        # Uses parameterized account ID to avoid hardcoding
+        # AWS ALB automatically appends /AWSLogs/<account-id>/ to the prefix
         Sid    = "ELBAccountWrite"
         Effect = "Allow"
         Principal = {
           AWS = data.aws_elb_service_account.main.arn
         }
         Action   = "s3:PutObject"
-        Resource = "${aws_s3_bucket.alb_logs.arn}/alb-logs/AWSLogs/${var.aws_account_id}/*"
+        Resource = "${aws_s3_bucket.alb_logs.arn}/alb-logs/*"
       },
       {
         # S3 logging service writes to a dedicated access-logs prefix
