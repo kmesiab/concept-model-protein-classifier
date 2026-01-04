@@ -290,6 +290,12 @@ resource "aws_security_group_rule" "ecs_egress_dns_tcp" {
   security_group_id = aws_security_group.ecs_tasks.id
 }
 
+# Import existing CloudWatch log group into Terraform state
+import {
+  to = aws_cloudwatch_log_group.vpc_flow_logs
+  id = "/aws/vpc/protein-classifier-flow-logs"
+}
+
 # CloudWatch Log Group for VPC Flow Logs
 resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
   name              = "/aws/vpc/protein-classifier-flow-logs"

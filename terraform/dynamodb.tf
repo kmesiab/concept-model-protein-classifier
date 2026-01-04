@@ -1,3 +1,9 @@
+# Import existing DynamoDB table into Terraform state
+import {
+  to = aws_dynamodb_table.terraform_locks
+  id = "protein-classifier-terraform-locks"
+}
+
 resource "aws_dynamodb_table" "terraform_locks" {
   name         = "protein-classifier-terraform-locks"
   billing_mode = "PAY_PER_REQUEST"
