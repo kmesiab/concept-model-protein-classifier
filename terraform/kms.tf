@@ -34,8 +34,8 @@ resource "aws_kms_key_policy" "alb_logs_s3" {
         Resource = "*"
       },
       {
-        # ELB service only needs encrypt and generate permissions for log delivery
-        # Decrypt and DescribeKey are not required for write-only log operations
+        # ELB service requires all these permissions for ALB log delivery to KMS-encrypted S3
+        # These were explicitly added after terraform apply failures and are necessary
         Sid    = "AllowELBToUseTheKeyForALBLogs"
         Effect = "Allow"
         Principal = {
@@ -43,7 +43,9 @@ resource "aws_kms_key_policy" "alb_logs_s3" {
         }
         Action = [
           "kms:Encrypt",
-          "kms:GenerateDataKey*"
+          "kms:Decrypt",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey"
         ]
         Resource = "*"
       },
