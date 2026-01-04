@@ -242,8 +242,8 @@ jobs:
           script: |
             const fs = require('fs');
             
-            // Cost threshold (matches the threshold in cost_check step)
-            const COST_THRESHOLD = 125;
+            // Get cost threshold from the previous step output (defaults to 125)
+            const COST_THRESHOLD = ${{ steps.cost_check.outputs.threshold || 125 }};
             
             // Read Infracost JSON if it exists
             let costComment = '';
@@ -324,9 +324,9 @@ jobs:
               issue_number: context.issue.number,
             });
             
-            // Look for existing cost estimation comment by the github-actions bot
+            // Look for existing cost estimation comment by checking for the unique identifier in the comment body
+            // This is more robust than checking bot username which might vary by configuration
             const botComment = comments.find(comment => 
-              comment.user.login === 'github-actions[bot]' && 
               comment.body.includes('💰 Gate 3 - Cost Estimation Summary')
             );
             
