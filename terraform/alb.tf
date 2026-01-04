@@ -95,16 +95,17 @@ resource "aws_s3_bucket_logging" "alb_logs" {
   target_prefix = "access-logs/"
 }
 
-# Enable server-side encryption for ALB logs bucket with KMS
+# Enable server-side encryption for ALB logs bucket with S3-managed keys (SSE-S3)
+# Note: ALB access logs only support SSE-S3 encryption, not KMS (SSE-KMS)
+# Per AWS documentation: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html
+# trivy:ignore:AVD-AWS-0132 - AWS ALB access logs only support SSE-S3, not customer-managed KMS keys
 resource "aws_s3_bucket_server_side_encryption_configuration" "alb_logs" {
   bucket = aws_s3_bucket.alb_logs.id
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm     = "aws:kms"
-      kms_master_key_id = aws_kms_key.alb_logs_s3.arn
+      sse_algorithm = "AES256"
     }
-    bucket_key_enabled = true
   }
 }
 
@@ -203,8 +204,7 @@ resource "aws_lb" "main" {
     aws_s3_bucket_policy.alb_logs,
     aws_s3_bucket_public_access_block.alb_logs,
     aws_s3_bucket_ownership_controls.alb_logs,
-    aws_s3_bucket_server_side_encryption_configuration.alb_logs,
-    aws_kms_key_policy.alb_logs_s3
+    aws_s3_bucket_server_side_encryption_configuration.alb_logs
   ]
 }
 
