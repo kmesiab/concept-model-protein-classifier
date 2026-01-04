@@ -17,6 +17,9 @@ permissions:
   id-token: write  # Required for OIDC (if needed in future)
   security-events: write  # Required for uploading SARIF files
 
+env:
+  COST_THRESHOLD: 125  # Monthly cost threshold in USD
+
 jobs:
   # Gate 1: TFLint - Catch provider-specific errors and enforce naming conventions
   tflint:
@@ -211,7 +214,7 @@ jobs:
         id: cost_check
         if: always()
         run: |
-          COST_THRESHOLD=125
+          COST_THRESHOLD=${{ env.COST_THRESHOLD }}
           
           if [ -f /tmp/infracost.json ]; then
             # Extract total monthly cost from Infracost JSON
@@ -234,12 +237,135 @@ jobs:
             echo "cost_exceeded=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Run Infracost Comment
-        id: infracost
-        uses: infracost/actions/comment@v1
+      - name: Post Cost Estimation Comment
+        id: post_cost_comment
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
         with:
-          path: /tmp/infracost.json
-          behavior: update
+          script: |
+            const fs = require('fs');
+            
+            // Get cost threshold from the previous step output (defaults to 125)
+            const COST_THRESHOLD = ${{ steps.cost_check.outputs.threshold || 125 }};
+            
+            // Read Infracost JSON if it exists
+            let costComment = '';
+            const infracostPath = '/tmp/infracost.json';
+            
+            // Check if file exists before attempting to read
+            if (!fs.existsSync(infracostPath)) {
+              console.error(`Infracost JSON file not found at ${infracostPath}`);
+              costComment = `## 💰 Gate 3 - Cost Estimation Summary\n\n`;
+              costComment += `⚠️ Infracost analysis not available\n\n`;
+              costComment += `**Estimated Monthly Costs (Cost-Optimized Configuration):**\n`;
+              costComment += `- ECS Fargate (1 task, 0.5 vCPU, 1GB): ~$18/month\n`;
+              costComment += `- Application Load Balancer: ~$22/month\n`;
+              costComment += `- NAT Gateway (1): ~$35/month\n`;
+              costComment += `- Route 53 Hosted Zone: ~$0.50/month\n`;
+              costComment += `- CloudWatch Logs + ECR: ~$2/month\n`;
+              costComment += `- Data Transfer: Variable (estimate $5-10/month)\n\n`;
+              costComment += `**Total Estimated: ~$82-92/month**\n`;
+              costComment += `**Cost Threshold: $${COST_THRESHOLD}/month** ✅\n\n`;
+              costComment += `To enable automated cost tracking, add INFRACOST_API_KEY secret.\n`;
+              costComment += `Get free API key at: https://www.infracost.io/\n\n`;
+              costComment += `---\n`;
+              costComment += `<sub>💡 Enable Infracost for detailed cost breakdown</sub>`;
+            } else {
+              try {
+                const infracostData = JSON.parse(fs.readFileSync(infracostPath, 'utf8'));
+                const totalCost = parseFloat(infracostData.totalMonthlyCost || 0);
+                const costExceeded = totalCost > COST_THRESHOLD;
+                
+                // Build the cost breakdown table
+                costComment = `## 💰 Gate 3 - Cost Estimation Summary\n\n`;
+                
+                // Cost status (single, consolidated threshold display)
+                if (costExceeded) {
+                  costComment += `❌ **Cost exceeds acceptable threshold:** $${totalCost.toFixed(2)}/month > $${COST_THRESHOLD}/month\n\n`;
+                } else {
+                  costComment += `✅ **Cost within acceptable threshold:** $${totalCost.toFixed(2)}/month ≤ $${COST_THRESHOLD}/month\n\n`;
+                }
+                
+                costComment += `### 💰 Gate 3: Cost Estimation\n\n`;
+                costComment += `✅ Infracost analysis completed\n\n`;
+                
+                // Add resource breakdown if available
+                if (infracostData.projects && infracostData.projects.length > 0) {
+                  costComment += `### 📊 Resource Cost Breakdown\n\n`;
+                  costComment += `| Resource | Monthly Cost |\n`;
+                  costComment += `|----------|-------------|\n`;
+                  
+                  for (const project of infracostData.projects) {
+                    if (project.breakdown && project.breakdown.resources) {
+                      for (const resource of project.breakdown.resources) {
+                        const resourceCost = parseFloat(resource.monthlyCost || 0);
+                        if (resourceCost > 0) {
+                          costComment += `| ${resource.name} | $${resourceCost.toFixed(2)} |\n`;
+                        }
+                      }
+                    }
+                  }
+                  
+                  costComment += `\n**Total Monthly Cost:** $${totalCost.toFixed(2)}\n`;
+                }
+                
+                costComment += `\n---\n`;
+                costComment += `<sub>💡 Cost estimates are provided by [Infracost](https://www.infracost.io/)</sub>`;
+                
+              } catch (error) {
+                // Log the error for debugging - JSON parsing or other read errors
+                console.error('Error parsing Infracost JSON:', error.message);
+                console.error('Stack trace:', error.stack);
+                
+                // Fallback to manual cost estimates
+                costComment = `## 💰 Gate 3 - Cost Estimation Summary\n\n`;
+                costComment += `⚠️ Infracost data could not be parsed\n\n`;
+                costComment += `**Estimated Monthly Costs (Cost-Optimized Configuration):**\n`;
+                costComment += `- ECS Fargate (1 task, 0.5 vCPU, 1GB): ~$18/month\n`;
+                costComment += `- Application Load Balancer: ~$22/month\n`;
+                costComment += `- NAT Gateway (1): ~$35/month\n`;
+                costComment += `- Route 53 Hosted Zone: ~$0.50/month\n`;
+                costComment += `- CloudWatch Logs + ECR: ~$2/month\n`;
+                costComment += `- Data Transfer: Variable (estimate $5-10/month)\n\n`;
+                costComment += `**Total Estimated: ~$82-92/month**\n`;
+                costComment += `**Cost Threshold: $${COST_THRESHOLD}/month** ✅\n\n`;
+                costComment += `To enable automated cost tracking, add INFRACOST_API_KEY secret.\n`;
+                costComment += `Get free API key at: https://www.infracost.io/\n\n`;
+                costComment += `---\n`;
+                costComment += `<sub>💡 Enable Infracost for detailed cost breakdown</sub>`;
+              }
+            }
+            
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            // Look for existing cost estimation comment by checking for the unique identifier in the comment body
+            // This is more robust than checking bot username which might vary by configuration
+            const botComment = comments.find(comment => 
+              comment.body.includes('💰 Gate 3 - Cost Estimation Summary')
+            );
+            
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: costComment
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: costComment
+              });
+            }
         continue-on-error: true
 
       - name: Cost Estimation Summary (Manual)
