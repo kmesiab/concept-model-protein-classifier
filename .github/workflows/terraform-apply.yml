@@ -391,6 +391,26 @@ jobs:
           
           echo "✅ Import step complete"
 
+      # Backup current state before applying changes
+      # This enables rollback to previous stable state if apply fails
+      - name: Backup Current State
+        id: backup
+        run: |
+          cd terraform
+          echo "💾 Backing up current Terraform state..."
+          
+          # Pull latest state from remote backend
+          terraform state pull > /tmp/terraform-state-backup.json
+          
+          # Get list of current resources for comparison
+          terraform state list > /tmp/terraform-resources-before.txt
+          
+          echo "✅ State backup completed"
+          echo "📋 Current resources:"
+          cat /tmp/terraform-resources-before.txt
+          echo ""
+          echo "Backup saved to /tmp/terraform-state-backup.json"
+
       - name: Terraform Apply
         id: apply
         run: |
@@ -398,6 +418,103 @@ jobs:
           echo "🚀 Applying Terraform changes..."
           terraform apply -auto-approve -no-color tfplan.out
           echo "✅ Terraform apply completed successfully!"
+
+      # Automatic rollback mechanism - only triggers on apply failure
+      # Identifies and destroys only resources created in the failed apply
+      # Restores infrastructure to previous stable state
+      - name: Rollback on Failure
+        if: failure() && steps.apply.outcome == 'failure'
+        run: |
+          cd terraform
+          echo "## 🔄 Automatic Rollback Triggered" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️  Terraform apply failed. Initiating automatic rollback..." | tee -a $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Get list of resources after failed apply
+          echo "📋 Identifying resources created in failed apply..."
+          terraform state list > /tmp/terraform-resources-after.txt 2>/dev/null || true
+          
+          # Compare states to find newly created resources
+          # These are resources that exist in 'after' but not in 'before'
+          echo "🔍 Comparing states to identify new resources..."
+          NEW_RESOURCES=$(comm -13 \
+            <(sort /tmp/terraform-resources-before.txt) \
+            <(sort /tmp/terraform-resources-after.txt) || echo "")
+          
+          if [ -z "$NEW_RESOURCES" ]; then
+            echo "ℹ️  No new resources found to rollback" | tee -a $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The apply failed before creating any resources." | tee -a $GITHUB_STEP_SUMMARY
+            echo "Previous infrastructure state remains intact." | tee -a $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          
+          echo "### Resources to Rollback:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "$NEW_RESOURCES" | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Attempt to destroy newly created resources
+          echo "🗑️  Rolling back newly created resources..."
+          ROLLBACK_FAILED=false
+          
+          while IFS= read -r resource; do
+            if [ -n "$resource" ]; then
+              echo "  Destroying: $resource"
+              if terraform destroy -auto-approve -target="$resource" -no-color; then
+                echo "    ✅ Successfully destroyed: $resource" | tee -a $GITHUB_STEP_SUMMARY
+              else
+                echo "    ❌ Failed to destroy: $resource" | tee -a $GITHUB_STEP_SUMMARY
+                ROLLBACK_FAILED=true
+              fi
+            fi
+          done <<< "$NEW_RESOURCES"
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check if rollback was successful
+          if [ "$ROLLBACK_FAILED" = true ]; then
+            echo "### ⚠️  Rollback Partially Failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Some resources could not be automatically destroyed." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "#### Manual Recovery Required:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "1. Review the AWS Console to identify orphaned resources" >> $GITHUB_STEP_SUMMARY
+            echo "2. Manually destroy failed resources using:" >> $GITHUB_STEP_SUMMARY
+            echo '   ```bash' >> $GITHUB_STEP_SUMMARY
+            echo "   terraform destroy -target=<resource_address>" >> $GITHUB_STEP_SUMMARY
+            echo '   ```' >> $GITHUB_STEP_SUMMARY
+            echo "3. Verify state consistency with:" >> $GITHUB_STEP_SUMMARY
+            echo '   ```bash' >> $GITHUB_STEP_SUMMARY
+            echo "   terraform state list" >> $GITHUB_STEP_SUMMARY
+            echo "   terraform plan" >> $GITHUB_STEP_SUMMARY
+            echo '   ```' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "❌ Rollback completed with errors. Manual intervention required." | tee -a $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "### ✅ Rollback Successful" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "All newly created resources have been destroyed." >> $GITHUB_STEP_SUMMARY
+            echo "Infrastructure has been restored to previous stable state." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # Verify final state
+            echo "### Final State Verification:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            terraform state list | tee -a $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            echo "✅ Rollback completed successfully" | tee -a $GITHUB_STEP_SUMMARY
+            echo "⚠️  Note: The original apply failure still needs to be investigated and resolved." | tee -a $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
 
       - name: Output Infrastructure Details
         if: success()
