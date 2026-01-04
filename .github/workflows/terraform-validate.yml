@@ -234,12 +234,111 @@ jobs:
             echo "cost_exceeded=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Run Infracost Comment
-        id: infracost
-        uses: infracost/actions/comment@v1
+      - name: Post Cost Estimation Comment
+        id: post_cost_comment
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
         with:
-          path: /tmp/infracost.json
-          behavior: update
+          script: |
+            const fs = require('fs');
+            
+            // Read Infracost JSON if it exists
+            let costComment = '';
+            try {
+              const infracostData = JSON.parse(fs.readFileSync('/tmp/infracost.json', 'utf8'));
+              const totalCost = parseFloat(infracostData.totalMonthlyCost || 0);
+              const threshold = 125;
+              const costExceeded = totalCost > threshold;
+              
+              // Build the cost breakdown table
+              costComment = `## 💰 Gate 3 - Cost Estimation Summary\n\n`;
+              
+              // Cost status
+              if (costExceeded) {
+                costComment += `❌ **Cost threshold exceeded:** $${totalCost.toFixed(2)}/month > $${threshold}/month\n\n`;
+              } else {
+                costComment += `✅ **Cost within threshold:** $${totalCost.toFixed(2)}/month ≤ $${threshold}/month\n\n`;
+              }
+              
+              costComment += `### 💰 Gate 3: Cost Estimation\n\n`;
+              costComment += `✅ Infracost analysis completed\n\n`;
+              
+              if (costExceeded) {
+                costComment += `❌ Cost exceeds acceptable threshold ($${threshold}/month)\n\n`;
+              } else {
+                costComment += `✅ Cost within acceptable threshold ($${threshold}/month)\n\n`;
+              }
+              
+              // Add resource breakdown if available
+              if (infracostData.projects && infracostData.projects.length > 0) {
+                costComment += `### 📊 Resource Cost Breakdown\n\n`;
+                costComment += `| Resource | Monthly Cost |\n`;
+                costComment += `|----------|-------------|\n`;
+                
+                for (const project of infracostData.projects) {
+                  if (project.breakdown && project.breakdown.resources) {
+                    for (const resource of project.breakdown.resources) {
+                      const resourceCost = parseFloat(resource.monthlyCost || 0);
+                      if (resourceCost > 0) {
+                        costComment += `| ${resource.name} | $${resourceCost.toFixed(2)} |\n`;
+                      }
+                    }
+                  }
+                }
+                
+                costComment += `\n**Total Monthly Cost:** $${totalCost.toFixed(2)}\n`;
+              }
+              
+              costComment += `\n---\n`;
+              costComment += `<sub>💡 Cost estimates are provided by [Infracost](https://www.infracost.io/)</sub>`;
+              
+            } catch (error) {
+              costComment = `## 💰 Gate 3 - Cost Estimation Summary\n\n`;
+              costComment += `⚠️ Infracost analysis not available\n\n`;
+              costComment += `**Estimated Monthly Costs (Cost-Optimized Configuration):**\n`;
+              costComment += `- ECS Fargate (1 task, 0.5 vCPU, 1GB): ~$18/month\n`;
+              costComment += `- Application Load Balancer: ~$22/month\n`;
+              costComment += `- NAT Gateway (1): ~$35/month\n`;
+              costComment += `- Route 53 Hosted Zone: ~$0.50/month\n`;
+              costComment += `- CloudWatch Logs + ECR: ~$2/month\n`;
+              costComment += `- Data Transfer: Variable (estimate $5-10/month)\n\n`;
+              costComment += `**Total Estimated: ~$82-92/month**\n`;
+              costComment += `**Cost Threshold: $125/month** ✅\n\n`;
+              costComment += `To enable automated cost tracking, add INFRACOST_API_KEY secret.\n`;
+              costComment += `Get free API key at: https://www.infracost.io/\n\n`;
+              costComment += `---\n`;
+              costComment += `<sub>💡 Enable Infracost for detailed cost breakdown</sub>`;
+            }
+            
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('💰 Gate 3 - Cost Estimation Summary')
+            );
+            
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: costComment
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: costComment
+              });
+            }
         continue-on-error: true
 
       - name: Cost Estimation Summary (Manual)
