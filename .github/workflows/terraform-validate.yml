@@ -17,6 +17,9 @@ permissions:
   id-token: write  # Required for OIDC (if needed in future)
   security-events: write  # Required for uploading SARIF files
 
+env:
+  COST_THRESHOLD: 125  # Monthly cost threshold in USD
+
 jobs:
   # Gate 1: TFLint - Catch provider-specific errors and enforce naming conventions
   tflint:
@@ -211,7 +214,7 @@ jobs:
         id: cost_check
         if: always()
         run: |
-          COST_THRESHOLD=125
+          COST_THRESHOLD=${{ env.COST_THRESHOLD }}
           
           if [ -f /tmp/infracost.json ]; then
             # Extract total monthly cost from Infracost JSON

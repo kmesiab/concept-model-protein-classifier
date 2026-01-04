@@ -23,6 +23,9 @@ permissions:
   id-token: write
   pull-requests: write
 
+env:
+  COST_THRESHOLD: 125  # Monthly cost threshold in USD
+
 jobs:
   validate:
     name: Pre-Apply Validation (Triple-Gated)
@@ -173,7 +176,7 @@ jobs:
           
           # Extract total monthly cost
           TOTAL_COST=$(jq -r '.totalMonthlyCost' /tmp/infracost.json)
-          THRESHOLD=125
+          THRESHOLD=${{ env.COST_THRESHOLD }}
           
           echo "📊 Total Monthly Cost: \$$TOTAL_COST"
           echo "🎯 Cost Threshold: \$$THRESHOLD"
