@@ -22,107 +22,11 @@ because no identity-based policy allows the kms:Decrypt action
 
 ## Solutions
 
-We provide **three approaches** to solve this problem:
+We provide **two approaches** to solve this problem:
 
-### Option 1: GitHub Actions Workflow (Recommended)
+### Option 1: Manual AWS CLI Command (Recommended)
 
-This is the **easiest and safest** approach. A one-time GitHub Actions workflow will update the KMS key policy automatically.
-
-**Prerequisites:**
-
-- Access to GitHub Actions in this repository
-- AWS role with permission to modify KMS key policies (e.g., `github-actions-terraform-admin`)
-  - **Note:** The workflow uses `github-actions-terraform-admin` role by default
-  - If this role doesn't exist, you'll need to use Option 2, 3, 4, or 5 with appropriate credentials
-  - Or create the admin role with `kms:PutKeyPolicy` permission
-
-**Steps:**
-
-1. Go to **Actions** tab in GitHub
-2. Select **Bootstrap KMS Permissions** workflow
-3. Click **Run workflow**
-4. Type `bootstrap` to confirm
-5. Wait for workflow to complete
-6. Run the regular **Terraform Apply** workflow
-
-**What it does:**
-
-- Validates AWS credentials
-- Retrieves current KMS key policy
-- Adds GitHub Actions role permissions
-- Verifies the update was successful
-
-### Option 2: Bash Script (Local Execution)
-
-Run the bootstrap script locally with AWS CLI credentials.
-
-**Prerequisites:**
-
-- AWS CLI installed and configured
-- `jq` installed (`sudo apt-get install jq` or `brew install jq`)
-- AWS credentials with permission to modify KMS key policies
-
-**Steps:**
-
-```bash
-cd terraform
-./bootstrap-kms-permissions.sh
-```
-
-**With custom parameters:**
-
-```bash
-./bootstrap-kms-permissions.sh \
-  e9b37450-f4df-45d6-a336-aefd3b1d0896 \
-  arn:aws:iam::462498369025:role/github-actions-terraform
-```
-
-**Using environment variables:**
-
-```bash
-export KMS_KEY_ID=e9b37450-f4df-45d6-a336-aefd3b1d0896
-export GITHUB_ACTIONS_ROLE_ARN=arn:aws:iam::462498369025:role/github-actions-terraform
-export AWS_REGION=us-west-2
-./bootstrap-kms-permissions.sh
-```
-
-### Option 3: Python Script (Local Execution)
-
-Use the Python script if you prefer boto3 over AWS CLI.
-
-**Prerequisites:**
-
-- Python 3.7+
-- boto3 installed (`pip install boto3`)
-- AWS credentials with permission to modify KMS key policies
-
-**Steps:**
-
-```bash
-cd terraform
-python3 bootstrap_kms_permissions.py
-```
-
-**With custom parameters:**
-
-```bash
-python3 bootstrap_kms_permissions.py \
-  --key-id e9b37450-f4df-45d6-a336-aefd3b1d0896 \
-  --role-arn arn:aws:iam::462498369025:role/github-actions-terraform \
-  --region us-west-2
-```
-
-**Using environment variables:**
-
-```bash
-export KMS_KEY_ID=e9b37450-f4df-45d6-a336-aefd3b1d0896
-export GITHUB_ACTIONS_ROLE_ARN=arn:aws:iam::462498369025:role/github-actions-terraform
-python3 bootstrap_kms_permissions.py
-```
-
-### Option 4: Manual AWS CLI Command
-
-If you can't use the scripts, run this AWS CLI command directly:
+Run these AWS CLI commands to manually update the KMS key policy:
 
 **Step 1: Get current policy**
 
@@ -166,7 +70,7 @@ aws kms put-key-policy \
   --region us-west-2
 ```
 
-### Option 5: AWS Console (Manual)
+### Option 2: AWS Console (Manual)
 
 If you prefer using the AWS Console:
 
@@ -175,7 +79,7 @@ If you prefer using the AWS Console:
 3. Click on the key
 4. Go to **Key policy** tab
 5. Click **Edit**
-6. Add the statement from Option 4 Step 2 to the policy
+6. Add the statement from Option 1 Step 2 to the policy
 7. Click **Save changes**
 
 ## What Permissions Are Granted?
