@@ -23,6 +23,7 @@ Implement a standardized naming convention for ALL Terraform resources:
 **Pattern:** `protein-classifier-{resource-purpose}-{resource-type}`
 
 **Rules:**
+
 1. Always prefix with `protein-classifier-` for all AWS resources
 2. Use hyphens only (no underscores) for AWS resource names
 3. Be descriptive about the resource purpose
@@ -94,6 +95,7 @@ git checkout <branch-with-naming-changes>
 ```
 
 Review the changes in:
+
 - `terraform/kms.tf`
 - `terraform/iam.tf`
 - `terraform/dynamodb.tf`
@@ -108,6 +110,7 @@ cd terraform/
 ```
 
 This script will:
+
 - Verify you're in the correct directory
 - Show a summary of changes
 - Ask for confirmation
@@ -118,24 +121,27 @@ This script will:
 
 **Expected changes:**
 
-```
+```text
 Plan: 4 to add, 6 to change, 4 to destroy.
 ```
 
 **Breakdown:**
+
 - **Add (4)**: New KMS aliases with updated names
-- **Change (6)**: 
+- **Change (6)**:
   - 4 KMS key tags (in-place update)
   - 2 IAM policy names (in-place update)
 - **Destroy (4)**: Old KMS aliases (replaced by new ones)
 
 **Critical Verification:**
+
 - ✅ Zero KMS **keys** being destroyed (only aliases)
 - ✅ Zero DynamoDB tables being destroyed
 - ✅ Zero IAM **roles** being destroyed (only inline policies updated)
 - ✅ All changes are in-place updates or alias recreations
 
 **Red Flags (STOP if you see these):**
+
 - ❌ `aws_kms_key.alb_logs_s3` will be destroyed
 - ❌ `aws_kms_key.cloudwatch_logs` will be destroyed
 - ❌ `aws_kms_key.dynamodb` will be destroyed
@@ -160,6 +166,7 @@ Review the plan one more time when prompted, then type `yes` to apply.
 After applying, verify the changes in AWS Console:
 
 **KMS Keys:**
+
 1. Navigate to: AWS Console → KMS → Customer managed keys
 2. Verify aliases are updated:
    - `alias/protein-classifier-alb-logs-kms`
@@ -169,6 +176,7 @@ After applying, verify the changes in AWS Console:
 3. Verify Name tags are updated in each key's details
 
 **IAM Policies:**
+
 1. Navigate to: AWS Console → IAM → Roles
 2. Check `protein-classifier-github-actions-role`
    - Verify policy name is `protein-classifier-github-actions-deployment-policy`
@@ -240,6 +248,7 @@ terraform apply
 **Cause:** Another Terraform operation is in progress or a previous operation didn't clean up properly.
 
 **Solution:**
+
 ```bash
 # Check DynamoDB for locks
 aws dynamodb get-item \
@@ -261,6 +270,7 @@ terraform force-unlock <lock-id>
 **Cause:** IAM permissions insufficient for the migration.
 
 **Solution:** Ensure your IAM user/role has:
+
 - `kms:CreateAlias`, `kms:DeleteAlias`, `kms:UpdateAlias`
 - `iam:PutRolePolicy`, `iam:DeleteRolePolicy`
 - `kms:TagResource`, `kms:UntagResource`
@@ -275,6 +285,7 @@ terraform force-unlock <lock-id>
 **Cause 2:** Hard-coded KMS alias references in application code.
 
 **Solution:** Search codebase for old alias names and update:
+
 ```bash
 grep -r "alb-logs-s3-encryption" .
 grep -r "cloudwatch-logs" . | grep -v "protein-classifier-cloudwatch-logs"
