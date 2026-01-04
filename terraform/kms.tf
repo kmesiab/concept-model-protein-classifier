@@ -50,6 +50,23 @@ resource "aws_kms_key_policy" "alb_logs_s3" {
         Resource = "*"
       },
       {
+        # Regional ELB service account requires KMS permissions to encrypt logs
+        # This matches the S3 bucket policy which grants write access to this account
+        # Without this, the ELB service account can write to S3 but cannot encrypt the objects
+        Sid    = "AllowRegionalELBAccountToUseTheKey"
+        Effect = "Allow"
+        Principal = {
+          AWS = data.aws_elb_service_account.main.arn
+        }
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey"
+        ]
+        Resource = "*"
+      },
+      {
         # S3 service needs encrypt/decrypt/generate for server-side encryption
         # Server access logging requires both read and write encryption operations
         Sid    = "AllowS3ToUseTheKeyForAccessLogs"
