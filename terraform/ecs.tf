@@ -5,7 +5,8 @@ resource "aws_cloudwatch_log_group" "ecs_logs" {
   kms_key_id        = aws_kms_key.cloudwatch_logs.arn
 
   tags = {
-    Name = "protein-classifier-ecs-logs"
+    Name        = "protein-classifier-ecs-logs"
+    Description = "CloudWatch log group for ECS container logs"
   }
 }
 
@@ -19,7 +20,8 @@ resource "aws_ecs_cluster" "main" {
   }
 
   tags = {
-    Name = "protein-classifier-api-1-0-0-prod-cluster"
+    Name        = "protein-classifier-api-1-0-0-prod-cluster"
+    Description = "ECS cluster for protein classifier API production environment"
   }
 }
 
@@ -87,7 +89,8 @@ resource "aws_ecs_task_definition" "api" {
   ])
 
   tags = {
-    Name = "protein-classifier-api-task"
+    Name        = "protein-classifier-api-task"
+    Description = "ECS task definition for protein classifier API container"
   }
 }
 
@@ -145,6 +148,7 @@ resource "aws_ecs_service" "api" {
   ]
 
   tags = {
-    Name = "protein-classifier-api-service"
+    Name        = "protein-classifier-api-service"
+    Description = "ECS Fargate service running protein classifier API"
   }
 }

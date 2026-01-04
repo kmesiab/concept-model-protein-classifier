@@ -6,7 +6,8 @@ resource "aws_s3_bucket" "alb_logs" {
   bucket = "protein-classifier-alb-logs-${var.aws_account_id}"
 
   tags = {
-    Name = "protein-classifier-alb-logs"
+    Name        = "protein-classifier-alb-logs"
+    Description = "S3 bucket for Application Load Balancer access logs"
   }
 }
 
@@ -184,7 +185,8 @@ resource "aws_lb" "main" {
   }
 
   tags = {
-    Name = "protein-classifier-alb"
+    Name        = "protein-classifier-alb"
+    Description = "Application Load Balancer for protein classifier API"
   }
 
   depends_on = [aws_s3_bucket_policy.alb_logs, aws_kms_key_policy.alb_logs_s3]
@@ -212,7 +214,8 @@ resource "aws_lb_target_group" "ecs" {
   deregistration_delay = 30
 
   tags = {
-    Name = "protein-classifier-ecs-tg"
+    Name        = "protein-classifier-ecs-tg"
+    Description = "Target group for ECS Fargate tasks"
   }
 }
 

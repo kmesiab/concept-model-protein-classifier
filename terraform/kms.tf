@@ -9,7 +9,8 @@ resource "aws_kms_key" "alb_logs_s3" {
   }
 
   tags = {
-    Name = "protein-classifier-alb-logs-kms"
+    Name        = "protein-classifier-alb-logs-kms"
+    Description = "KMS key for encrypting ALB access logs in S3"
   }
 }
 
@@ -99,7 +100,8 @@ resource "aws_kms_key" "cloudwatch_logs" {
   }
 
   tags = {
-    Name = "protein-classifier-cloudwatch-logs-kms"
+    Name        = "protein-classifier-cloudwatch-logs-kms"
+    Description = "KMS key for encrypting CloudWatch log groups"
   }
 }
 
@@ -161,7 +163,8 @@ resource "aws_kms_key" "dynamodb" {
   }
 
   tags = {
-    Name = "protein-classifier-dynamodb-kms"
+    Name        = "protein-classifier-dynamodb-kms"
+    Description = "KMS key for encrypting DynamoDB tables"
   }
 }
 
@@ -244,7 +247,8 @@ resource "aws_kms_key" "ecr" {
   }
 
   tags = {
-    Name = "protein-classifier-ecr-kms"
+    Name        = "protein-classifier-ecr-kms"
+    Description = "KMS key for encrypting ECR Docker images"
   }
 }
 
