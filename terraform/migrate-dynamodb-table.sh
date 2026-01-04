@@ -125,11 +125,9 @@ elif [ "$OLD_TABLE_STATUS" != "NOT_FOUND" ] && [ "$NEW_TABLE_STATUS" = "NOT_FOUN
   # Step 1: Verify Terraform is NOT initialized with state locking
   echo "Step 1: Checking Terraform initialization..."
   if [ -d ".terraform" ]; then
-    # Check backend configuration
-    BACKEND_CONFIG=$(terraform -chdir=. show -json 2>/dev/null | jq -r '.values.root_module.resources[] | select(.type == "terraform_backend") | .values.config.dynamodb_table // "none"' 2>/dev/null || echo "unknown")
-    
-    if [ "$BACKEND_CONFIG" = "$NEW_TABLE" ]; then
-      echo -e "${YELLOW}⚠️  Warning: Terraform is already configured to use $NEW_TABLE${NC}"
+    # Check backend configuration by looking at backend.tf directly
+    if grep -q "^[[:space:]]*dynamodb_table[[:space:]]*=" backend.tf; then
+      echo -e "${YELLOW}⚠️  Warning: backend.tf has dynamodb_table enabled${NC}"
       echo "   This will likely fail during init. We'll reconfigure the backend."
       echo ""
     fi
@@ -141,7 +139,7 @@ elif [ "$OLD_TABLE_STATUS" != "NOT_FOUND" ] && [ "$NEW_TABLE_STATUS" = "NOT_FOUN
     echo "   Creating backup of backend.tf..."
     cp backend.tf backend.tf.backup
     echo "   Commenting out dynamodb_table line..."
-    sed -i.tmp 's/^\([[:space:]]*\)dynamodb_table\([[:space:]]*=.*\)/\1# dynamodb_table\2  # Temporarily disabled for migration/' backend.tf
+    sed -i.tmp 's/^\([[:space:]]*\)dynamodb_table\([[:space:]]*=.*\)/\1# dynamodb_table\2  # TEMP: Disabled for migration/' backend.tf
     rm -f backend.tf.tmp
     echo -e "${GREEN}✅ State locking temporarily disabled${NC}"
   else
@@ -186,7 +184,8 @@ elif [ "$OLD_TABLE_STATUS" != "NOT_FOUND" ] && [ "$NEW_TABLE_STATUS" = "NOT_FOUN
     echo -e "${GREEN}✅ State locking re-enabled${NC}"
   else
     echo "   Uncommenting dynamodb_table line..."
-    sed -i.tmp 's/^[[:space:]]*#[[:space:]]*dynamodb_table\([[:space:]]*=.*\)[[:space:]]*#.*migration/    dynamodb_table\1/' backend.tf
+    # Pattern: captures indentation, removes "# ", keeps rest, removes comment
+    sed -i.tmp 's/^\([[:space:]]*\)# \(dynamodb_table[[:space:]]*=.*\)[[:space:]]*#.*TEMP:.*migration/\1\2/' backend.tf
     rm -f backend.tf.tmp
     echo -e "${GREEN}✅ State locking re-enabled${NC}"
   fi
