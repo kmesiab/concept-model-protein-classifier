@@ -1,5 +1,8 @@
 # GitHub Actions OIDC Role - Reference to existing role
-# This role already exists in AWS and should not be managed by Terraform
+# This role already exists in AWS and should not be managed by Terraform.
+# The existing role has carefully crafted granular permissions that are managed
+# outside of this Terraform configuration to maintain separation of concerns.
+# Terraform only needs to reference the role's ARN for KMS policies and outputs.
 data "aws_iam_role" "github_actions" {
   name = "github-actions-terraform"
 }
