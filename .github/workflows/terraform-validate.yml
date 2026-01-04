@@ -242,31 +242,33 @@ jobs:
           script: |
             const fs = require('fs');
             
+            // Cost threshold (matches the threshold in cost_check step)
+            const COST_THRESHOLD = 125;
+            
             // Read Infracost JSON if it exists
             let costComment = '';
             try {
               const infracostData = JSON.parse(fs.readFileSync('/tmp/infracost.json', 'utf8'));
               const totalCost = parseFloat(infracostData.totalMonthlyCost || 0);
-              const threshold = 125;
-              const costExceeded = totalCost > threshold;
+              const costExceeded = totalCost > COST_THRESHOLD;
               
               // Build the cost breakdown table
               costComment = `## 💰 Gate 3 - Cost Estimation Summary\n\n`;
               
               // Cost status
               if (costExceeded) {
-                costComment += `❌ **Cost threshold exceeded:** $${totalCost.toFixed(2)}/month > $${threshold}/month\n\n`;
+                costComment += `❌ **Cost threshold exceeded:** $${totalCost.toFixed(2)}/month > $${COST_THRESHOLD}/month\n\n`;
               } else {
-                costComment += `✅ **Cost within threshold:** $${totalCost.toFixed(2)}/month ≤ $${threshold}/month\n\n`;
+                costComment += `✅ **Cost within threshold:** $${totalCost.toFixed(2)}/month ≤ $${COST_THRESHOLD}/month\n\n`;
               }
               
               costComment += `### 💰 Gate 3: Cost Estimation\n\n`;
               costComment += `✅ Infracost analysis completed\n\n`;
               
               if (costExceeded) {
-                costComment += `❌ Cost exceeds acceptable threshold ($${threshold}/month)\n\n`;
+                costComment += `❌ Cost exceeds acceptable threshold ($${COST_THRESHOLD}/month)\n\n`;
               } else {
-                costComment += `✅ Cost within acceptable threshold ($${threshold}/month)\n\n`;
+                costComment += `✅ Cost within acceptable threshold ($${COST_THRESHOLD}/month)\n\n`;
               }
               
               // Add resource breakdown if available
@@ -293,6 +295,11 @@ jobs:
               costComment += `<sub>💡 Cost estimates are provided by [Infracost](https://www.infracost.io/)</sub>`;
               
             } catch (error) {
+              // Log the error for debugging
+              console.error('Error reading or parsing Infracost JSON:', error.message);
+              console.error('Stack trace:', error.stack);
+              
+              // Fallback to manual cost estimates
               costComment = `## 💰 Gate 3 - Cost Estimation Summary\n\n`;
               costComment += `⚠️ Infracost analysis not available\n\n`;
               costComment += `**Estimated Monthly Costs (Cost-Optimized Configuration):**\n`;
@@ -303,7 +310,7 @@ jobs:
               costComment += `- CloudWatch Logs + ECR: ~$2/month\n`;
               costComment += `- Data Transfer: Variable (estimate $5-10/month)\n\n`;
               costComment += `**Total Estimated: ~$82-92/month**\n`;
-              costComment += `**Cost Threshold: $125/month** ✅\n\n`;
+              costComment += `**Cost Threshold: $${COST_THRESHOLD}/month** ✅\n\n`;
               costComment += `To enable automated cost tracking, add INFRACOST_API_KEY secret.\n`;
               costComment += `Get free API key at: https://www.infracost.io/\n\n`;
               costComment += `---\n`;
@@ -317,8 +324,9 @@ jobs:
               issue_number: context.issue.number,
             });
             
+            // Look for existing cost estimation comment by the github-actions bot
             const botComment = comments.find(comment => 
-              comment.user.type === 'Bot' && 
+              comment.user.login === 'github-actions[bot]' && 
               comment.body.includes('💰 Gate 3 - Cost Estimation Summary')
             );
             
