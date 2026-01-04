@@ -2,6 +2,29 @@
 
 This directory contains the Terraform infrastructure code for deploying the Protein Classifier API to AWS ECS Fargate with OIDC authentication.
 
+## 📛 Resource Naming Convention
+
+All resources follow a standardized naming convention for clear ownership and easy identification:
+
+**Pattern:** `protein-classifier-{resource-purpose}-{resource-type}`
+
+**Rules:**
+
+1. Always prefix with `protein-classifier-` for all AWS resources
+2. Use hyphens only (no underscores) for AWS resource names
+3. Be descriptive about the resource purpose
+4. Include resource type when it adds clarity
+
+**Examples:**
+
+- KMS Keys: `alias/protein-classifier-alb-logs-kms`, `alias/protein-classifier-ecr-kms`
+- IAM Roles: `protein-classifier-github-actions-role`, `protein-classifier-ecs-task-role`
+- S3 Buckets: `protein-classifier-alb-logs-{account-id}`
+- Load Balancer: `protein-classifier-alb`
+- Security Groups: `protein-classifier-alb-sg`, `protein-classifier-ecs-tasks-sg`
+
+This ensures all resources are immediately identifiable in the AWS Console and supports proper cost allocation and security auditing.
+
 ## 🚀 Triple-Gated Validation Pipeline
 
 All infrastructure changes are automatically validated through our **Triple-Gated CI/CD Pipeline**:

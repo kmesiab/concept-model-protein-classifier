@@ -17,6 +17,10 @@ resource "aws_dynamodb_table" "terraform_locks" {
     kms_key_arn = aws_kms_key.dynamodb.arn
   }
 
+  lifecycle {
+    prevent_destroy = true
+  }
+
   tags = {
     Name        = "protein-classifier-terraform-locks"
     Description = "DynamoDB table for Terraform state locking"

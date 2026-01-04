@@ -10,7 +10,8 @@ resource "aws_vpc" "main" {
   enable_dns_hostnames = true
 
   tags = {
-    Name = "protein-classifier-vpc"
+    Name        = "protein-classifier-vpc"
+    Description = "VPC for protein classifier application infrastructure"
   }
 }
 
@@ -19,7 +20,8 @@ resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
   tags = {
-    Name = "protein-classifier-igw"
+    Name        = "protein-classifier-igw"
+    Description = "Internet Gateway for public subnet internet access"
   }
 }
 
@@ -31,8 +33,9 @@ resource "aws_subnet" "public_a" {
   map_public_ip_on_launch = true # trivy:ignore:AVD-AWS-0164 - Public subnet required for internet-facing ALB
 
   tags = {
-    Name = "protein-classifier-public-subnet-a"
-    Type = "Public"
+    Name        = "protein-classifier-public-subnet-a"
+    Type        = "Public"
+    Description = "Public subnet in availability zone A for ALB"
   }
 }
 
@@ -43,8 +46,9 @@ resource "aws_subnet" "public_b" {
   map_public_ip_on_launch = true # trivy:ignore:AVD-AWS-0164 - Public subnet required for internet-facing ALB
 
   tags = {
-    Name = "protein-classifier-public-subnet-b"
-    Type = "Public"
+    Name        = "protein-classifier-public-subnet-b"
+    Type        = "Public"
+    Description = "Public subnet in availability zone B for ALB"
   }
 }
 
@@ -55,8 +59,9 @@ resource "aws_subnet" "private_a" {
   availability_zone = data.aws_availability_zones.available.names[0]
 
   tags = {
-    Name = "protein-classifier-private-subnet-a"
-    Type = "Private"
+    Name        = "protein-classifier-private-subnet-a"
+    Type        = "Private"
+    Description = "Private subnet in availability zone A for ECS tasks"
   }
 }
 
@@ -66,8 +71,9 @@ resource "aws_subnet" "private_b" {
   availability_zone = data.aws_availability_zones.available.names[1]
 
   tags = {
-    Name = "protein-classifier-private-subnet-b"
-    Type = "Private"
+    Name        = "protein-classifier-private-subnet-b"
+    Type        = "Private"
+    Description = "Private subnet in availability zone B for ECS tasks"
   }
 }
 
@@ -76,7 +82,8 @@ resource "aws_eip" "nat_a" {
   domain = "vpc"
 
   tags = {
-    Name = "protein-classifier-nat-eip-a"
+    Name        = "protein-classifier-nat-eip-a"
+    Description = "Elastic IP for NAT Gateway in availability zone A"
   }
 
   depends_on = [aws_internet_gateway.main]
@@ -87,7 +94,8 @@ resource "aws_eip" "nat_b" {
   domain = "vpc"
 
   tags = {
-    Name = "protein-classifier-nat-eip-b"
+    Name        = "protein-classifier-nat-eip-b"
+    Description = "Elastic IP for NAT Gateway in availability zone B"
   }
 
   depends_on = [aws_internet_gateway.main]
@@ -99,7 +107,8 @@ resource "aws_nat_gateway" "nat_a" {
   subnet_id     = aws_subnet.public_a.id
 
   tags = {
-    Name = "protein-classifier-nat-gateway-a"
+    Name        = "protein-classifier-nat-gateway-a"
+    Description = "NAT Gateway for private subnet internet access in AZ A"
   }
 
   depends_on = [aws_internet_gateway.main]
@@ -111,7 +120,8 @@ resource "aws_nat_gateway" "nat_b" {
   subnet_id     = aws_subnet.public_b.id
 
   tags = {
-    Name = "protein-classifier-nat-gateway-b"
+    Name        = "protein-classifier-nat-gateway-b"
+    Description = "NAT Gateway for private subnet internet access in AZ B"
   }
 
   depends_on = [aws_internet_gateway.main]
@@ -127,7 +137,8 @@ resource "aws_route_table" "public" {
   }
 
   tags = {
-    Name = "protein-classifier-public-rt"
+    Name        = "protein-classifier-public-rt"
+    Description = "Route table for public subnets with internet gateway"
   }
 }
 
@@ -152,7 +163,8 @@ resource "aws_route_table" "private_a" {
   }
 
   tags = {
-    Name = "protein-classifier-private-rt-a"
+    Name        = "protein-classifier-private-rt-a"
+    Description = "Route table for private subnet A with NAT gateway"
   }
 }
 
@@ -166,7 +178,8 @@ resource "aws_route_table" "private_b" {
   }
 
   tags = {
-    Name = "protein-classifier-private-rt-b"
+    Name        = "protein-classifier-private-rt-b"
+    Description = "Route table for private subnet B with NAT gateway"
   }
 }
 
@@ -188,7 +201,8 @@ resource "aws_security_group" "alb" {
   vpc_id      = aws_vpc.main.id
 
   tags = {
-    Name = "protein-classifier-alb-sg"
+    Name        = "protein-classifier-alb-sg"
+    Description = "Security group for Application Load Balancer"
   }
 }
 
@@ -230,7 +244,8 @@ resource "aws_security_group" "ecs_tasks" {
   vpc_id      = aws_vpc.main.id
 
   tags = {
-    Name = "protein-classifier-ecs-tasks-sg"
+    Name        = "protein-classifier-ecs-tasks-sg"
+    Description = "Security group for ECS Fargate tasks"
   }
 }
 
@@ -282,7 +297,8 @@ resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
   kms_key_id        = aws_kms_key.cloudwatch_logs.arn
 
   tags = {
-    Name = "protein-classifier-vpc-flow-logs"
+    Name        = "protein-classifier-vpc-flow-logs"
+    Description = "CloudWatch log group for VPC flow logs"
   }
 }
 
@@ -304,7 +320,8 @@ resource "aws_iam_role" "vpc_flow_logs" {
   })
 
   tags = {
-    Name = "protein-classifier-vpc-flow-logs-role"
+    Name        = "protein-classifier-vpc-flow-logs-role"
+    Description = "IAM role for VPC flow logs to write to CloudWatch"
   }
 }
 
@@ -340,6 +357,7 @@ resource "aws_flow_log" "main" {
   log_destination = aws_cloudwatch_log_group.vpc_flow_logs.arn
 
   tags = {
-    Name = "protein-classifier-vpc-flow-log"
+    Name        = "protein-classifier-vpc-flow-log"
+    Description = "VPC flow log for network traffic monitoring"
   }
 }

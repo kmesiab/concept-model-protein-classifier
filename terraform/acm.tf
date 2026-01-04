@@ -14,7 +14,8 @@ resource "aws_acm_certificate" "api" {
   }
 
   tags = {
-    Name = "${var.api_subdomain}.${var.domain_name}"
+    Name        = "${var.api_subdomain}.${var.domain_name}"
+    Description = "ACM SSL/TLS certificate for API subdomain"
   }
 }
 
