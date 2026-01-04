@@ -332,7 +332,11 @@ graph LR
 4. **Check cost threshold** - Compares `totalMonthlyCost` against $125
    - Uses `jq` and `bc` for decimal comparison
    - Fails if cost > $125
-5. **Run Infracost Comment** - `infracost/actions/comment@v1` posts to PR
+5. **Post Cost Estimation Comment** - `actions/github-script@v7` posts detailed cost breakdown to PR
+   - Includes cost threshold status (✅ within / ❌ exceeded)
+   - Shows detailed resource cost breakdown table
+   - Updates existing comment or creates new one
+   - Handles fallback when Infracost is not available
 6. **Cost Estimation Summary** - Manual fallback if API key not configured
    - Shows estimated costs: ECS Fargate (~$18), ALB (~$22), NAT Gateway (~$35), etc.
    - Total estimate: ~$82-92/month (under $125 threshold)
