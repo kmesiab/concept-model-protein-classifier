@@ -454,14 +454,41 @@ jobs:
           
           # Use safer comparison with explicit file checks
           NEW_RESOURCES=""
-          if [ -f /tmp/terraform-resources-after.txt ] && [ -s /tmp/terraform-resources-before.txt ]; then
+          
+          # Verify both files exist and are readable
+          if [ ! -f /tmp/terraform-resources-before.txt ]; then
+            echo "❌ Error: Pre-apply resource list not found" | tee -a $GITHUB_STEP_SUMMARY
+            echo "Cannot determine which resources to rollback without baseline." | tee -a $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          
+          if [ -f /tmp/terraform-resources-after.txt ]; then
             # Use temporary sorted files for more robust comparison
-            sort /tmp/terraform-resources-before.txt > /tmp/resources-before-sorted.txt 2>/dev/null || touch /tmp/resources-before-sorted.txt
-            sort /tmp/terraform-resources-after.txt > /tmp/resources-after-sorted.txt 2>/dev/null || touch /tmp/resources-after-sorted.txt
+            echo "Sorting resource lists for comparison..."
+            
+            if ! sort /tmp/terraform-resources-before.txt > /tmp/resources-before-sorted.txt 2>&1; then
+              echo "⚠️  Warning: Failed to sort pre-apply resource list"
+              # If sort fails, try to continue with unsorted files
+              cp /tmp/terraform-resources-before.txt /tmp/resources-before-sorted.txt 2>/dev/null || touch /tmp/resources-before-sorted.txt
+            fi
+            
+            if ! sort /tmp/terraform-resources-after.txt > /tmp/resources-after-sorted.txt 2>&1; then
+              echo "⚠️  Warning: Failed to sort post-apply resource list"
+              # If sort fails, try to continue with unsorted files
+              cp /tmp/terraform-resources-after.txt /tmp/resources-after-sorted.txt 2>/dev/null || touch /tmp/resources-after-sorted.txt
+            fi
             
             # Compare to find new resources and save to file
-            comm -13 /tmp/resources-before-sorted.txt /tmp/resources-after-sorted.txt > /tmp/new-resources.txt 2>/dev/null || touch /tmp/new-resources.txt
-            NEW_RESOURCES=$(cat /tmp/new-resources.txt)
+            echo "Comparing resource lists to identify new resources..."
+            if ! comm -13 /tmp/resources-before-sorted.txt /tmp/resources-after-sorted.txt > /tmp/new-resources.txt 2>&1; then
+              echo "⚠️  Warning: Resource comparison failed, checking for any differences..."
+              # Fallback: try simple diff approach
+              grep -Fxv -f /tmp/terraform-resources-before.txt /tmp/terraform-resources-after.txt > /tmp/new-resources.txt 2>/dev/null || touch /tmp/new-resources.txt
+            fi
+            
+            NEW_RESOURCES=$(cat /tmp/new-resources.txt 2>/dev/null || echo "")
+          else
+            echo "ℹ️  Post-apply resource list not available (apply may have failed very early)"
           fi
           
           if [ -z "$NEW_RESOURCES" ]; then
