@@ -6,6 +6,7 @@
 data "aws_iam_role" "github_actions" {
   name = "github-actions-terraform"
 }
+
 # ECS Task Execution Role
 resource "aws_iam_role" "ecs_task_execution_role" {
   name = "protein-classifier-ecs-task-execution-role"
