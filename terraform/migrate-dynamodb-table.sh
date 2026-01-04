@@ -165,8 +165,10 @@ elif [ "$OLD_TABLE_STATUS" != "NOT_FOUND" ] && [ "$NEW_TABLE_STATUS" = "NOT_FOUN
   echo "Step 4: Creating new DynamoDB table using Terraform..."
   echo "   Running: terraform apply -target=aws_dynamodb_table.terraform_locks"
   echo ""
+  echo -e "${YELLOW}Please review the plan and type 'yes' to proceed with creating the table.${NC}"
+  echo ""
   
-  if terraform apply -target=aws_dynamodb_table.terraform_locks -auto-approve; then
+  if terraform apply -target=aws_dynamodb_table.terraform_locks; then
     echo ""
     echo -e "${GREEN}✅ New DynamoDB table created successfully${NC}"
   else
@@ -223,7 +225,10 @@ elif [ "$OLD_TABLE_STATUS" != "NOT_FOUND" ] && [ "$NEW_TABLE_STATUS" = "NOT_FOUN
   echo "Do you want to delete it? (yes/no)"
   read -r CONFIRM_DELETE
   
-  if [ "$CONFIRM_DELETE" = "yes" ]; then
+  # Convert to lowercase for case-insensitive comparison
+  CONFIRM_DELETE_LOWER=$(echo "$CONFIRM_DELETE" | tr '[:upper:]' '[:lower:]')
+  
+  if [ "$CONFIRM_DELETE_LOWER" = "yes" ] || [ "$CONFIRM_DELETE_LOWER" = "y" ]; then
     echo ""
     echo "Deleting old table..."
     if aws dynamodb delete-table --table-name "$OLD_TABLE" --region "$AWS_REGION"; then
