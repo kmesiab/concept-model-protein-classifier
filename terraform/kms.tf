@@ -23,6 +23,8 @@ resource "aws_kms_key_policy" "alb_logs_s3" {
     Version = "2012-10-17"
     Statement = [
       {
+        # Root account has full admin permissions for key management
+        # Required for key administration by account owner/repository maintainers
         Sid    = "Enable IAM User Permissions"
         Effect = "Allow"
         Principal = {
@@ -32,6 +34,8 @@ resource "aws_kms_key_policy" "alb_logs_s3" {
         Resource = "*"
       },
       {
+        # ELB service requires all these permissions for ALB log delivery to KMS-encrypted S3
+        # These were explicitly added after terraform apply failures and are necessary
         Sid    = "AllowELBToUseTheKeyForALBLogs"
         Effect = "Allow"
         Principal = {
@@ -46,6 +50,8 @@ resource "aws_kms_key_policy" "alb_logs_s3" {
         Resource = "*"
       },
       {
+        # S3 service needs encrypt/decrypt/generate for server-side encryption
+        # Server access logging requires both read and write encryption operations
         Sid    = "AllowS3ToUseTheKeyForAccessLogs"
         Effect = "Allow"
         Principal = {
@@ -60,6 +66,8 @@ resource "aws_kms_key_policy" "alb_logs_s3" {
         Resource = "*"
       },
       {
+        # GitHub Actions needs decrypt/describe/generate for Terraform state access
+        # Required for Terraform operations that read/write to encrypted S3 backend
         Sid    = "AllowGitHubActionsToManageKey"
         Effect = "Allow"
         Principal = {
