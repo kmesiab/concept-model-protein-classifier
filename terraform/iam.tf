@@ -31,7 +31,7 @@ resource "aws_iam_role" "github_actions" {
 
 # Policy for GitHub Actions to manage ECR, ECS, and related services
 resource "aws_iam_role_policy" "github_actions_policy" {
-  name = "github-actions-deployment-policy"
+  name = "protein-classifier-github-actions-deployment-policy"
   role = aws_iam_role.github_actions.id
 
   policy = jsonencode({
@@ -216,7 +216,7 @@ resource "aws_iam_role" "ecs_task_role" {
 
 # Policy for ECS tasks (CloudWatch Logs)
 resource "aws_iam_role_policy" "ecs_task_policy" {
-  name = "ecs-task-policy"
+  name = "protein-classifier-ecs-task-policy"
   role = aws_iam_role.ecs_task_role.id
 
   policy = jsonencode({

@@ -4,14 +4,18 @@ resource "aws_kms_key" "alb_logs_s3" {
   deletion_window_in_days = 10
   enable_key_rotation     = true
 
+  lifecycle {
+    prevent_destroy = true
+  }
+
   tags = {
-    Name = "alb-logs-s3-encryption-key"
+    Name = "protein-classifier-alb-logs-kms"
   }
 }
 
 # KMS Key Alias for easier identification
 resource "aws_kms_alias" "alb_logs_s3" {
-  name          = "alias/alb-logs-s3-encryption"
+  name          = "alias/protein-classifier-alb-logs-kms"
   target_key_id = aws_kms_key.alb_logs_s3.key_id
 }
 
@@ -90,14 +94,18 @@ resource "aws_kms_key" "cloudwatch_logs" {
   deletion_window_in_days = 10
   enable_key_rotation     = true
 
+  lifecycle {
+    prevent_destroy = true
+  }
+
   tags = {
-    Name = "cloudwatch-logs-key"
+    Name = "protein-classifier-cloudwatch-logs-kms"
   }
 }
 
 # KMS Key Alias for easier identification
 resource "aws_kms_alias" "cloudwatch_logs" {
-  name          = "alias/cloudwatch-logs"
+  name          = "alias/protein-classifier-cloudwatch-logs-kms"
   target_key_id = aws_kms_key.cloudwatch_logs.key_id
 }
 
@@ -148,14 +156,18 @@ resource "aws_kms_key" "dynamodb" {
   deletion_window_in_days = 10
   enable_key_rotation     = true
 
+  lifecycle {
+    prevent_destroy = true
+  }
+
   tags = {
-    Name = "dynamodb-encryption-key"
+    Name = "protein-classifier-dynamodb-kms"
   }
 }
 
 # KMS Key Alias for DynamoDB encryption
 resource "aws_kms_alias" "dynamodb" {
-  name          = "alias/dynamodb-encryption"
+  name          = "alias/protein-classifier-dynamodb-kms"
   target_key_id = aws_kms_key.dynamodb.key_id
 }
 
@@ -227,14 +239,18 @@ resource "aws_kms_key" "ecr" {
   deletion_window_in_days = 10
   enable_key_rotation     = true
 
+  lifecycle {
+    prevent_destroy = true
+  }
+
   tags = {
-    Name = "ecr-encryption-key"
+    Name = "protein-classifier-ecr-kms"
   }
 }
 
 # KMS Key Alias for ECR encryption
 resource "aws_kms_alias" "ecr" {
-  name          = "alias/ecr-encryption"
+  name          = "alias/protein-classifier-ecr-kms"
   target_key_id = aws_kms_key.ecr.key_id
 }
 
