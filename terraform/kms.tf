@@ -1,4 +1,11 @@
-# KMS Key for ALB Logs S3 Bucket Encryption
+# NOTE: This KMS key is no longer used for ALB access logs.
+# AWS ALB access logs only support SSE-S3 encryption, not KMS (SSE-KMS).
+# The S3 bucket encryption was changed to use SSE-S3 (AES256) in alb.tf.
+# This key resource is retained with prevent_destroy=true to avoid accidental deletion
+# if it already exists in production, but it's not actively used by the ALB logging.
+# Reference: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html
+#
+# KMS Key for ALB Logs S3 Bucket Encryption (DEPRECATED - see note above)
 resource "aws_kms_key" "alb_logs_s3" {
   description             = "KMS key for ALB logs S3 bucket encryption"
   deletion_window_in_days = 10
@@ -14,13 +21,13 @@ resource "aws_kms_key" "alb_logs_s3" {
   }
 }
 
-# KMS Key Alias for easier identification
+# KMS Key Alias for easier identification (DEPRECATED - see note above)
 resource "aws_kms_alias" "alb_logs_s3" {
   name          = "alias/protein-classifier-alb-logs-kms"
   target_key_id = aws_kms_key.alb_logs_s3.key_id
 }
 
-# KMS Key Policy to allow ELB service to encrypt ALB logs in S3
+# KMS Key Policy to allow ELB service to encrypt ALB logs in S3 (DEPRECATED - see note above)
 resource "aws_kms_key_policy" "alb_logs_s3" {
   key_id = aws_kms_key.alb_logs_s3.id
 
@@ -39,9 +46,9 @@ resource "aws_kms_key_policy" "alb_logs_s3" {
         Resource = "*"
       },
       {
-        # ELB service requires these permissions for ALB log delivery to KMS-encrypted S3
-        # Service principal grants permissions to the ELB service
-        Sid    = "AllowELBServiceToUseTheKeyForALBLogs"
+        # ELB service requires all these permissions for ALB log delivery to KMS-encrypted S3
+        # These were explicitly added after terraform apply failures and are necessary
+        Sid    = "AllowELBToUseTheKeyForALBLogs"
         Effect = "Allow"
         Principal = {
           Service = "elasticloadbalancing.amazonaws.com"
@@ -51,20 +58,6 @@ resource "aws_kms_key_policy" "alb_logs_s3" {
           "kms:Decrypt",
           "kms:GenerateDataKey*",
           "kms:DescribeKey"
-        ]
-        Resource = "*"
-      },
-      {
-        # Regional ELB service account requires Encrypt and GenerateDataKey for ALB log delivery
-        # This is the region-specific AWS account that writes ALB access logs
-        Sid    = "AllowELBAccountToWriteALBLogs"
-        Effect = "Allow"
-        Principal = {
-          AWS = data.aws_elb_service_account.main.arn
-        }
-        Action = [
-          "kms:Encrypt",
-          "kms:GenerateDataKey"
         ]
         Resource = "*"
       },
