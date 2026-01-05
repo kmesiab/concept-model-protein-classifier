@@ -119,9 +119,7 @@ class SessionService:
 
             # Check if expired
             expires_at = (
-                int(item["expires_at"])  # type: ignore[arg-type]
-                if item.get("expires_at")
-                else 0
+                int(item["expires_at"]) if item.get("expires_at") else 0  # type: ignore[arg-type]
             )
             if int(time.time()) > expires_at:
                 logger.warning(f"Magic link token expired: {token[:8]}...")

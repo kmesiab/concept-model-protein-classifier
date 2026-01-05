@@ -2,10 +2,12 @@
 Tests for API key management and authentication endpoints.
 """
 
+from unittest.mock import patch
+
 import pytest
-from app.main import app
 from fastapi.testclient import TestClient
-from unittest.mock import MagicMock, patch
+
+from app.main import app
 
 
 @pytest.fixture
@@ -97,9 +99,7 @@ class TestAuthenticationEndpoints:
             "expires_in": 3600,
         }
 
-        response = client.post(
-            "/api/v1/auth/refresh", headers={"X-Refresh-Token": "refresh-token"}
-        )
+        response = client.post("/api/v1/auth/refresh", headers={"X-Refresh-Token": "refresh-token"})
 
         assert response.status_code == 200
         data = response.json()

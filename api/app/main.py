@@ -12,6 +12,7 @@ import time
 from datetime import datetime, timezone
 from typing import Optional
 
+from botocore.exceptions import ClientError, NoCredentialsError
 from fastapi import FastAPI, Header, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -139,7 +140,7 @@ def verify_api_key(api_key: Optional[str]) -> dict:
 
         if metadata:
             return metadata
-    except Exception as e:  # pylint: disable=broad-except
+    except (ClientError, NoCredentialsError, ConnectionError) as e:
         logger.warning(f"DynamoDB API key service unavailable: {e}")
         logger.info("Falling back to in-memory API key manager")
 
