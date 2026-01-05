@@ -108,6 +108,9 @@ class TestClassifyEndpoint:
         data = response.json()
         assert "results" in data
         assert len(data["results"]) == 1
+        # Verify the classification succeeded (anonymous free tier access)
+        assert data["results"][0]["classification"] in ["structured", "disordered"]
+        assert "features" in data["results"][0]
 
     def test_invalid_api_key(self, client):
         """Test request with invalid API key."""
@@ -259,6 +262,20 @@ ALLALWGPDPAAAF"""
             "/api/v1/classify/fasta", data="", headers={**headers, "Content-Type": "text/plain"}
         )
         assert response.status_code == 400
+
+    def test_classify_fasta_missing_api_key(self, client):
+        """Test FASTA endpoint without API key - should succeed with anonymous access."""
+        fasta_data = ">test1\nMKVLWAASLLLLASAARA\n>test2\nMALWMRLLPLLALLALWGPDPAAAF"
+
+        response = client.post(
+            "/api/v1/classify/fasta", data=fasta_data, headers={"Content-Type": "text/plain"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total_sequences"] == 2
+        assert len(data["results"]) == 2
+        # Verify classifications succeeded with anonymous free tier access
+        assert all(r["classification"] in ["structured", "disordered"] for r in data["results"])
 
 
 class TestPerformance:

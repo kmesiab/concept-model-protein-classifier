@@ -102,12 +102,14 @@ def verify_api_key(api_key: Optional[str]) -> dict:
     Verify API key and return metadata.
 
     Temporarily allows empty API keys with default free tier metadata.
+    All anonymous users share the same identifier and rate limits.
 
     Raises:
         HTTPException: If API key is invalid
     """
     if not api_key:
         # Temporarily allow empty API key with default free tier metadata
+        # Note: All anonymous users share the same rate limits
         return {
             "email": "anonymous@example.com",
             "tier": "free",
@@ -136,20 +138,20 @@ def check_rate_limit(api_key: Optional[str], metadata: dict, num_sequences: int)
     Raises:
         HTTPException: If rate limit is exceeded
     """
-    # Hash the API key for rate limiting
-    # Use a default hash for empty API keys
-    # Note: All anonymous users share the same rate limit bucket as a temporary measure
+    # Create rate limiting identifier
+    # For authenticated users: hash of API key
+    # For anonymous users: shared "anonymous" hash (all anonymous users share rate limits)
     if api_key:
-        api_key_hash = hashlib.sha256(api_key.encode()).hexdigest()
+        rate_limit_key = hashlib.sha256(api_key.encode()).hexdigest()
     else:
-        api_key_hash = hashlib.sha256(b"anonymous").hexdigest()
+        rate_limit_key = hashlib.sha256(b"anonymous").hexdigest()
 
     # Get rate limiter
     limiter = get_rate_limiter()
 
     # Check limits
     allowed, error_msg = limiter.check_rate_limit(
-        api_key_hash, metadata["rate_limit_per_minute"], metadata["daily_limit"], num_sequences
+        rate_limit_key, metadata["rate_limit_per_minute"], metadata["daily_limit"], num_sequences
     )
 
     if not allowed:
