@@ -122,11 +122,16 @@ def verify_api_key(api_key: Optional[str]) -> dict:
         HTTPException: If API key is invalid
     """
     if not api_key:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing API key. Include 'X-API-Key' header.",
-            headers={"WWW-Authenticate": "ApiKey"},
-        )
+        # Temporarily allow empty API key with default free tier metadata
+        # Note: All anonymous users share the same rate limits
+        return {
+            "email": "anonymous@example.com",
+            "tier": "free",
+            "is_active": True,
+            "daily_limit": 1000,
+            "rate_limit_per_minute": 100,
+            "max_batch_size": 50,
+        }
 
     # Try DynamoDB-based API key service first
     try:
@@ -152,22 +157,27 @@ def verify_api_key(api_key: Optional[str]) -> dict:
     return metadata
 
 
-def check_rate_limit(api_key: str, metadata: dict, num_sequences: int):
+def check_rate_limit(api_key: Optional[str], metadata: dict, num_sequences: int):
     """
     Check rate limits for the request.
 
     Raises:
         HTTPException: If rate limit is exceeded
     """
-    # Hash the API key for rate limiting
-    api_key_hash = hashlib.sha256(api_key.encode()).hexdigest()
+    # Create rate limiting identifier
+    # For authenticated users: hash of API key
+    # For anonymous users: shared "anonymous" hash (all anonymous users share rate limits)
+    if api_key:
+        rate_limit_key = hashlib.sha256(api_key.encode()).hexdigest()
+    else:
+        rate_limit_key = hashlib.sha256(b"anonymous").hexdigest()
 
     # Get rate limiter
     limiter = get_rate_limiter()
 
     # Check limits
     allowed, error_msg = limiter.check_rate_limit(
-        api_key_hash, metadata["rate_limit_per_minute"], metadata["daily_limit"], num_sequences
+        rate_limit_key, metadata["rate_limit_per_minute"], metadata["daily_limit"], num_sequences
     )
 
     if not allowed:
