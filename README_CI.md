@@ -10,7 +10,7 @@ The repository now has a comprehensive CI/CD pipeline with quality gates:
 
 ### On Push to `main` Branch
 
-```
+```text
 ┌─────────────────────────────────────────┐
 │         Push to main branch             │
 └─────────────────┬───────────────────────┘
@@ -150,8 +150,8 @@ The workflows are configured to run as follows:
   - `lint.yml` runs for code quality validation
   - `test.yml` runs for test validation
   - `security.yml` runs security scans
-  
-- **Security scans**: 
+
+- **Security scans**:
   - Weekly (Mondays at 9 AM UTC)
   - On push to `main`
   - On pull requests
@@ -181,7 +181,7 @@ To complete the setup:
    - ✅ Build depends on successful lint and test runs
    - ✅ Automated Docker image builds and push to AWS ECR
    - ✅ Manual build trigger for emergency deployments
-   
+
 5. **Phase 3** (Future):
    - Performance benchmarking
    - Automated ECS deployment after successful build
