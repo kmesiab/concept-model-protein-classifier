@@ -64,7 +64,7 @@ class TestClassifyEndpoint:
         assert result["classification"] in ["structured", "disordered"]
         assert 0.5 <= result["confidence"] <= 1.0
         assert 0 <= result["conditions_met"] <= 7
-        assert result["threshold"] == 4
+        assert result["threshold"] == 5
         assert "features" in result
         assert "processing_time_ms" in result
 

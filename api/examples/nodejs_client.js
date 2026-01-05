@@ -41,10 +41,10 @@ class ProteinClassifierClient {
   /**
    * Classify protein sequences
    * @param {Array<{id: string, sequence: string}>} sequences - Sequences to classify
-   * @param {number} threshold - Classification threshold (default: 4)
+   * @param {number} threshold - Classification threshold (default: 5)
    * @returns {Promise<Object>} Classification results
    */
-  async classify(sequences, threshold = 4) {
+  async classify(sequences, threshold = 5) {
     const response = await this.client.post('/api/v1/classify', {
       sequences: sequences,
       threshold: threshold
@@ -55,10 +55,10 @@ class ProteinClassifierClient {
   /**
    * Classify sequences from FASTA format
    * @param {string} fastaText - FASTA formatted text
-   * @param {number} threshold - Classification threshold (default: 4)
+   * @param {number} threshold - Classification threshold (default: 5)
    * @returns {Promise<Object>} Classification results
    */
-  async classifyFasta(fastaText, threshold = 4) {
+  async classifyFasta(fastaText, threshold = 5) {
     const response = await this.client.post(
       `/api/v1/classify/fasta?threshold=${threshold}`,
       fastaText,
