@@ -74,7 +74,30 @@ resource "aws_iam_role_policy" "ecs_task_policy" {
           "logs:PutLogEvents"
         ]
         Resource = "${aws_cloudwatch_log_group.ecs_logs.arn}:*"
+      },
+      {
+        Sid    = "DynamoDBAccessForAPIKeys"
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:UpdateItem",
+          "dynamodb:DeleteItem",
+          "dynamodb:Query",
+          "dynamodb:Scan"
+        ]
+        Resource = [
+          aws_dynamodb_table.api_keys.arn,
+          "${aws_dynamodb_table.api_keys.arn}/index/*",
+          aws_dynamodb_table.user_sessions.arn,
+          "${aws_dynamodb_table.user_sessions.arn}/index/*",
+          aws_dynamodb_table.magic_link_tokens.arn,
+          "${aws_dynamodb_table.magic_link_tokens.arn}/index/*",
+          aws_dynamodb_table.audit_logs.arn,
+          "${aws_dynamodb_table.audit_logs.arn}/index/*"
+        ]
       }
     ]
   })
 }
+
