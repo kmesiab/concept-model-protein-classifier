@@ -33,7 +33,7 @@
       <!-- Base URL -->
       <section id="base-url">
         <h2>Base URL</h2>
-        <pre><code>https://api.protein-classifier.com/v1</code></pre>
+        <pre><code>https://api.proteinclassifier.com/v1</code></pre>
       </section>
 
       <!-- Authentication -->
@@ -95,7 +95,7 @@ X-API-Key: your_api_key_here</code></pre>
 }</code></pre>
 
           <h4>Example Request</h4>
-          <pre><code>curl -X POST https://api.protein-classifier.com/v1/classify \
+          <pre><code>curl -X POST https://api.proteinclassifier.com/v1/classify \
   -H "X-API-Key: your_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -184,7 +184,7 @@ X-API-Key: your_api_key_here</code></pre>
           <p>Check API service health and status.</p>
 
           <h4>Example Request</h4>
-          <pre><code>curl -X GET https://api.protein-classifier.com/v1/health</code></pre>
+          <pre><code>curl -X GET https://api.proteinclassifier.com/v1/health</code></pre>
 
           <h4>Response</h4>
           <pre><code>{
@@ -204,7 +204,7 @@ X-API-Key: your_api_key_here</code></pre>
           <pre><code>X-API-Key: your_api_key_here</code></pre>
 
           <h4>Example Request</h4>
-          <pre><code>curl -X GET https://api.protein-classifier.com/v1/stats \
+          <pre><code>curl -X GET https://api.proteinclassifier.com/v1/stats \
   -H "X-API-Key: your_key_here"</code></pre>
 
           <h4>Response</h4>
@@ -240,7 +240,7 @@ X-API-Key: your_api_key_here</code></pre>
 import json
 
 API_KEY = "your_api_key_here"
-BASE_URL = "https://api.protein-classifier.com/v1"
+BASE_URL = "https://api.proteinclassifier.com/v1"
 
 def classify_sequences(sequences):
     """
@@ -286,7 +286,7 @@ for result in results["results"]:
           <pre><code>const axios = require('axios');
 
 const API_KEY = 'your_api_key_here';
-const BASE_URL = 'https://api.protein-classifier.com/v1';
+const BASE_URL = 'https://api.proteinclassifier.com/v1';
 
 async function classifySequences(sequences) {
   try {
@@ -337,7 +337,7 @@ import (
 
 const (
     APIKey  = "your_api_key_here"
-    BaseURL = "https://api.protein-classifier.com/v1"
+    BaseURL = "https://api.proteinclassifier.com/v1"
 )
 
 type Sequence struct {
@@ -414,7 +414,7 @@ func main() {
         <div class="card">
           <h3>cURL</h3>
           <pre><code># Single sequence
-curl -X POST https://api.protein-classifier.com/v1/classify \
+curl -X POST https://api.proteinclassifier.com/v1/classify \
   -H "X-API-Key: your_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -424,13 +424,13 @@ curl -X POST https://api.protein-classifier.com/v1/classify \
   }'
 
 # Multiple sequences
-curl -X POST https://api.protein-classifier.com/v1/classify \
+curl -X POST https://api.proteinclassifier.com/v1/classify \
   -H "X-API-Key: your_key_here" \
   -H "Content-Type: application/json" \
   -d @sequences.json
 
 # Check usage stats
-curl -X GET https://api.protein-classifier.com/v1/stats \
+curl -X GET https://api.proteinclassifier.com/v1/stats \
   -H "X-API-Key: your_key_here"</code></pre>
         </div>
       </section>

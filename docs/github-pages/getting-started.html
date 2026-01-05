@@ -53,7 +53,7 @@
             <h3>2️⃣ Make First Request</h3>
             <p>Test the API with a simple curl command.</p>
             <pre style="margin-top: 1rem;"><code>curl -X POST \
-  https://api.protein-classifier.com/v1/classify \
+  https://api.proteinclassifier.com/v1/classify \
   -H "X-API-Key: your_key" \
   -H "Content-Type: application/json" \
   -d '{
@@ -172,7 +172,7 @@
 
 # Your API credentials
 API_KEY = "your_api_key_here"
-BASE_URL = "https://api.protein-classifier.com/v1"
+BASE_URL = "https://api.proteinclassifier.com/v1"
 
 # Classify a sequence
 response = requests.post(
@@ -219,7 +219,7 @@ def classify_batch(sequences: List[Dict[str, str]], api_key: str) -> List[Dict]:
         batch = sequences[i:i + batch_size]
         
         response = requests.post(
-            "https://api.protein-classifier.com/v1/classify",
+            "https://api.proteinclassifier.com/v1/classify",
             headers={
                 "X-API-Key": api_key,
                 "Content-Type": "application/json"
@@ -259,7 +259,7 @@ def classify_with_retry(sequences, api_key, max_retries=3):
     """
     Classify sequences with exponential backoff retry logic.
     """
-    url = "https://api.protein-classifier.com/v1/classify"
+    url = "https://api.proteinclassifier.com/v1/classify"
     headers = {
         "X-API-Key": api_key,
         "Content-Type": "application/json"
@@ -348,7 +348,7 @@ def get_classification(sequence: str) -> dict:
           <h3>4. Monitor Your Usage</h3>
           <pre><code># Check usage stats periodically
 response = requests.get(
-    "https://api.protein-classifier.com/v1/stats",
+    "https://api.proteinclassifier.com/v1/stats",
     headers={"X-API-Key": api_key}
 )
 
