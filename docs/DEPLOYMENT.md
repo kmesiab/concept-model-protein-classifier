@@ -66,37 +66,39 @@ This document describes all required and optional environment variables for depl
 - **Default**: `us-west-2`
 - **Example**: `AWS_REGION=us-west-2`
 
-### Email Configuration (SMTP)
+### Email Configuration (AWS SES)
 
-Required for magic link authentication emails.
+Required for magic link authentication emails and API key notifications.
 
-#### SMTP_HOST
+**AWS SES is used in production for reliable, scalable email delivery.**
 
-- **Purpose**: SMTP server hostname
-- **Example**: `SMTP_HOST=smtp.gmail.com`
+#### SES_FROM_EMAIL
 
-#### SMTP_PORT
+- **Purpose**: Sender email address for all outbound emails
+- **Default**: `noreply@proteinclassifier.com`
+- **Requirements**: Must be verified in AWS SES
+- **Infrastructure**: Automatically verified by Terraform in `terraform/ses.tf`
+- **Example**: `SES_FROM_EMAIL=noreply@proteinclassifier.com`
 
-- **Purpose**: SMTP server port
-- **Default**: `587` (TLS), `465` (SSL)
-- **Example**: `SMTP_PORT=587`
+#### SES_CONFIGURATION_SET
 
-#### SMTP_USERNAME
+- **Purpose**: AWS SES configuration set name for tracking and monitoring
+- **Default**: `protein-classifier-email`
+- **Infrastructure**: Automatically created by Terraform in `terraform/ses.tf`
+- **Features**:
+  - TLS enforcement
+  - Reputation metrics tracking
+  - Bounce and complaint handling
+- **Example**: `SES_CONFIGURATION_SET=protein-classifier-email`
 
-- **Purpose**: SMTP authentication username
-- **Example**: `SMTP_USERNAME=api@example.com`
+#### USE_SES
 
-#### SMTP_PASSWORD
+- **Purpose**: Enable/disable AWS SES for email delivery
+- **Default**: `false` (development mode, emails logged to console)
+- **Production**: Automatically enabled when `AWS_EXECUTION_ENV` is set (ECS environment)
+- **Example**: `USE_SES=true`
 
-- **Purpose**: SMTP authentication password
-- **Storage**: Store in secure secrets management
-- **Example**: `SMTP_PASSWORD=your-smtp-password`
-
-#### SMTP_FROM_EMAIL
-
-- **Purpose**: Sender email address for magic links
-- **Default**: Uses SMTP_USERNAME if not set
-- **Example**: `SMTP_FROM_EMAIL=noreply@proteinclassifier.com`
+**Note**: In development mode (when AWS SES is not enabled), emails are logged to the console instead of being sent. This allows local testing without AWS credentials.
 
 #### BASE_URL
 
@@ -174,26 +176,16 @@ Required for magic link authentication emails.
           "value": "https://api.proteinclassifier.com"
         },
         {
-          "name": "SMTP_HOST",
-          "value": "smtp.gmail.com"
+          "name": "SES_FROM_EMAIL",
+          "value": "noreply@proteinclassifier.com"
         },
         {
-          "name": "SMTP_PORT",
-          "value": "587"
+          "name": "SES_CONFIGURATION_SET",
+          "value": "protein-classifier-email"
         },
         {
           "name": "ALLOWED_ORIGINS",
           "value": "https://proteinclassifier.com"
-        }
-      ],
-      "secrets": [
-        {
-          "name": "SMTP_USERNAME",
-          "valueFrom": "arn:aws:secretsmanager:us-west-2:123456789:secret:smtp-username"
-        },
-        {
-          "name": "SMTP_PASSWORD",
-          "valueFrom": "arn:aws:secretsmanager:us-west-2:123456789:secret:smtp-password"
         }
       ]
     }
@@ -222,10 +214,8 @@ services:
       - AWS_REGION=us-west-2
       - REDIS_URL=redis://redis:6379/0
       - BASE_URL=http://localhost:8000
-      - SMTP_HOST=smtp.gmail.com
-      - SMTP_PORT=587
-      - SMTP_USERNAME=${SMTP_USERNAME}
-      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      # Email disabled in dev (console logging only)
+      # Set USE_SES=false or omit to use console logging
     depends_on:
       - redis
 
@@ -235,7 +225,10 @@ services:
       - "6379:6379"
 ```
 
-**Note**: For local development, the JWT secret fallback is used when AWS Secrets Manager is unavailable. **Never use this in production**.
+**Note**: For local development:
+- JWT secret fallback is used when AWS Secrets Manager is unavailable (**never use in production**)
+- Emails are logged to console instead of being sent via AWS SES
+- DynamoDB can be replaced with local DynamoDB or mocked for testing
 
 ## Security Best Practices
 
@@ -248,10 +241,13 @@ services:
    - Access controlled via IAM policies
    - Audit trail via CloudTrail
 
-2. **SMTP Credentials**:
-   - Store in AWS Secrets Manager
-   - Use application-specific passwords when possible
-   - Enable 2FA on SMTP account
+2. **AWS SES Email Delivery**:
+   - Domain identity automatically verified by Terraform
+   - DKIM signing for email authentication
+   - Custom MAIL FROM domain for improved deliverability
+   - TLS encryption enforced
+   - Reputation metrics and bounce tracking enabled
+   - No SMTP credentials needed (uses IAM roles)
 
 3. **DynamoDB Access**:
    - Use IAM roles for ECS tasks
@@ -272,12 +268,14 @@ Before deploying to production, verify:
 - [ ] ECS task role has permissions to read JWT secret
 - [ ] All DynamoDB table names are correct
 - [ ] AWS region matches your infrastructure
-- [ ] SMTP credentials are valid and tested
+- [ ] AWS SES domain identity verified (done by Terraform)
+- [ ] AWS SES DKIM records configured in Route53 (done by Terraform)
+- [ ] AWS SES moved out of sandbox mode (submit production access request to AWS)
 - [ ] BASE_URL matches your production domain
 - [ ] Redis is accessible from application
 - [ ] CORS origins include your frontend domains
-- [ ] IAM roles have necessary permissions (DynamoDB, Secrets Manager, KMS)
-- [ ] Terraform tables and secrets are created before deployment
+- [ ] IAM roles have necessary permissions (DynamoDB, Secrets Manager, KMS, SES)
+- [ ] Terraform resources are created before deployment
 
 ## Troubleshooting
 
@@ -308,12 +306,19 @@ Before deploying to production, verify:
 - Wrong AWS region
 - Solution: Verify table names and region, run Terraform apply
 
-### "SMTP authentication failed"
+### "Failed to send email via SES"
 
-- Invalid SMTP credentials
-- App-specific password required but not used
-- 2FA blocking access
-- Solution: Verify SMTP settings, use app-specific password
+- SES domain identity not verified
+- SES still in sandbox mode (can only send to verified email addresses)
+- IAM role missing `ses:SendEmail` permission
+- FROM email address not verified in SES
+- Solution: Verify SES domain identity, request production access, check IAM permissions
+
+### "Email MessageRejected: Email address is not verified"
+
+- SES is in sandbox mode (development/testing)
+- Recipient email not verified in SES console
+- Solution: Request production access from AWS Support to send to any email address
 
 ### "Rate limiting not working"
 

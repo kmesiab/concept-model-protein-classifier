@@ -64,6 +64,42 @@ resource "aws_ecs_task_definition" "api" {
         {
           name  = "ENVIRONMENT"
           value = var.environment
+        },
+        {
+          name  = "AWS_REGION"
+          value = var.aws_region
+        },
+        {
+          name  = "DYNAMODB_API_KEYS_TABLE"
+          value = aws_dynamodb_table.api_keys.name
+        },
+        {
+          name  = "DYNAMODB_SESSIONS_TABLE"
+          value = aws_dynamodb_table.user_sessions.name
+        },
+        {
+          name  = "DYNAMODB_MAGIC_LINKS_TABLE"
+          value = aws_dynamodb_table.magic_link_tokens.name
+        },
+        {
+          name  = "DYNAMODB_AUDIT_LOGS_TABLE"
+          value = aws_dynamodb_table.audit_logs.name
+        },
+        {
+          name  = "JWT_SECRET_NAME"
+          value = aws_secretsmanager_secret.jwt_secret_key.name
+        },
+        {
+          name  = "SES_FROM_EMAIL"
+          value = "noreply@${var.domain_name}"
+        },
+        {
+          name  = "SES_CONFIGURATION_SET"
+          value = aws_ses_configuration_set.main.name
+        },
+        {
+          name  = "BASE_URL"
+          value = "https://${var.api_subdomain}.${var.domain_name}"
         }
       ]
 
