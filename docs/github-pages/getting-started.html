@@ -36,25 +36,45 @@
         
         <div class="card-grid">
           <div class="card">
-            <h3>1️⃣ Get API Key</h3>
-            <p>Sign up for a free account to receive your API key.</p>
-            <div class="alert alert-info" style="margin-top: 1rem;">
-              <strong>📧 Contact for API Access</strong>
-              <p style="margin: 0.5rem 0 0 0;">This is currently a research project. To request API access, please:</p>
-              <ul style="margin: 0.5rem 0 0 1.5rem;">
-                <li>Email: <a href="mailto:kmesiab@gmail.com">kmesiab@gmail.com</a></li>
-                <li>Open an issue: <a href="https://github.com/kmesiab/concept-model-protein-classifier/issues">GitHub Issues</a></li>
-                <li>Include your use case and expected volume</li>
-              </ul>
+            <h3>1️⃣ Register with Magic Link</h3>
+            <p>Sign up for a free account using passwordless authentication.</p>
+            <div style="margin-top: 1rem;">
+              <h4>Request Magic Link</h4>
+              <pre><code>curl -X POST \
+  https://api.proteinclassifier.com/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "your.email@example.com"}'</code></pre>
+              <p style="margin-top: 1rem;">Check your email for the magic link (valid for 15 minutes, single-use).</p>
             </div>
           </div>
 
           <div class="card">
-            <h3>2️⃣ Make First Request</h3>
-            <p>Test the API with a simple curl command.</p>
+            <h3>2️⃣ Get Your Access Token</h3>
+            <p>Click the magic link in your email or verify the token manually.</p>
+            <pre style="margin-top: 1rem;"><code>curl -X POST \
+  https://api.proteinclassifier.com/api/v1/auth/verify \
+  -H "Content-Type: application/json" \
+  -d '{"token": "YOUR_TOKEN_FROM_EMAIL"}'</code></pre>
+            <p style="margin-top: 1rem;">You'll receive access and refresh tokens for managing API keys.</p>
+          </div>
+
+          <div class="card">
+            <h3>3️⃣ Create Your API Key</h3>
+            <p>Use your access token to create an API key for classification.</p>
+            <pre style="margin-top: 1rem;"><code>curl -X POST \
+  https://api.proteinclassifier.com/api/v1/api-keys/register \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"label": "My First API Key"}'</code></pre>
+            <p style="margin-top: 1rem;"><strong>Save the API key immediately—it's only shown once!</strong></p>
+          </div>
+
+          <div class="card">
+            <h3>4️⃣ Classify Proteins</h3>
+            <p>Use your API key to start classifying protein sequences.</p>
             <pre style="margin-top: 1rem;"><code>curl -X POST \
   https://api.proteinclassifier.com/v1/classify \
-  -H "X-API-Key: your_key" \
+  -H "X-API-Key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "sequences": [{
@@ -65,24 +85,13 @@
           </div>
 
           <div class="card">
-            <h3>3️⃣ Integrate</h3>
-            <p>Choose your language and integrate into your workflow.</p>
+            <h3>5️⃣ Manage & Monitor</h3>
+            <p>Track usage and manage your API keys as needed.</p>
             <ul style="margin-top: 1rem;">
-              <li><a href="api-docs.html#code-examples">Python examples</a></li>
-              <li><a href="api-docs.html#code-examples">JavaScript examples</a></li>
-              <li><a href="api-docs.html#code-examples">Go examples</a></li>
-              <li><a href="api-docs.html#code-examples">cURL examples</a></li>
-            </ul>
-          </div>
-
-          <div class="card">
-            <h3>4️⃣ Scale Up</h3>
-            <p>Monitor usage and upgrade as needed.</p>
-            <ul style="margin-top: 1rem;">
-              <li>Check <code>/stats</code> endpoint</li>
-              <li>Implement batch processing</li>
-              <li>Optimize with caching</li>
-              <li>Upgrade to premium tier</li>
+              <li>List your API keys: <code>GET /api/v1/api-keys/list</code></li>
+              <li>Rotate keys regularly: <code>POST /api/v1/api-keys/rotate</code></li>
+              <li>Revoke compromised keys: <code>POST /api/v1/api-keys/revoke</code></li>
+              <li>Check usage: <code>GET /v1/stats</code></li>
             </ul>
           </div>
         </div>
@@ -109,8 +118,8 @@
             
             <div style="margin-top: 2rem;">
               <div class="alert alert-info">
-                <strong>Currently in Research Phase</strong>
-                <p style="margin: 0.5rem 0 0 0;">Contact us for API access. This is a research project - we're happy to collaborate!</p>
+                <strong>Self-Service Registration Available</strong>
+                <p style="margin: 0.5rem 0 0 0;">Create your free account now using magic link authentication. No credit card required!</p>
               </div>
             </div>
           </div>
@@ -310,6 +319,18 @@ except Exception as e:
         <h2>✨ Best Practices</h2>
         
         <div class="card">
+          <h3>🔒 API Key Security</h3>
+          <ul>
+            <li><strong>Never commit API keys to version control</strong> - Use environment variables or secure vaults</li>
+            <li><strong>Rotate keys regularly</strong> - Every 90 days recommended for production keys</li>
+            <li><strong>Use different keys for development and production</strong> - Create separate keys with labels</li>
+            <li><strong>Revoke keys immediately if compromised</strong> - Use the revoke endpoint</li>
+            <li><strong>Monitor key usage</strong> - Check the list endpoint for unexpected activity</li>
+            <li><strong>Store refresh tokens securely</strong> - They have a 30-day lifetime</li>
+          </ul>
+        </div>
+        
+        <div class="card">
           <h3>1. Validate Sequences Before Sending</h3>
           <pre><code>def is_valid_sequence(seq: str) -> bool:
     """Check if sequence contains only valid amino acids."""
@@ -374,7 +395,31 @@ print(f"Sequences remaining today: {remaining}")</code></pre>
         
         <div class="card">
           <h4>How do I get an API key?</h4>
-          <p>This is currently a research project. Please contact <a href="mailto:kmesiab@gmail.com">kmesiab@gmail.com</a> or open an issue on <a href="https://github.com/kmesiab/concept-model-protein-classifier">GitHub</a> to request access.</p>
+          <p>Use our self-service magic link authentication system:</p>
+          <ol>
+            <li>Request a magic link with your email at <code>POST /api/v1/auth/login</code></li>
+            <li>Verify the token from your email at <code>POST /api/v1/auth/verify</code></li>
+            <li>Use your access token to create an API key at <code>POST /api/v1/api-keys/register</code></li>
+          </ol>
+          <p>See the <a href="api-docs.html#authentication">Authentication section</a> for detailed examples.</p>
+        </div>
+        
+        <div class="card">
+          <h4>How do I rotate or revoke my API keys?</h4>
+          <p>Use the API key management endpoints with your JWT access token:</p>
+          <ul>
+            <li><strong>Rotate:</strong> <code>POST /api/v1/api-keys/rotate</code> - Creates new key and revokes old one</li>
+            <li><strong>Revoke:</strong> <code>POST /api/v1/api-keys/revoke</code> - Permanently deactivates a key</li>
+            <li><strong>List:</strong> <code>GET /api/v1/api-keys/list</code> - View all your keys and their status</li>
+          </ul>
+          <p>See the <a href="api-docs.html#api-key-management">API Key Management section</a> for examples.</p>
+        </div>
+        
+        <div class="card">
+          <h4>What's the difference between access tokens and API keys?</h4>
+          <p><strong>Access tokens (JWT):</strong> Used for managing your API keys. Short-lived (1 hour), obtained via magic link authentication.</p>
+          <p><strong>API keys:</strong> Used for classification requests. Long-lived, created and managed through the API key management endpoints.</p>
+          <p><strong>Refresh tokens:</strong> Used to get new access tokens without re-authentication. Valid for 30 days.</p>
         </div>
 
         <div class="card">

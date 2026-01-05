@@ -21,6 +21,7 @@ curl -X POST "http://localhost:8000/api/v1/auth/login" \
 ```
 
 Response:
+
 ```json
 {
   "message": "Magic link sent to your email",
@@ -39,6 +40,7 @@ curl -X POST "http://localhost:8000/api/v1/auth/verify" \
 ```
 
 Response:
+
 ```json
 {
   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -60,6 +62,7 @@ curl -X POST "http://localhost:8000/api/v1/auth/refresh" \
 ```
 
 Response:
+
 ```json
 {
   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -84,6 +87,7 @@ curl -X POST "http://localhost:8000/api/v1/api-keys/register" \
 ```
 
 Response:
+
 ```json
 {
   "api_key": "pk_live_abc123def456...",
@@ -105,6 +109,7 @@ curl -X GET "http://localhost:8000/api/v1/api-keys/list" \
 ```
 
 Response:
+
 ```json
 {
   "keys": [
@@ -141,6 +146,7 @@ curl -X POST "http://localhost:8000/api/v1/api-keys/rotate" \
 ```
 
 Response:
+
 ```json
 {
   "api_key": "pk_live_new789xyz...",
@@ -164,6 +170,7 @@ curl -X POST "http://localhost:8000/api/v1/api-keys/revoke" \
 ```
 
 Response:
+
 ```json
 {
   "revoked": true,
@@ -234,6 +241,7 @@ curl -X POST "http://localhost:8000/api/v1/classify" \
 ## Support
 
 For questions or issues, please:
+
 - Check the interactive API documentation at `/docs`
 - Review the main README
 - Open an issue on GitHub
