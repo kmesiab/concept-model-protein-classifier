@@ -96,7 +96,7 @@ Enforces code standards across Python and documentation through parallel linting
 #### Job 1: Python Linting (Matrix)
 
 Runs on: `ubuntu-latest`  
-Strategy: Matrix across Python 3.10, 3.11, 3.12  
+Strategy: Python 3.12 only  
 Permissions: `contents: read`
 
 **Steps:**
@@ -157,19 +157,19 @@ Executes test suite with coverage enforcement across multiple Python versions.
 **Jobs:**
 
 Runs on: `ubuntu-latest`  
-Strategy: Matrix across Python 3.10, 3.11, 3.12 with `fail-fast: false`  
+Strategy: Python 3.12 only with `fail-fast: false`  
 Permissions: `contents: read`
 
 **Steps:**
 
 1. **Checkout code** - `actions/checkout@v6`
-2. **Set up Python** - `actions/setup-python@v6` with matrix version
+2. **Set up Python** - `actions/setup-python@v6` with Python 3.12
 3. **Cache pip packages** - Version-specific cache key
 4. **Install dependencies** - pytest, pytest-cov, pytest-asyncio, coverage
 5. **Run tests with coverage** - `pytest tests/ -v --cov=. --cov-report=xml --cov-report=term --cov-report=html`
 6. **Upload coverage to Codecov** - `codecov/codecov-action@v4` with CODECOV_TOKEN (optional)
 7. **Check coverage threshold** - `coverage report --fail-under=80`
-8. **Upload coverage HTML report** - Only for Python 3.11 as artifact
+8. **Upload coverage HTML report** - Only for Python 3.12 as artifact
 
 **Coverage Requirements:**
 
@@ -198,13 +198,13 @@ Multi-tool security scanning with weekly scheduled runs and SARIF uploads.
 **Jobs:**
 
 Runs on: `ubuntu-latest`  
-Python version: 3.11  
+Python version: 3.12  
 Permissions: `contents: read`, `security-events: write`
 
 **Steps:**
 
 1. **Checkout code** - `actions/checkout@v6`
-2. **Set up Python** - `actions/setup-python@v6` with Python 3.11
+2. **Set up Python** - `actions/setup-python@v6` with Python 3.12
 3. **Cache pip packages** - Security-specific cache key
 4. **Install security tools** - bandit, safety, pip-audit
 5. **Bandit security scan** - Python code security analysis
@@ -769,15 +769,11 @@ Recommended settings for `main` branch:
 
 ```yaml
 Required status checks:
-  # Code Quality (3 Python versions × 1 job)
-  - lint / lint (3.10)
-  - lint / lint (3.11)
+  # Code Quality (1 Python version)
   - lint / lint (3.12)
   - lint / markdown-lint
   
-  # Tests (3 Python versions)
-  - test / test (3.10)
-  - test / test (3.11)
+  # Tests (1 Python version)
   - test / test (3.12)
   
   # Security
@@ -1085,7 +1081,7 @@ gh run download <RUN_ID> -n <ARTIFACT_NAME>
 
 1. Navigate to **Actions** tab in GitHub
 2. Click on workflow run
-3. Click on specific job (e.g., "lint (3.11)")
+3. Click on specific job (e.g., "lint (3.12)")
 4. Expand failed step
 5. Review detailed error output
 

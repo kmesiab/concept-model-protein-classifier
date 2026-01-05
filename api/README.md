@@ -27,7 +27,7 @@ Fast and accurate REST API for protein disorder prediction. Built on a validated
 ### Prerequisites
 
 - Docker and Docker Compose (recommended)
-- OR Python 3.11+ and Redis
+- OR Python 3.12+ and Redis
 
 ### Using Docker (Recommended)
 
