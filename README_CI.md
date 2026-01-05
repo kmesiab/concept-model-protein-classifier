@@ -53,10 +53,10 @@ The repository now has a comprehensive CI/CD pipeline with quality gates:
 
 **Key Feature**: Build and push to ECR **only runs** if both lint and test jobs succeed. This ensures no broken code is deployed.
 
-### On Push to `develop` or Pull Requests
+### On Pull Requests
 
 - Separate `lint.yml` and `test.yml` workflows run for validation
-- No Docker build/push occurs (development validation only)
+- No Docker build/push occurs (validation only)
 
 ### Workflows Created
 
@@ -68,22 +68,22 @@ The repository now has a comprehensive CI/CD pipeline with quality gates:
    - **Dependencies**: Build only runs after lint, markdown-lint, and test succeed
    - Matrix testing across Python 3.10, 3.11, 3.12
 
-2. **`.github/workflows/lint.yml`** - Code Quality Workflow (all branches and PRs)
+2. **`.github/workflows/lint.yml`** - Code Quality Workflow (all pushes and PRs)
    - Black formatting (100% compliance)
    - Flake8 linting (0 errors)
    - Pylint static analysis (10.00/10 score)
    - MyPy type checking (passing)
    - isort import organization (passing)
    - Matrix testing across Python 3.10, 3.11, 3.12
-   - Runs on: push to main/develop, PRs to main/develop
+   - Runs on: push to main, PRs to main
 
-3. **`.github/workflows/test.yml`** - Testing Workflow (all branches and PRs)
+3. **`.github/workflows/test.yml`** - Testing Workflow (all pushes and PRs)
    - pytest with coverage reporting
    - Coverage: **91.15%** (exceeds 80% requirement)
    - Codecov integration (requires `CODECOV_TOKEN` secret)
    - Matrix testing across Python 3.10, 3.11, 3.12
    - HTML coverage reports as artifacts
-   - Runs on: push to main/develop, PRs to main/develop
+   - Runs on: push to main, PRs to main
 
 4. **`.github/workflows/docker-build.yml`** - Manual Docker Build (workflow_dispatch only)
    - Standalone Docker image build and push to ECR
@@ -146,19 +146,14 @@ The workflows are configured to run as follows:
   - `ci-cd.yml` runs with integrated lint → test → build pipeline
   - Build and push to ECR only runs after successful lint and test (in ci-cd.yml)
 
-- **On push to `develop` branch**:
-  - `lint.yml` runs for code quality validation
-  - `test.yml` runs for test validation
-  - `security.yml` runs security scans
-
-- **On pull requests to `main` or `develop`**:
+- **On pull requests to `main`**:
   - `lint.yml` runs for code quality validation
   - `test.yml` runs for test validation
   - `security.yml` runs security scans
   
 - **Security scans**: 
   - Weekly (Mondays at 9 AM UTC)
-  - On push to `main` or `develop`
+  - On push to `main`
   - On pull requests
 
 - **Manual triggers**:
