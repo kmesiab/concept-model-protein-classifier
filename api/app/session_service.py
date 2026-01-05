@@ -15,6 +15,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional
 
 import boto3
+from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 from jose import JWTError, jwt
 
@@ -224,9 +225,9 @@ class SessionService:
             # Query session by refresh token using GSI (efficient)
             response = self.sessions_table.query(
                 IndexName="RefreshTokenIndex",
-                KeyConditionExpression="refresh_token = :token",
+                KeyConditionExpression=Key("refresh_token").eq(refresh_token),
                 FilterExpression="is_active = :active",
-                ExpressionAttributeValues={":token": refresh_token, ":active": True},
+                ExpressionAttributeValues={":active": True},
             )
 
             items = response.get("Items", [])
