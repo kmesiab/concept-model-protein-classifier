@@ -286,6 +286,8 @@ terraform apply
 
 **[View AWS Deployment Guide →](docs/AWS_DEPLOYMENT.md)**
 
+**[View Environment Configuration Guide →](docs/DEPLOYMENT.md)**
+
 ---
 
 ## 🤝 Community & Support

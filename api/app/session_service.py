@@ -221,9 +221,11 @@ class SessionService:
             Dict with access_token, token_type, and expires_in (int), or None
         """
         try:
-            # Find session by refresh token
-            response = self.sessions_table.scan(
-                FilterExpression="refresh_token = :token AND is_active = :active",
+            # Query session by refresh token using GSI (efficient)
+            response = self.sessions_table.query(
+                IndexName="RefreshTokenIndex",
+                KeyConditionExpression="refresh_token = :token",
+                FilterExpression="is_active = :active",
                 ExpressionAttributeValues={":token": refresh_token, ":active": True},
             )
 

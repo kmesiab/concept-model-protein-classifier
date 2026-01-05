@@ -7,11 +7,12 @@ Provides endpoints for:
 - Token refresh
 """
 
+import hashlib
 import logging
 from typing import Optional
 
 from email_validator import EmailNotValidError, validate_email
-from fastapi import APIRouter, Header, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 
 from .email_service import get_email_service
 from .models import (
@@ -22,11 +23,39 @@ from .models import (
     TokenResponse,
     VerifyTokenRequest,
 )
+from .rate_limiter import get_rate_limiter
 from .session_service import get_session_service
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
+
+
+async def check_auth_rate_limit(request: Request):
+    """
+    Rate limit dependency for authentication endpoints.
+
+    Limits to 10 requests per minute per IP address.
+    """
+    rate_limiter = get_rate_limiter()
+
+    # Use IP address as identifier
+    client_ip = request.client.host if request.client else "unknown"
+    ip_hash = hashlib.sha256(client_ip.encode()).hexdigest()[:16]
+
+    # Check rate limit: 10 requests per minute
+    allowed, _ = rate_limiter.check_rate_limit(
+        api_key_hash=f"auth:{ip_hash}",
+        max_requests_per_minute=10,
+        max_sequences_per_day=1000,  # Daily limit to prevent sustained abuse
+        num_sequences=1,
+    )
+
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many authentication requests. Please try again in a minute.",
+        )
 
 
 @router.post(
@@ -38,6 +67,7 @@ router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
         400: {"description": "Invalid email", "model": ErrorResponse},
         429: {"description": "Rate limit exceeded", "model": ErrorResponse},
     },
+    dependencies=[Depends(check_auth_rate_limit)],
 )
 async def login(request: LoginRequest):
     """
