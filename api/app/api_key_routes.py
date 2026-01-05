@@ -11,7 +11,7 @@ Provides endpoints for:
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Header, status, Depends
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 
 from .api_key_service import get_api_key_service
 from .email_service import get_email_service
@@ -33,7 +33,7 @@ router = APIRouter(prefix="/api/v1/api-keys", tags=["API Key Management"])
 
 
 async def get_current_user(
-    authorization: Optional[str] = Header(None)
+    authorization: Optional[str] = Header(None),
 ) -> str:  # pylint: disable=too-many-return-statements
     """
     Dependency to get the current authenticated user's email from JWT token.

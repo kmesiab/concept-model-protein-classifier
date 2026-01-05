@@ -193,6 +193,23 @@ class TokenResponse(BaseModel):
         }
 
 
+class RefreshTokenResponse(BaseModel):
+    """Response model for refresh token endpoint."""
+
+    access_token: str = Field(..., description="New JWT access token")
+    token_type: str = Field(..., description="Token type (bearer)")
+    expires_in: int = Field(..., description="Token expiration time in seconds")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                "token_type": "bearer",
+                "expires_in": 3600,
+            }
+        }
+
+
 # API Key Management models
 class RegisterAPIKeyRequest(BaseModel):
     """Request model for API key registration."""
@@ -295,4 +312,3 @@ class RevokeAPIKeyResponse(BaseModel):
 
     class Config:
         json_schema_extra = {"example": {"revoked": True, "api_key_id": "key_xyz789"}}
-

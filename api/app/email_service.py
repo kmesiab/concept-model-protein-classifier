@@ -32,9 +32,7 @@ class EmailService:
         self.base_url = os.getenv("BASE_URL", "http://localhost:8000")
 
         # Check if SMTP is configured
-        self.smtp_configured = all(
-            [self.smtp_host, self.smtp_username, self.smtp_password]
-        )
+        self.smtp_configured = all([self.smtp_host, self.smtp_username, self.smtp_password])
 
         if not self.smtp_configured:
             logger.warning(
@@ -161,9 +159,10 @@ class EmailService:
 
         # Production mode: send via SMTP
         try:
-            import aiosmtplib
             from email.mime.multipart import MIMEMultipart
             from email.mime.text import MIMEText
+
+            import aiosmtplib
 
             message = MIMEMultipart()
             message["From"] = self.from_email

@@ -15,7 +15,6 @@ import secrets
 import time
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
-from decimal import Decimal
 
 import boto3
 from botocore.exceptions import ClientError
@@ -109,7 +108,7 @@ class APIKeyService:
         }
 
         try:
-            self.table.put_item(Item=item)
+            self.table.put_item(Item=item)  # type: ignore[arg-type]
             logger.info(f"Created API key {api_key_id} for user {user_email}")
 
             # Audit log
@@ -160,13 +159,16 @@ class APIKeyService:
             self._update_last_used(api_key_hash)
 
             # Convert Decimal to int for compatibility
+            # Type ignore needed for DynamoDB's dynamic return types
             return {
-                "email": item["user_email"],
-                "tier": item["tier"],
-                "daily_limit": int(item["daily_limit"]),
-                "rate_limit_per_minute": int(item["rate_limit_per_minute"]),
-                "max_batch_size": int(item["max_batch_size"]),
-                "api_key_id": item["api_key_id"],
+                "email": str(item.get("user_email", "")),
+                "tier": str(item.get("tier", "free")),
+                "daily_limit": int(item.get("daily_limit", 1000)),  # type: ignore[arg-type]
+                "rate_limit_per_minute": int(
+                    item.get("rate_limit_per_minute", 100)  # type: ignore[arg-type]
+                ),
+                "max_batch_size": int(item.get("max_batch_size", 50)),  # type: ignore[arg-type]
+                "api_key_id": str(item.get("api_key_id", "")),
             }
         except ClientError as e:
             logger.error(f"Failed to validate API key: {e}")
@@ -193,22 +195,26 @@ class APIKeyService:
 
             results = []
             for item in items:
+                created_at_val = item.get("created_at")
+                last_used_val = item.get("last_used_at")
+
                 results.append(
                     {
-                        "api_key_id": item["api_key_id"],
-                        "label": item.get("label", "Untitled API Key"),
-                        "status": item["status"],
+                        "api_key_id": str(item.get("api_key_id", "")),
+                        "label": str(item.get("label", "Untitled API Key")),
+                        "status": str(item.get("status", "unknown")),
                         "created_at": datetime.fromtimestamp(
-                            int(item["created_at"]), tz=timezone.utc
+                            int(created_at_val) if created_at_val else 0,  # type: ignore[arg-type]
+                            tz=timezone.utc,
                         ).isoformat(),
                         "last_used_at": (
                             datetime.fromtimestamp(
-                                int(item["last_used_at"]), tz=timezone.utc
+                                int(last_used_val), tz=timezone.utc  # type: ignore[arg-type]
                             ).isoformat()
-                            if item.get("last_used_at")
+                            if last_used_val
                             else None
                         ),
-                        "tier": item.get("tier", "free"),
+                        "tier": str(item.get("tier", "free")),
                     }
                 )
 
@@ -341,9 +347,7 @@ class APIKeyService:
             # Non-critical error, just log it
             logger.warning(f"Failed to update last_used_at: {e}")
 
-    def _audit_log(
-        self, user_email: str, action: str, api_key_id: str, details: Dict
-    ) -> None:
+    def _audit_log(self, user_email: str, action: str, api_key_id: str, details: Dict) -> None:
         """
         Create an audit log entry.
 

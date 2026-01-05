@@ -10,16 +10,17 @@ Provides endpoints for:
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Header, status
-from email_validator import validate_email, EmailNotValidError
+from email_validator import EmailNotValidError, validate_email
+from fastapi import APIRouter, Header, HTTPException, status
 
 from .email_service import get_email_service
 from .models import (
+    ErrorResponse,
     LoginRequest,
     LoginResponse,
+    RefreshTokenResponse,
     TokenResponse,
     VerifyTokenRequest,
-    ErrorResponse,
 )
 from .session_service import get_session_service
 
@@ -108,16 +109,14 @@ async def verify_token(request: VerifyTokenRequest):
 
 @router.post(
     "/refresh",
-    response_model=TokenResponse,
+    response_model=RefreshTokenResponse,
     summary="Refresh access token",
     responses={
         200: {"description": "Token refreshed successfully"},
         401: {"description": "Invalid refresh token", "model": ErrorResponse},
     },
 )
-async def refresh_token(
-    x_refresh_token: Optional[str] = Header(None, alias="X-Refresh-Token")
-):
+async def refresh_token(x_refresh_token: Optional[str] = Header(None, alias="X-Refresh-Token")):
     """
     Refresh an access token using a refresh token.
 
@@ -141,4 +140,4 @@ async def refresh_token(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired refresh token"
         )
 
-    return TokenResponse(**tokens)
+    return RefreshTokenResponse(**tokens)

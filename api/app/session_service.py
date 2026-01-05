@@ -118,7 +118,12 @@ class SessionService:
                 return None
 
             # Check if expired
-            if int(time.time()) > item["expires_at"]:
+            expires_at = (
+                int(item["expires_at"])  # type: ignore[arg-type]
+                if item.get("expires_at")
+                else 0
+            )
+            if int(time.time()) > expires_at:
                 logger.warning(f"Magic link token expired: {token[:8]}...")
                 return None
 
@@ -129,12 +134,13 @@ class SessionService:
                 ExpressionAttributeValues={":used": True},
             )
 
-            return item["email"]
+            email_value = item.get("email")
+            return str(email_value) if email_value else None
         except ClientError as e:
             logger.error(f"Failed to verify magic link token: {e}")
             return None
 
-    def create_session(self, email: str) -> Dict[str, str]:
+    def create_session(self, email: str) -> Dict:
         """
         Create a new session for a user.
 
@@ -142,7 +148,7 @@ class SessionService:
             email: User's email address
 
         Returns:
-            Dict with access_token and refresh_token
+            Dict with access_token, refresh_token, token_type, and expires_in (int)
         """
         # Generate session ID
         session_id = f"sess_{secrets.token_urlsafe(16)}"
@@ -169,6 +175,7 @@ class SessionService:
 
             logger.info(f"Created session {session_id} for {email}")
 
+            # Return typed dict for TokenResponse
             return {
                 "access_token": access_token,
                 "refresh_token": refresh_token,
@@ -194,9 +201,7 @@ class SessionService:
 
             # Check expiration
             exp = payload.get("exp")
-            if exp and datetime.fromtimestamp(exp, tz=timezone.utc) < datetime.now(
-                timezone.utc
-            ):
+            if exp and datetime.fromtimestamp(exp, tz=timezone.utc) < datetime.now(timezone.utc):
                 return None
 
             return {
@@ -207,7 +212,7 @@ class SessionService:
             logger.warning(f"Invalid access token: {e}")
             return None
 
-    def refresh_access_token(self, refresh_token: str) -> Optional[Dict[str, str]]:
+    def refresh_access_token(self, refresh_token: str) -> Optional[Dict]:
         """
         Refresh an access token using a refresh token.
 
@@ -215,7 +220,7 @@ class SessionService:
             refresh_token: Refresh token
 
         Returns:
-            New access token if valid, None otherwise
+            Dict with access_token, token_type, and expires_in (int), or None
         """
         try:
             # Find session by refresh token
@@ -232,15 +237,21 @@ class SessionService:
             session = items[0]
 
             # Check if expired
-            if int(time.time()) > session["expires_at"]:
+            expires_at = (
+                int(session["expires_at"])  # type: ignore[arg-type]
+                if session.get("expires_at")
+                else 0
+            )
+            if int(time.time()) > expires_at:
                 logger.warning("Refresh token expired")
                 return None
 
             # Create new access token
-            access_token = self._create_access_token(
-                session["user_email"], session["session_id"]
-            )
+            user_email = str(session.get("user_email", ""))
+            session_id = str(session.get("session_id", ""))
+            access_token = self._create_access_token(user_email, session_id)
 
+            # Return typed dict for TokenResponse
             return {
                 "access_token": access_token,
                 "token_type": "bearer",

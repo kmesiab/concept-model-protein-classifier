@@ -94,7 +94,6 @@ app.include_router(auth_router)
 app.include_router(api_key_router)
 
 
-
 @app.exception_handler(Exception)
 async def global_exception_handler(_request: Request, exc: Exception):
     """Global exception handler for unexpected errors."""
