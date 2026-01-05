@@ -54,13 +54,23 @@ jobs:
             exit 1
           fi
 
+      - name: Get image tag from commit SHA
+        id: image-tag
+        run: |
+          # Use the commit SHA from the workflow run that triggered this deployment
+          COMMIT_SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
+          SHORT_SHA=$(echo "${COMMIT_SHA}" | cut -c1-7)
+          IMAGE_TAG="${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${SHORT_SHA}"
+          echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+          echo "Using image tag: ${IMAGE_TAG}"
+
       - name: Update task definition with new image
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-definition.json
           container-name: ${{ env.CONTAINER_NAME }}
-          image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+          image: ${{ steps.image-tag.outputs.image_tag }}
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
@@ -75,4 +85,4 @@ jobs:
           echo "✅ Deployment completed successfully!"
           echo "Cluster: ${{ env.ECS_CLUSTER }}"
           echo "Service: ${{ env.ECS_SERVICE }}"
-          echo "Image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest"
+          echo "Image: ${{ steps.image-tag.outputs.image_tag }}"
