@@ -96,6 +96,24 @@ resource "aws_iam_role_policy" "ecs_task_policy" {
           aws_dynamodb_table.audit_logs.arn,
           "${aws_dynamodb_table.audit_logs.arn}/index/*"
         ]
+      },
+      {
+        Sid    = "SecretsManagerAccessForJWT"
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret"
+        ]
+        Resource = aws_secretsmanager_secret.jwt_secret_key.arn
+      },
+      {
+        Sid    = "KMSAccessForSecrets"
+        Effect = "Allow"
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey"
+        ]
+        Resource = aws_kms_key.secrets.arn
       }
     ]
   })

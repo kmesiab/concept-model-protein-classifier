@@ -5,8 +5,10 @@ Provides secure session management using:
 - JWT tokens for stateless authentication
 - DynamoDB for session storage and revocation
 - Magic link authentication
+- AWS Secrets Manager for JWT key management
 """
 
+import json
 import logging
 import os
 import secrets
@@ -28,13 +30,22 @@ class SessionService:
 
     Sessions use short-lived JWT access tokens and refresh tokens
     stored in DynamoDB for revocation capability.
+    
+    JWT secret key is fetched from AWS Secrets Manager and cached
+    for performance. Supports automatic key rotation.
     """
+
+    # Class-level cache for JWT secret (shared across instances)
+    _jwt_secret_cache: Optional[Dict[str, any]] = None
+    _jwt_secret_cache_time: Optional[float] = None
+    _jwt_secret_cache_ttl: int = 3600  # Cache for 1 hour
 
     def __init__(
         self,
         sessions_table_name: str = None,
         magic_link_table_name: str = None,
         region_name: str = None,
+        jwt_secret_name: str = None,
     ):
         """
         Initialize the session service.
@@ -43,6 +54,7 @@ class SessionService:
             sessions_table_name: DynamoDB table name for sessions
             magic_link_table_name: DynamoDB table name for magic links
             region_name: AWS region
+            jwt_secret_name: AWS Secrets Manager secret name for JWT key
         """
         self.sessions_table_name = sessions_table_name or os.getenv(
             "DYNAMODB_SESSIONS_TABLE", "protein-classifier-user-sessions"
@@ -50,19 +62,72 @@ class SessionService:
         self.magic_link_table_name = magic_link_table_name or os.getenv(
             "DYNAMODB_MAGIC_LINKS_TABLE", "protein-classifier-magic-link-tokens"
         )
+        self.jwt_secret_name = jwt_secret_name or os.getenv(
+            "JWT_SECRET_NAME", "protein-classifier-jwt-secret-key"
+        )
         region = region_name or os.getenv("AWS_REGION", "us-west-2")
 
         # JWT configuration
-        self.secret_key = os.getenv("JWT_SECRET_KEY", secrets.token_urlsafe(32))
         self.algorithm = "HS256"
         self.access_token_expire_minutes = 60  # 1 hour
         self.refresh_token_expire_days = 30  # 30 days
         self.magic_link_expire_minutes = 15  # 15 minutes
 
-        # Initialize DynamoDB client
+        # Initialize AWS clients
         self.dynamodb = boto3.resource("dynamodb", region_name=region)
+        self.secretsmanager = boto3.client("secretsmanager", region_name=region)
         self.sessions_table = self.dynamodb.Table(self.sessions_table_name)
         self.magic_link_table = self.dynamodb.Table(self.magic_link_table_name)
+
+    def _get_jwt_secret(self) -> str:
+        """
+        Get JWT secret key from AWS Secrets Manager with caching.
+        
+        Caches the secret for 1 hour to reduce API calls and improve performance.
+        Automatically handles secret rotation by refreshing cache.
+        
+        Returns:
+            JWT secret key string
+        """
+        current_time = time.time()
+        
+        # Check if cache is valid
+        if (
+            self._jwt_secret_cache is not None
+            and self._jwt_secret_cache_time is not None
+            and (current_time - self._jwt_secret_cache_time) < self._jwt_secret_cache_ttl
+        ):
+            return self._jwt_secret_cache.get("key", "")
+        
+        # Fetch from Secrets Manager
+        try:
+            response = self.secretsmanager.get_secret_value(SecretId=self.jwt_secret_name)
+            secret_data = json.loads(response["SecretString"])
+            
+            # Update cache
+            SessionService._jwt_secret_cache = secret_data
+            SessionService._jwt_secret_cache_time = current_time
+            
+            logger.info("JWT secret fetched from AWS Secrets Manager and cached")
+            return secret_data.get("key", "")
+            
+        except ClientError as e:
+            error_code = e.response["Error"]["Code"]
+            if error_code == "ResourceNotFoundException":
+                logger.error(f"JWT secret not found: {self.jwt_secret_name}")
+            elif error_code == "AccessDeniedException":
+                logger.error(f"Access denied to JWT secret: {self.jwt_secret_name}")
+            else:
+                logger.error(f"Failed to fetch JWT secret: {e}")
+            
+            # Fallback for development only (should not happen in production)
+            logger.warning("Using fallback JWT secret - THIS IS NOT SECURE FOR PRODUCTION")
+            return os.getenv("JWT_SECRET_KEY_FALLBACK", secrets.token_urlsafe(32))
+
+    @property
+    def secret_key(self) -> str:
+        """Get the current JWT secret key (cached)."""
+        return self._get_jwt_secret()
 
     def create_magic_link_token(self, email: str) -> str:
         """

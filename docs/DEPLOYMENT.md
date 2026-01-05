@@ -6,24 +6,31 @@ This document describes all required and optional environment variables for depl
 
 ### Critical - Must Be Set
 
-#### JWT_SECRET_KEY
+#### JWT_SECRET_NAME
 
-**CRITICAL**: This key is used to sign JWT tokens and **MUST** be persistent across restarts.
+**MANAGED BY AWS SECRETS MANAGER** - This is the recommended and secure approach.
 
-- **Purpose**: Sign and verify JWT access and refresh tokens
-- **Requirements**:
-  - Minimum 32 characters
-  - Cryptographically secure random string
-  - **MUST** remain constant across deployments and restarts
-  - Changing this will invalidate all existing user sessions
-- **Generation**:
+- **Purpose**: Name of the AWS Secrets Manager secret containing the JWT signing key
+- **Default**: `protein-classifier-jwt-secret-key`
+- **Infrastructure**: Automatically created by Terraform in `terraform/secrets.tf`
+- **Features**:
+  - Automatic rotation every 90 days
+  - KMS encryption at rest
+  - Cached for 1 hour to reduce API calls
+  - No manual secret management required
+- **Example**: `JWT_SECRET_NAME=protein-classifier-jwt-secret-key`
 
-  ```bash
-  python -c "import secrets; print(secrets.token_urlsafe(64))"
-  ```
+**Important**: The JWT secret key is **NOT** stored as an environment variable. It's fetched from AWS Secrets Manager at runtime and cached. This provides:
+- Automatic key rotation support
+- Centralized secret management
+- Audit trail of secret access
+- No secret exposure in environment variables or logs
 
-- **Storage**: Store in AWS Secrets Manager, AWS Systems Manager Parameter Store, or equivalent secure storage
-- **Example**: `JWT_SECRET_KEY=your-very-long-random-secret-key-here`
+#### JWT_SECRET_KEY_FALLBACK (Development Only)
+
+- **Purpose**: Fallback JWT secret for local development when Secrets Manager is unavailable
+- **WARNING**: **NEVER** use in production
+- **Example**: `JWT_SECRET_KEY_FALLBACK=dev-only-insecure-key`
 
 ### DynamoDB Tables
 
@@ -139,6 +146,10 @@ Required for magic link authentication emails.
           "value": "us-west-2"
         },
         {
+          "name": "JWT_SECRET_NAME",
+          "value": "protein-classifier-jwt-secret-key"
+        },
+        {
           "name": "DYNAMODB_API_KEYS_TABLE",
           "value": "protein-classifier-api-keys"
         },
@@ -177,10 +188,6 @@ Required for magic link authentication emails.
       ],
       "secrets": [
         {
-          "name": "JWT_SECRET_KEY",
-          "valueFrom": "arn:aws:secretsmanager:us-west-2:123456789:secret:jwt-secret-key"
-        },
-        {
           "name": "SMTP_USERNAME",
           "valueFrom": "arn:aws:secretsmanager:us-west-2:123456789:secret:smtp-username"
         },
@@ -194,6 +201,8 @@ Required for magic link authentication emails.
 }
 ```
 
+**Note**: JWT secret is **NOT** passed as an environment variable or ECS secret. The application fetches it from AWS Secrets Manager using the IAM role attached to the ECS task. This provides automatic rotation support and better security.
+
 ## Docker Compose Example (Development)
 
 ```yaml
@@ -205,7 +214,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - JWT_SECRET_KEY=dev-secret-key-change-in-production
+      - JWT_SECRET_KEY_FALLBACK=dev-secret-key-not-for-production
       - DYNAMODB_API_KEYS_TABLE=protein-classifier-api-keys
       - DYNAMODB_SESSIONS_TABLE=protein-classifier-user-sessions
       - DYNAMODB_MAGIC_LINKS_TABLE=protein-classifier-magic-link-tokens
@@ -226,13 +235,18 @@ services:
       - "6379:6379"
 ```
 
+**Note**: For local development, the JWT secret fallback is used when AWS Secrets Manager is unavailable. **Never use this in production**.
+
 ## Security Best Practices
 
-1. **JWT_SECRET_KEY**:
-   - NEVER commit to version control
-   - Use AWS Secrets Manager or equivalent
-   - Rotate every 90 days
-   - Use different keys for dev/staging/production
+1. **JWT Secret Key** (Managed by AWS Secrets Manager):
+   - Automatically created by Terraform
+   - Encrypted with KMS at rest
+   - Supports automatic rotation every 90 days
+   - Cached for 1 hour to reduce API calls
+   - Never exposed in environment variables or logs
+   - Access controlled via IAM policies
+   - Audit trail via CloudTrail
 
 2. **SMTP Credentials**:
    - Store in AWS Secrets Manager
@@ -254,24 +268,38 @@ services:
 
 Before deploying to production, verify:
 
-- [ ] JWT_SECRET_KEY is set and stored securely
+- [ ] JWT secret created in AWS Secrets Manager by Terraform
+- [ ] ECS task role has permissions to read JWT secret
 - [ ] All DynamoDB table names are correct
 - [ ] AWS region matches your infrastructure
 - [ ] SMTP credentials are valid and tested
 - [ ] BASE_URL matches your production domain
 - [ ] Redis is accessible from application
 - [ ] CORS origins include your frontend domains
-- [ ] All secrets are in AWS Secrets Manager (not environment variables)
-- [ ] IAM roles have necessary DynamoDB permissions
-- [ ] Terraform tables are created before deployment
+- [ ] IAM roles have necessary permissions (DynamoDB, Secrets Manager, KMS)
+- [ ] Terraform tables and secrets are created before deployment
 
 ## Troubleshooting
 
+### "Failed to fetch JWT secret from AWS Secrets Manager"
+
+- JWT secret not created in Secrets Manager
+- IAM role lacks permissions to read secret
+- KMS key permissions not granted to ECS task role
+- Wrong AWS region configuration
+- Solution: Run Terraform to create secret, verify IAM permissions
+
 ### "Invalid JWT signature"
 
-- JWT_SECRET_KEY changed between deployments
-- Multiple instances using different secret keys
-- Solution: Ensure JWT_SECRET_KEY is consistent across all instances
+- JWT secret was rotated but application cache not refreshed (wait 1 hour or restart)
+- Multiple instances using different secrets (should not happen with Secrets Manager)
+- Solution: Restart application to refresh cache, verify secret ARN
+
+### "Access denied to JWT secret"
+
+- ECS task role missing `secretsmanager:GetSecretValue` permission
+- KMS key policy doesn't allow ECS task role to decrypt
+- Solution: Verify IAM policy in terraform/iam.tf includes Secrets Manager and KMS permissions
 
 ### "DynamoDB table not found"
 
