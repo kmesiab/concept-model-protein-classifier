@@ -47,11 +47,16 @@ The repository now has a comprehensive CI/CD pipeline with quality gates:
 │                                          │
 │    • Multi-platform build (amd64, arm64)│
 │    • Push to Amazon ECR                  │
-│    • Tag with SHA and 'latest'           │
+│    • Tag with SHA only (unique per-build)│
 └─────────────────────────────────────────┘
 ```
 
 **Key Feature**: Build and push to ECR **only runs** if both lint and test jobs succeed. This ensures no broken code is deployed.
+
+**Image Tags**: Images are tagged with commit SHA to ensure uniqueness and prevent conflicts with immutable tags in ECR:
+
+- `<branch>-<sha>` (e.g., `main-3fcf35c`)
+- `<sha>` (e.g., `3fcf35c`)
 
 ### On Pull Requests
 
