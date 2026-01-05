@@ -399,6 +399,105 @@ jobs:
           terraform apply -auto-approve -no-color tfplan.out
           echo "✅ Terraform apply completed successfully!"
 
+      - name: Trigger Docker Build if Image Missing
+        id: trigger-docker-build
+        run: |
+          echo "🔍 Checking if Docker image exists in ECR..."
+          
+          # Check if ECR repository exists
+          if ! aws ecr describe-repositories --repository-names protein-classifier-api --region us-west-2 >/dev/null 2>&1; then
+            echo "⚠️  ECR repository was just created by Terraform"
+            echo "Triggering Docker build workflow to create initial image..."
+            echo "TRIGGER_BUILD=true" >> $GITHUB_OUTPUT
+          else
+            # Check if :latest image exists
+            if aws ecr describe-images \
+              --repository-name protein-classifier-api \
+              --image-ids imageTag=latest \
+              --region us-west-2 >/dev/null 2>&1; then
+              echo "✅ Docker image with :latest tag already exists"
+              echo "TRIGGER_BUILD=false" >> $GITHUB_OUTPUT
+            else
+              echo "⚠️  No :latest image found in ECR"
+              echo "Triggering Docker build workflow..."
+              echo "TRIGGER_BUILD=true" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Trigger Build and Push Docker Image Workflow
+        if: steps.trigger-docker-build.outputs.TRIGGER_BUILD == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log('🚀 Triggering Build and Push Docker Image workflow...');
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'docker-build.yml',
+              ref: 'main'
+            });
+            console.log('✅ Docker build workflow triggered successfully');
+            console.log('🕐 Waiting 30 seconds for workflow to start...');
+            await new Promise(resolve => setTimeout(resolve, 30000));
+
+      - name: Wait for Docker Build Completion
+        if: steps.trigger-docker-build.outputs.TRIGGER_BUILD == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log('⏳ Waiting for Docker build workflow to complete...');
+            const maxWaitMinutes = 10;
+            const pollIntervalSeconds = 30;
+            const maxAttempts = (maxWaitMinutes * 60) / pollIntervalSeconds;
+            
+            let attempts = 0;
+            while (attempts < maxAttempts) {
+              attempts++;
+              
+              // Get recent workflow runs for docker-build.yml
+              const runs = await github.rest.actions.listWorkflowRuns({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'docker-build.yml',
+                per_page: 5
+              });
+              
+              // Find the most recent run
+              const latestRun = runs.data.workflow_runs[0];
+              
+              if (latestRun) {
+                console.log(`Status: ${latestRun.status}, Conclusion: ${latestRun.conclusion}`);
+                
+                if (latestRun.status === 'completed') {
+                  if (latestRun.conclusion === 'success') {
+                    console.log('✅ Docker build completed successfully!');
+                    return;
+                  } else {
+                    throw new Error(`❌ Docker build failed with conclusion: ${latestRun.conclusion}`);
+                  }
+                }
+              }
+              
+              console.log(`Attempt ${attempts}/${maxAttempts} - waiting ${pollIntervalSeconds}s...`);
+              await new Promise(resolve => setTimeout(resolve, pollIntervalSeconds * 1000));
+            }
+            
+            throw new Error(`❌ Docker build did not complete within ${maxWaitMinutes} minutes`);
+
+      - name: Force ECS Service Update
+        if: steps.trigger-docker-build.outputs.TRIGGER_BUILD == 'true'
+        run: |
+          echo "🔄 Forcing ECS service update to pull the newly built image..."
+          aws ecs update-service \
+            --cluster protein-classifier-api-1-0-0-prod-cluster \
+            --service protein-classifier-api-service \
+            --force-new-deployment \
+            --region us-west-2
+          
+          echo "✅ ECS service deployment triggered"
+
       - name: Output Infrastructure Details
         if: success()
         run: |

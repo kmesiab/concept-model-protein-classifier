@@ -203,6 +203,39 @@ resource "aws_kms_key_policy" "ecr" {
             "kms:EncryptionContext:aws:ecr:repositoryArn" = "arn:aws:ecr:${var.aws_region}:${var.aws_account_id}:repository/protein-classifier-api"
           }
         }
+      },
+      {
+        # GitHub Actions principal statement for ECR image push operations.
+        # GitHub Actions needs KMS permissions to encrypt Docker images when pushing to ECR
+        # since the repository uses KMS encryption. This statement grants the necessary
+        # permissions without requiring the encryption context condition, as IAM principals
+        # don't provide the same encryption context that ECR service operations use.
+        Sid    = "AllowGitHubActionsToUseECRKey"
+        Effect = "Allow"
+        Principal = {
+          AWS = data.aws_iam_role.github_actions.arn
+        }
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey"
+        ]
+        Resource = "*"
+      },
+      {
+        # ECS Task Execution Role needs to decrypt images when pulling from ECR
+        Sid    = "AllowECSTaskExecutionRoleToUseECRKey"
+        Effect = "Allow"
+        Principal = {
+          AWS = aws_iam_role.ecs_task_execution_role.arn
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey"
+        ]
+        Resource = "*"
       }
     ]
   })
