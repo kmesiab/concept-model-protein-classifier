@@ -14,7 +14,7 @@ import os
 import secrets
 import time
 from datetime import datetime, timedelta, timezone
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 import boto3
 from boto3.dynamodb.conditions import Key
@@ -30,13 +30,13 @@ class SessionService:
 
     Sessions use short-lived JWT access tokens and refresh tokens
     stored in DynamoDB for revocation capability.
-    
+
     JWT secret key is fetched from AWS Secrets Manager and cached
     for performance. Supports automatic key rotation.
     """
 
     # Class-level cache for JWT secret (shared across instances)
-    _jwt_secret_cache: Optional[Dict[str, any]] = None
+    _jwt_secret_cache: Optional[Dict[str, Any]] = None
     _jwt_secret_cache_time: Optional[float] = None
     _jwt_secret_cache_ttl: int = 3600  # Cache for 1 hour
 
@@ -82,15 +82,15 @@ class SessionService:
     def _get_jwt_secret(self) -> str:
         """
         Get JWT secret key from AWS Secrets Manager with caching.
-        
+
         Caches the secret for 1 hour to reduce API calls and improve performance.
         Automatically handles secret rotation by refreshing cache.
-        
+
         Returns:
             JWT secret key string
         """
         current_time = time.time()
-        
+
         # Check if cache is valid
         if (
             self._jwt_secret_cache is not None
@@ -98,19 +98,19 @@ class SessionService:
             and (current_time - self._jwt_secret_cache_time) < self._jwt_secret_cache_ttl
         ):
             return self._jwt_secret_cache.get("key", "")
-        
+
         # Fetch from Secrets Manager
         try:
             response = self.secretsmanager.get_secret_value(SecretId=self.jwt_secret_name)
             secret_data = json.loads(response["SecretString"])
-            
+
             # Update cache
             SessionService._jwt_secret_cache = secret_data
             SessionService._jwt_secret_cache_time = current_time
-            
+
             logger.info("JWT secret fetched from AWS Secrets Manager and cached")
             return secret_data.get("key", "")
-            
+
         except ClientError as e:
             error_code = e.response["Error"]["Code"]
             if error_code == "ResourceNotFoundException":
@@ -119,7 +119,7 @@ class SessionService:
                 logger.error(f"Access denied to JWT secret: {self.jwt_secret_name}")
             else:
                 logger.error(f"Failed to fetch JWT secret: {e}")
-            
+
             # Fallback for development only (should not happen in production)
             logger.warning("Using fallback JWT secret - THIS IS NOT SECURE FOR PRODUCTION")
             return os.getenv("JWT_SECRET_KEY_FALLBACK", secrets.token_urlsafe(32))
