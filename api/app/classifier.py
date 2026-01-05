@@ -129,7 +129,7 @@ FLEXIBILITY = {
 # Canonical amino acids set
 CANONICAL_AAS = set(KD_HYDROPHOBICITY.keys())
 
-# Pre-computed thresholds from validation (best k=5 with 84.52% accuracy)
+# Pre-computed thresholds from validation (best k=5 based on F1 score, 84.52% accuracy)
 # These are the midpoints between PDB (folded) and DisProt (disordered) means
 DEFAULT_THRESHOLDS = {
     "hydro_norm_avg": 0.507,
