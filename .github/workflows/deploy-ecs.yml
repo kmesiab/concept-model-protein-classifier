@@ -8,6 +8,11 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Docker image tag to deploy (e.g., 3fcf35c or main-3fcf35c). If not provided, uses current commit SHA.'
+        required: false
+        type: string
 
 permissions:
   id-token: write
@@ -57,12 +62,37 @@ jobs:
       - name: Get image tag from commit SHA
         id: image-tag
         run: |
-          # Use the commit SHA from the workflow run that triggered this deployment
-          COMMIT_SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
-          SHORT_SHA=$(echo "${COMMIT_SHA}" | cut -c1-7)
+          # Use manual input if provided, otherwise use commit SHA from workflow run or current commit
+          if [ -n "${{ inputs.image_tag }}" ]; then
+            SHORT_SHA="${{ inputs.image_tag }}"
+            echo "Using manually provided image tag: ${SHORT_SHA}"
+          else
+            COMMIT_SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
+            SHORT_SHA=$(echo "${COMMIT_SHA}" | cut -c1-7)
+            echo "Using commit SHA: ${SHORT_SHA}"
+          fi
           IMAGE_TAG="${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${SHORT_SHA}"
           echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
-          echo "Using image tag: ${IMAGE_TAG}"
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "Image tag to deploy: ${IMAGE_TAG}"
+
+      - name: Verify image exists in ECR
+        run: |
+          echo "Verifying image exists in ECR..."
+          if aws ecr describe-images \
+            --repository-name ${{ env.ECR_REPOSITORY }} \
+            --image-ids imageTag=${{ steps.image-tag.outputs.short_sha }} \
+            --region ${{ env.AWS_REGION }} > /dev/null 2>&1; then
+            echo "✅ Image tag ${{ steps.image-tag.outputs.short_sha }} exists in ECR"
+          else
+            echo "❌ ERROR: Image tag ${{ steps.image-tag.outputs.short_sha }} does not exist in ECR repository ${{ env.ECR_REPOSITORY }}"
+            echo "Available tags:"
+            aws ecr list-images --repository-name ${{ env.ECR_REPOSITORY }} --region ${{ env.AWS_REGION }} --max-items 10 || true
+            echo ""
+            echo "Please ensure the image has been built and pushed to ECR before deploying."
+            echo "Run the 'Build and Push Docker Image' workflow first, or specify an existing image tag."
+            exit 1
+          fi
 
       - name: Update task definition with new image
         id: task-def
