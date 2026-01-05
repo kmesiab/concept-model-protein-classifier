@@ -1,8 +1,10 @@
 # DynamoDB table for API key management
 resource "aws_dynamodb_table" "api_keys" {
-  name         = "protein-classifier-api-keys"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "api_key_hash"
+  name           = "protein-classifier-api-keys"
+  billing_mode   = "PROVISIONED"
+  read_capacity  = 5000
+  write_capacity = 2000
+  hash_key       = "api_key_hash"
 
   attribute {
     name = "api_key_hash"
@@ -21,17 +23,21 @@ resource "aws_dynamodb_table" "api_keys" {
 
   # Global secondary index to query keys by user email
   global_secondary_index {
-    name            = "UserEmailIndex"
-    hash_key        = "user_email"
-    range_key       = "api_key_id"
-    projection_type = "ALL"
+    name               = "UserEmailIndex"
+    hash_key           = "user_email"
+    range_key          = "api_key_id"
+    projection_type    = "ALL"
+    read_capacity      = 2000
+    write_capacity     = 1000
   }
 
   # Global secondary index to query by api_key_id for rotation/revocation
   global_secondary_index {
-    name            = "ApiKeyIdIndex"
-    hash_key        = "api_key_id"
-    projection_type = "ALL"
+    name               = "ApiKeyIdIndex"
+    hash_key           = "api_key_id"
+    projection_type    = "ALL"
+    read_capacity      = 1000
+    write_capacity     = 500
   }
 
   point_in_time_recovery {
@@ -56,9 +62,11 @@ resource "aws_dynamodb_table" "api_keys" {
 
 # DynamoDB table for user sessions (JWT refresh tokens)
 resource "aws_dynamodb_table" "user_sessions" {
-  name         = "protein-classifier-user-sessions"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "session_id"
+  name           = "protein-classifier-user-sessions"
+  billing_mode   = "PROVISIONED"
+  read_capacity  = 3000
+  write_capacity = 1500
+  hash_key       = "session_id"
 
   attribute {
     name = "session_id"
@@ -72,9 +80,11 @@ resource "aws_dynamodb_table" "user_sessions" {
 
   # Global secondary index to query sessions by user email
   global_secondary_index {
-    name            = "UserEmailIndex"
-    hash_key        = "user_email"
-    projection_type = "ALL"
+    name               = "UserEmailIndex"
+    hash_key           = "user_email"
+    projection_type    = "ALL"
+    read_capacity      = 1000
+    write_capacity     = 500
   }
 
   point_in_time_recovery {
@@ -99,9 +109,11 @@ resource "aws_dynamodb_table" "user_sessions" {
 
 # DynamoDB table for magic link tokens (email authentication)
 resource "aws_dynamodb_table" "magic_link_tokens" {
-  name         = "protein-classifier-magic-link-tokens"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "token"
+  name           = "protein-classifier-magic-link-tokens"
+  billing_mode   = "PROVISIONED"
+  read_capacity  = 1000
+  write_capacity = 1000
+  hash_key       = "token"
 
   attribute {
     name = "token"
@@ -130,10 +142,12 @@ resource "aws_dynamodb_table" "magic_link_tokens" {
 
 # DynamoDB table for audit logs
 resource "aws_dynamodb_table" "audit_logs" {
-  name         = "protein-classifier-audit-logs"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "event_id"
-  range_key    = "timestamp"
+  name           = "protein-classifier-audit-logs"
+  billing_mode   = "PROVISIONED"
+  read_capacity  = 2000
+  write_capacity = 3000
+  hash_key       = "event_id"
+  range_key      = "timestamp"
 
   attribute {
     name = "event_id"
@@ -152,10 +166,12 @@ resource "aws_dynamodb_table" "audit_logs" {
 
   # Global secondary index to query logs by user email
   global_secondary_index {
-    name            = "UserEmailIndex"
-    hash_key        = "user_email"
-    range_key       = "timestamp"
-    projection_type = "ALL"
+    name               = "UserEmailIndex"
+    hash_key           = "user_email"
+    range_key          = "timestamp"
+    projection_type    = "ALL"
+    read_capacity      = 1000
+    write_capacity     = 1500
   }
 
   point_in_time_recovery {
