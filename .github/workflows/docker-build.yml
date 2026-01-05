@@ -1,12 +1,6 @@
-name: Build and Push Docker Image
+name: Build and Push Docker Image (Manual)
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'api/**'
-      - '.github/workflows/docker-build.yml'
   workflow_dispatch:
 
 permissions:
