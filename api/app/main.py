@@ -100,15 +100,21 @@ def verify_api_key(api_key: Optional[str]) -> dict:
     """
     Verify API key and return metadata.
 
+    Temporarily allows empty API keys with default free tier metadata.
+
     Raises:
         HTTPException: If API key is invalid
     """
     if not api_key:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing API key. Include 'X-API-Key' header.",
-            headers={"WWW-Authenticate": "ApiKey"},
-        )
+        # Temporarily allow empty API key with default free tier metadata
+        return {
+            "email": "anonymous@example.com",
+            "tier": "free",
+            "is_active": True,
+            "daily_limit": 1000,
+            "rate_limit_per_minute": 100,
+            "max_batch_size": 50,
+        }
 
     metadata = api_key_manager.validate_api_key(api_key)
 
@@ -122,7 +128,7 @@ def verify_api_key(api_key: Optional[str]) -> dict:
     return metadata
 
 
-def check_rate_limit(api_key: str, metadata: dict, num_sequences: int):
+def check_rate_limit(api_key: Optional[str], metadata: dict, num_sequences: int):
     """
     Check rate limits for the request.
 
@@ -130,7 +136,11 @@ def check_rate_limit(api_key: str, metadata: dict, num_sequences: int):
         HTTPException: If rate limit is exceeded
     """
     # Hash the API key for rate limiting
-    api_key_hash = hashlib.sha256(api_key.encode()).hexdigest()
+    # Use a default hash for empty API keys
+    if api_key:
+        api_key_hash = hashlib.sha256(api_key.encode()).hexdigest()
+    else:
+        api_key_hash = hashlib.sha256(b"anonymous").hexdigest()
 
     # Get rate limiter
     limiter = get_rate_limiter()

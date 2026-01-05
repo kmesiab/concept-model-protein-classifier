@@ -100,11 +100,14 @@ class TestClassifyEndpoint:
         assert data["results"][0]["threshold"] == 5
 
     def test_missing_api_key(self, client):
-        """Test request without API key."""
+        """Test request without API key - should now succeed with default metadata."""
         request_data = {"sequences": [{"id": "test1", "sequence": "MKVLWAASLLLLASAARA"}]}
 
         response = client.post("/api/v1/classify", json=request_data)
-        assert response.status_code == 401
+        assert response.status_code == 200
+        data = response.json()
+        assert "results" in data
+        assert len(data["results"]) == 1
 
     def test_invalid_api_key(self, client):
         """Test request with invalid API key."""
