@@ -90,7 +90,7 @@ curl -X POST http://localhost:8000/api/v1/classify \
         "sequence": "MALWMRLLPLLALLALWGPDPAAAF"
       }
     ],
-    "threshold": 4
+    "threshold": 5
   }'
 ```
 
@@ -105,7 +105,7 @@ curl -X POST http://localhost:8000/api/v1/classify \
       "classification": "structured",
       "confidence": 0.85,
       "conditions_met": 5,
-      "threshold": 4,
+      "threshold": 5,
       "features": {
         "hydro_norm_avg": 0.6234,
         "flex_norm_avg": 0.7123,
@@ -131,7 +131,7 @@ Classify protein sequences using FASTA format.
 **Request:**
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/classify/fasta?threshold=4 \
+curl -X POST http://localhost:8000/api/v1/classify/fasta?threshold=5 \
   -H "Content-Type: text/plain" \
   -H "X-API-Key: YOUR_API_KEY" \
   --data-binary @- << 'EOF'
@@ -293,7 +293,7 @@ API_HOST=0.0.0.0
 API_PORT=8000
 
 # Optional: Custom thresholds
-CLASSIFICATION_THRESHOLD=4
+CLASSIFICATION_THRESHOLD=5
 ```
 
 ### Kubernetes Deployment
@@ -382,7 +382,7 @@ The classifier uses a threshold-based approach with 7 biophysical features:
 
 1. Compute all 7 features from the sequence
 2. Count how many features meet the "structured" condition
-3. If count >= threshold (default: 4), classify as **structured**
+3. If count >= threshold (default: 5), classify as **structured**
 4. Otherwise, classify as **disordered**
 
 ### Confidence Scoring

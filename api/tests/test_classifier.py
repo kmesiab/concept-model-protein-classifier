@@ -182,7 +182,7 @@ class TestClassifySequence:
         result = classify_sequence(sequence)
 
         assert result["classification"] == "structured"
-        assert result["conditions_met"] >= 4
+        assert result["conditions_met"] >= 5
         assert 0.5 <= result["confidence"] <= 1.0
         assert "features" in result
 
@@ -193,7 +193,7 @@ class TestClassifySequence:
         result = classify_sequence(sequence)
 
         assert result["classification"] == "disordered"
-        assert result["conditions_met"] < 4
+        assert result["conditions_met"] < 5
         assert 0.5 <= result["confidence"] <= 1.0
 
     def test_custom_threshold(self):

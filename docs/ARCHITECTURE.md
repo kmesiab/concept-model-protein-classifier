@@ -67,7 +67,7 @@ The script's structure and logic can be mapped to the **Concept Model** framewor
     1. **Parameters:**
         * `SLIDING_WINDOW_SIZE = 9` (each local window to analyze).
         * `SLIDING_WINDOW_SLIDE_STEP = 9` (non-overlapping windows).
-        * `SLIDING_WINDOW_PASS_K = 4` (a 9-AA window "passes" if its 7 *local* features meet at least 4 conditions, judged by the *globally-derived `midpoints`*).
+        * `SLIDING_WINDOW_PASS_K = 5` (a 9-AA window "passes" if its 7 *local* features meet at least 5 conditions, judged by the *globally-derived `midpoints`*).
         * `MAX_UNFORGIVEN_FAILED_WINDOWS_SLIDING = 3` (the protein is "Folded" if it has 3 or fewer uncancelled failed windows).
     2. **Serial Processing:** It slides a 9-AA window across the sequence.
     3. **Window Evaluation:** For each 9-AA window, its 7 new features are calculated. `count_conditions_for_new_feature_vector` determines if this window "passes" or "fails" based on `SLIDING_WINDOW_PASS_K` and the global `midpoints`.

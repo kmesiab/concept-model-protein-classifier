@@ -34,13 +34,13 @@ class ProteinClassifierClient:
         response.raise_for_status()
         return response.json()
 
-    def classify(self, sequences: List[Tuple[str, str]], threshold: int = 4) -> Dict:
+    def classify(self, sequences: List[Tuple[str, str]], threshold: int = 5) -> Dict:
         """
         Classify protein sequences.
 
         Args:
             sequences: List of (id, sequence) tuples
-            threshold: Classification threshold (default: 4)
+            threshold: Classification threshold (default: 5)
 
         Returns:
             Classification results as a dictionary
@@ -54,13 +54,13 @@ class ProteinClassifierClient:
         response.raise_for_status()
         return response.json()
 
-    def classify_fasta(self, fasta_text: str, threshold: int = 4) -> Dict:
+    def classify_fasta(self, fasta_text: str, threshold: int = 5) -> Dict:
         """
         Classify sequences from FASTA format.
 
         Args:
             fasta_text: FASTA formatted text
-            threshold: Classification threshold (default: 4)
+            threshold: Classification threshold (default: 5)
 
         Returns:
             Classification results as a dictionary

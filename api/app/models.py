@@ -28,7 +28,7 @@ class ClassifyRequest(BaseModel):
         ..., description="List of protein sequences to classify", min_length=1, max_length=50
     )
     threshold: Optional[int] = Field(
-        4,
+        5,
         description="Number of conditions that must be met for 'structured' classification",
         ge=1,
         le=7,
@@ -41,7 +41,7 @@ class ClassifyRequest(BaseModel):
                     {"id": "protein1", "sequence": "MKVLWAASLLLLASAARA"},
                     {"id": "protein2", "sequence": "MALWMRLLPLLALLALWGPDPAAAF"},
                 ],
-                "threshold": 4,
+                "threshold": 5,
             }
         }
 
@@ -90,7 +90,7 @@ class ClassifyResponse(BaseModel):
                         "classification": "structured",
                         "confidence": 0.92,
                         "conditions_met": 5,
-                        "threshold": 4,
+                        "threshold": 5,
                         "features": {
                             "hydro_norm_avg": 0.6234,
                             "flex_norm_avg": 0.7123,

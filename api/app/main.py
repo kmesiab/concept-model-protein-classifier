@@ -285,7 +285,7 @@ async def classify_sequences(
 )
 async def classify_fasta(
     request: Request,
-    threshold: int = Query(4, ge=1, le=7, description="Classification threshold (1-7)"),
+    threshold: int = Query(5, ge=1, le=7, description="Classification threshold (1-7)"),
     x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
 ):
     """

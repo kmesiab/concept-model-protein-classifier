@@ -129,7 +129,7 @@ FLEXIBILITY = {
 # Canonical amino acids set
 CANONICAL_AAS = set(KD_HYDROPHOBICITY.keys())
 
-# Pre-computed thresholds from validation (best k=4 with 84.52% accuracy)
+# Pre-computed thresholds from validation (best k=5 with 84.52% accuracy)
 # These are the midpoints between PDB (folded) and DisProt (disordered) means
 DEFAULT_THRESHOLDS = {
     "hydro_norm_avg": 0.507,
@@ -142,7 +142,7 @@ DEFAULT_THRESHOLDS = {
 }
 
 # Classification parameters
-CLASSIFICATION_THRESHOLD = 4  # Number of conditions that must be met for "structured"
+CLASSIFICATION_THRESHOLD = 5  # Number of conditions that must be met for "structured"
 BULKY_HYDROPHOBICS = ["W", "C", "F", "Y", "I", "V", "L"]
 
 # Pre-computed AA properties for fast lookup
