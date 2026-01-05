@@ -52,7 +52,8 @@ app = FastAPI(
     - **Multiple Input Formats**: JSON or FASTA
 
     ## Authentication
-    All endpoints require an API key passed in the `X-API-Key` header.
+    API keys are optional. Requests without an API key are treated as anonymous
+    users with free tier rate limits.
 
     ## Rate Limits (Free Tier)
     - 1,000 sequences per day
@@ -137,6 +138,7 @@ def check_rate_limit(api_key: Optional[str], metadata: dict, num_sequences: int)
     """
     # Hash the API key for rate limiting
     # Use a default hash for empty API keys
+    # Note: All anonymous users share the same rate limit bucket as a temporary measure
     if api_key:
         api_key_hash = hashlib.sha256(api_key.encode()).hexdigest()
     else:
