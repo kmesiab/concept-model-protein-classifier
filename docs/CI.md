@@ -77,7 +77,7 @@ graph TD
 | **Terraform Plan** | `terraform-plan.yml` | PR with terraform changes | Plan preview with PR comments |
 | **Terraform Apply** | `terraform-apply.yml` | Manual workflow_dispatch | Apply infrastructure changes |
 | **Docker Build** | `docker-build.yml` | Push to main (api changes) | Build & push to ECR |
-| **Deploy to ECS** | `deploy-ecs.yml` | After Docker build success | Deploy container to ECS |
+| **Deploy to ECS** | `deploy-ecs.yml` | Push to main (api changes) | Deploy container to ECS |
 | **Deploy Docs** | `deploy-docs.yml` | Push to main (docs changes) | Deploy to GitHub Pages |
 
 ## Code Quality Workflows
@@ -517,7 +517,7 @@ Deploys Docker container to Amazon ECS after successful Docker build.
 
 **Triggers:**
 
-- `workflow_run`: After "Build and Push Docker Image" workflow completes successfully on `main`
+- `push`: On push to `main` branch when changes affect `api/**` or `.github/workflows/deploy-ecs.yml`
 - `workflow_dispatch` (manual)
 
 **Permissions:**
@@ -560,7 +560,7 @@ sequenceDiagram
     participant ECS as Amazon ECS
     participant ALB as Load Balancer
     
-    GH->>GH: Docker Build Completes
+    GH->>GH: Push to main branch
     GH->>GH: Trigger deploy-ecs workflow
     GH->>ECR: Pull task definition
     GH->>ECR: Render new task def with latest image

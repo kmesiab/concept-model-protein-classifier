@@ -204,7 +204,7 @@ Two workflows are configured in `.github/workflows/`:
 
 ### 2. ECS Deploy (`deploy-ecs.yml`)
 
-- **Trigger**: After successful Docker build
+- **Trigger**: Push to main branch (api/** changes or workflow changes)
 - **Authentication**: OIDC (no AWS secrets required)
 - **Actions**:
   - Updates ECS task definition with new image
