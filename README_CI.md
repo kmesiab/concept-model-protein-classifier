@@ -68,20 +68,22 @@ The repository now has a comprehensive CI/CD pipeline with quality gates:
    - **Dependencies**: Build only runs after lint, markdown-lint, and test succeed
    - Matrix testing across Python 3.10, 3.11, 3.12
 
-2. **`.github/workflows/lint.yml`** - Code Quality Workflow (PRs and develop branch)
+2. **`.github/workflows/lint.yml`** - Code Quality Workflow (all branches and PRs)
    - Black formatting (100% compliance)
    - Flake8 linting (0 errors)
    - Pylint static analysis (10.00/10 score)
    - MyPy type checking (passing)
    - isort import organization (passing)
    - Matrix testing across Python 3.10, 3.11, 3.12
+   - Runs on: push to main/develop, PRs to main/develop
 
-3. **`.github/workflows/test.yml`** - Testing Workflow (PRs and develop branch)
+3. **`.github/workflows/test.yml`** - Testing Workflow (all branches and PRs)
    - pytest with coverage reporting
    - Coverage: **91.15%** (exceeds 80% requirement)
    - Codecov integration (requires `CODECOV_TOKEN` secret)
    - Matrix testing across Python 3.10, 3.11, 3.12
    - HTML coverage reports as artifacts
+   - Runs on: push to main/develop, PRs to main/develop
 
 4. **`.github/workflows/docker-build.yml`** - Manual Docker Build (workflow_dispatch only)
    - Standalone Docker image build and push to ECR
@@ -138,12 +140,21 @@ The repository now has a comprehensive CI/CD pipeline with quality gates:
 The workflows are configured to run as follows:
 
 - **On push to `main` branch**:
-  - `ci-cd.yml` runs with integrated lint → test → build pipeline
-  - Build and push to ECR only runs after successful lint and test
-
-- **On push to `develop` branch or pull requests**:
   - `lint.yml` runs for code quality validation
   - `test.yml` runs for test validation
+  - `security.yml` runs security scans
+  - `ci-cd.yml` runs with integrated lint → test → build pipeline
+  - Build and push to ECR only runs after successful lint and test (in ci-cd.yml)
+
+- **On push to `develop` branch**:
+  - `lint.yml` runs for code quality validation
+  - `test.yml` runs for test validation
+  - `security.yml` runs security scans
+
+- **On pull requests to `main` or `develop`**:
+  - `lint.yml` runs for code quality validation
+  - `test.yml` runs for test validation
+  - `security.yml` runs security scans
   
 - **Security scans**: 
   - Weekly (Mondays at 9 AM UTC)
