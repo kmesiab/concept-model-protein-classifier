@@ -21,6 +21,7 @@ This document describes all required and optional environment variables for depl
 - **Example**: `JWT_SECRET_NAME=protein-classifier-jwt-secret-key`
 
 **Important**: The JWT secret key is **NOT** stored as an environment variable. It's fetched from AWS Secrets Manager at runtime and cached. This provides:
+
 - Automatic key rotation support
 - Centralized secret management
 - Audit trail of secret access
@@ -226,6 +227,7 @@ services:
 ```
 
 **Note**: For local development:
+
 - JWT secret fallback is used when AWS Secrets Manager is unavailable (**never use in production**)
 - Emails are logged to console instead of being sent via AWS SES
 - DynamoDB can be replaced with local DynamoDB or mocked for testing
