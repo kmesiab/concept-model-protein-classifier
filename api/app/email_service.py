@@ -11,9 +11,9 @@ Uses AWS SES in production and console logging in development.
 
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +35,9 @@ class EmailService:
 
         # Email templates directory
         self.templates_dir = Path(__file__).parent.parent / "email_templates"
+
+        # Template cache for performance
+        self._template_cache: Dict[str, str] = {}
 
         # Check if AWS SES is available (production mode)
         self.ses_enabled = (
@@ -108,7 +111,7 @@ Protein Classifier API Team
         Returns:
             True if sent successfully
         """
-        created_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+        created_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
         subject = "New API Key Created - Protein Classifier API"
 
@@ -150,7 +153,7 @@ Protein Classifier API Team
         Returns:
             True if sent successfully
         """
-        revoked_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+        revoked_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
         subject = "API Key Revoked - Protein Classifier API"
 
@@ -181,6 +184,7 @@ Protein Classifier API Team
     def _load_template(self, template_path: Path, context: dict) -> str:
         """
         Load and render an HTML email template.
+        Templates are cached after first load for performance.
 
         Args:
             template_path: Path to the template file
@@ -190,8 +194,13 @@ Protein Classifier API Team
             Rendered HTML content
         """
         try:
-            with open(template_path, "r", encoding="utf-8") as f:
-                template = f.read()
+            # Check cache first
+            cache_key = str(template_path)
+            if cache_key not in self._template_cache:
+                with open(template_path, "r", encoding="utf-8") as f:
+                    self._template_cache[cache_key] = f.read()
+
+            template = self._template_cache[cache_key]
 
             # Simple template variable replacement
             for key, value in context.items():

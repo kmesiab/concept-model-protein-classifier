@@ -53,8 +53,9 @@ resource "aws_route53_record" "ses_dkim" {
 
 # Custom MAIL FROM domain for better deliverability
 resource "aws_ses_domain_mail_from" "main" {
-  domain           = aws_ses_domain_identity.main.domain
-  mail_from_domain = "mail.${aws_ses_domain_identity.main.domain}"
+  domain                 = aws_ses_domain_identity.main.domain
+  mail_from_domain       = "mail.${aws_ses_domain_identity.main.domain}"
+  behavior_on_mx_failure = "UseDefaultValue"
 }
 
 # Route53 MX record for MAIL FROM domain

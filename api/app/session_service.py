@@ -122,7 +122,25 @@ class SessionService:
 
             # Fallback for development only (should not happen in production)
             logger.warning("Using fallback JWT secret - THIS IS NOT SECURE FOR PRODUCTION")
-            return os.getenv("JWT_SECRET_KEY_FALLBACK", secrets.token_urlsafe(32))
+
+            # Prefer a fixed fallback from environment for deterministic behavior
+            fallback_secret = os.getenv("JWT_SECRET_KEY_FALLBACK")
+
+            if not fallback_secret:
+                # If no environment override, reuse existing cached key if present
+                cache = SessionService._jwt_secret_cache
+                if cache is not None and isinstance(cache, dict):
+                    # pylint: disable=unsubscriptable-object,unsupported-membership-test
+                    if "key" in cache:
+                        fallback_secret = cache["key"]
+
+                if not fallback_secret:
+                    # Last resort: generate once and cache for consistency
+                    fallback_secret = secrets.token_urlsafe(32)
+                    SessionService._jwt_secret_cache = {"key": fallback_secret}
+                    SessionService._jwt_secret_cache_time = current_time
+
+            return fallback_secret
 
     @property
     def secret_key(self) -> str:
