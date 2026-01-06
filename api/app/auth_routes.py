@@ -97,8 +97,15 @@ async def login(request: LoginRequest):
 
     # Send magic link email
     email_service = get_email_service()
-    await email_service.send_magic_link(email, token)
+    email_sent = await email_service.send_magic_link(email, token)
 
+    if not email_sent:
+        # Log detailed failure for observability; response to user remains generic
+        logger.error("Failed to send magic link email for '%s'", email)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Unable to send magic link email. Please try again later.",
+        )
     return LoginResponse(message="Magic link sent to your email", email=email)
 
 
