@@ -9,11 +9,7 @@
 # - Custom MAIL FROM domain for improved deliverability
 # - Configuration set for tracking and monitoring
 
-# Reference to existing Route53 zone
-data "aws_route53_zone" "main" {
-  name         = var.domain_name
-  private_zone = false
-}
+# Note: Route53 zone data source is defined in acm.tf and reused here
 
 # SES Domain Identity
 resource "aws_ses_domain_identity" "main" {
