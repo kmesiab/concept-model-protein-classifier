@@ -58,21 +58,11 @@ jobs:
           name: bandit-report
           path: reports/bandit-report.json
       
-      - name: Safety dependency check
-        run: |
-          echo "Running Safety dependency vulnerability check..."
-          # Create JSON report (Safety 3.x syntax)
-          safety scan --key ${{ secrets.SAFETY_API_KEY }} --output json > reports/safety-report.json || true
-          # Display results
-          safety scan --key ${{ secrets.SAFETY_API_KEY }} || echo "⚠️ Safety found vulnerabilities"
-        continue-on-error: true
-      
-      - name: Upload Safety report
-        if: always()
-        uses: actions/upload-artifact@v6
+      - name: Run Safety CLI to check for vulnerabilities
+        uses: pyupio/safety-action@v1
         with:
-          name: safety-report
-          path: reports/safety-report.json
+          api-key: ${{ secrets.SAFETY_API_KEY }}
+        continue-on-error: true
       
       - name: Pip audit
         run: |
