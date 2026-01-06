@@ -67,8 +67,8 @@ lint-pylint: ## Check code quality with Pylint
 
 lint-mypy: ## Check type hints with mypy
 	@echo "${YELLOW}Running mypy type checker...${NC}"
-	@if [ -d "api" ] && [ -f "api/mypy.ini" ]; then \
-		mypy --config-file=api/mypy.ini api/ || (echo "${RED}❌ mypy failed${NC}" && exit 1); \
+	@if [ -d "api" ] && [ -f "mypy.ini" ]; then \
+		mypy --config-file=mypy.ini api/ || (echo "${RED}❌ mypy failed${NC}" && exit 1); \
 	else \
 		mypy $(API_DIR)/ || (echo "${RED}❌ mypy failed${NC}" && exit 1); \
 	fi

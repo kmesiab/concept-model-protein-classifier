@@ -69,7 +69,7 @@ jobs:
           echo "Running MyPy type checker..."
           # Check api directory if it exists
           if [ -d "api" ]; then
-            mypy --config-file=api/mypy.ini api/
+            mypy --config-file=mypy.ini api/
           fi
           # Check root-level Python files
           find . -maxdepth 1 -name "*.py" -type f | xargs -r mypy
