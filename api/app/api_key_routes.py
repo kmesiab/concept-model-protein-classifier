@@ -8,6 +8,7 @@ Provides endpoints for:
 - Revoking API keys
 """
 
+import hashlib
 import logging
 from typing import Optional
 
@@ -32,9 +33,22 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/api-keys", tags=["API Key Management"])
 
 
+def _anonymize_email(email: str) -> str:
+    """
+    Create a non-PII anonymized identifier from an email address.
+
+    Args:
+        email: User's email address
+
+    Returns:
+        Anonymized identifier (first 8 chars of SHA-256 hash)
+    """
+    return hashlib.sha256(email.encode()).hexdigest()[:8]
+
+
 async def get_current_user(
     authorization: Optional[str] = Header(None),
-) -> str:  # pylint: disable=too-many-return-statements
+) -> str:
     """
     Dependency to get the current authenticated user's email from JWT token.
 
@@ -50,7 +64,9 @@ async def get_current_user(
     if not authorization:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing authorization header. Include 'Authorization: Bearer <token>' header.",
+            detail=(
+                "Missing authorization header. " "Include 'Authorization: Bearer <token>' header."
+            ),
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -117,7 +133,7 @@ async def register_api_key(
         current_user, result["api_key_id"], result["label"]
     )
 
-    logger.info(f"API key registered for user {current_user}")
+    logger.info("API key registered for user %s", _anonymize_email(current_user))
 
     return APIKeyResponse(**result)
 
@@ -180,7 +196,11 @@ async def rotate_api_key(
 
     try:
         result = api_key_service.rotate_api_key(current_user, request.api_key_id)
-        logger.info(f"API key {request.api_key_id} rotated for user {current_user}")
+        logger.info(
+            "API key %s rotated for user %s",
+            request.api_key_id,
+            _anonymize_email(current_user),
+        )
         return APIKeyResponse(**result)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
@@ -232,7 +252,11 @@ async def revoke_api_key(
                 current_user, request.api_key_id, revoked_key["label"]
             )
 
-        logger.info(f"API key {request.api_key_id} revoked for user {current_user}")
+        logger.info(
+            "API key %s revoked for user %s",
+            request.api_key_id,
+            _anonymize_email(current_user),
+        )
 
         return RevokeAPIKeyResponse(revoked=True, api_key_id=request.api_key_id)
     except ValueError as e:

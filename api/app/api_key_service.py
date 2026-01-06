@@ -292,7 +292,7 @@ class APIKeyService:
                 ExpressionAttributeValues={":status": "revoked"},
             )
 
-            logger.info(f"Revoked API key {api_key_id} for user {user_email}")
+            logger.info("Revoked API key %s", api_key_id)
 
             # Audit log
             self._audit_log(
@@ -303,8 +303,8 @@ class APIKeyService:
             )
 
             return True
-        except ClientError as e:
-            logger.error(f"Failed to revoke API key: {e}")
+        except ClientError:
+            logger.exception("Failed to revoke API key %s", api_key_id)
             raise
 
     def _get_key_by_id(self, api_key_id: str) -> Optional[Dict]:
