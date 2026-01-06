@@ -12,12 +12,14 @@ import time
 from datetime import datetime, timezone
 from typing import Optional
 
+from botocore.exceptions import ClientError, NoCredentialsError
 from fastapi import FastAPI, Header, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .api_key_routes import router as api_key_router
 from .api_key_service import get_api_key_service
+from .auth import api_key_manager
 from .auth_routes import router as auth_router
 from .classifier import classify_batch
 from .models import (
@@ -131,9 +133,13 @@ def verify_api_key(api_key: Optional[str]) -> dict:
             "max_batch_size": 50,
         }
 
-    # Validate API key using DynamoDB service
-    api_key_service = get_api_key_service()
-    metadata = api_key_service.validate_api_key(api_key)
+    # Try DynamoDB service first, fallback to in-memory for development/testing
+    try:
+        api_key_service = get_api_key_service()
+        metadata = api_key_service.validate_api_key(api_key)
+    except (ClientError, NoCredentialsError):
+        # Fallback to in-memory manager for development/testing
+        metadata = api_key_manager.validate_api_key(api_key)
 
     if not metadata:
         raise HTTPException(
