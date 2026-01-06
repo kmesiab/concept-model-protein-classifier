@@ -42,10 +42,10 @@ class SessionService:
 
     def __init__(
         self,
-        sessions_table_name: str = None,
-        magic_link_table_name: str = None,
-        region_name: str = None,
-        jwt_secret_name: str = None,
+        sessions_table_name: Optional[str] = None,
+        magic_link_table_name: Optional[str] = None,
+        region_name: Optional[str] = None,
+        jwt_secret_name: Optional[str] = None,
     ):
         """
         Initialize the session service.
@@ -128,11 +128,10 @@ class SessionService:
 
             if not fallback_secret:
                 # If no environment override, reuse existing cached key if present
-                cache = SessionService._jwt_secret_cache
-                if cache is not None and isinstance(cache, dict):
-                    # pylint: disable=unsubscriptable-object,unsupported-membership-test
-                    if "key" in cache:
-                        fallback_secret = cache["key"]
+                if SessionService._jwt_secret_cache is not None:
+                    cached_key = SessionService._jwt_secret_cache.get("key")
+                    if cached_key:
+                        fallback_secret = cached_key
 
                 if not fallback_secret:
                     # Last resort: generate once and cache for consistency

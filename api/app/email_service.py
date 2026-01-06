@@ -26,7 +26,7 @@ class EmailService:
     In production, uses AWS SES.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the email service."""
         self.from_email = os.getenv("SES_FROM_EMAIL", "noreply@proteinclassifier.com")
         self.base_url = os.getenv("BASE_URL", "http://localhost:8000")
@@ -118,7 +118,13 @@ Protein Classifier API Team
         # Load HTML template
         template_path = self.templates_dir / "api_key_created.html"
         html_body = self._load_template(
-            template_path, {"label": label, "api_key_id": api_key_id, "created_at": created_at}
+            template_path,
+            {
+                "label": label,
+                "api_key_id": api_key_id,
+                "created_at": created_at,
+                "base_url": self.base_url,
+            },
         )
 
         # Plain text fallback
