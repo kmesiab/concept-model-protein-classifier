@@ -62,9 +62,9 @@ jobs:
         run: |
           echo "Running Safety dependency vulnerability check..."
           # Create JSON report (Safety 3.x syntax)
-          safety scan --output json > reports/safety-report.json || true
+          safety scan --key ${{ secrets.SAFETY_API_KEY }} --output json > reports/safety-report.json || true
           # Display results
-          safety scan || echo "⚠️ Safety found vulnerabilities"
+          safety scan --key ${{ secrets.SAFETY_API_KEY }} || echo "⚠️ Safety found vulnerabilities"
         continue-on-error: true
       
       - name: Upload Safety report
