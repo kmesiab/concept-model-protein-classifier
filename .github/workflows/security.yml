@@ -40,7 +40,7 @@ jobs:
       - name: Install security tools
         run: |
           python -m pip install --upgrade pip
-          pip install bandit safety pip-audit
+          pip install bandit pip-audit
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       
       - name: Bandit security scan
