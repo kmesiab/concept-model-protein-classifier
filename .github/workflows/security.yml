@@ -98,6 +98,13 @@ jobs:
           category: trivy-filesystem
         continue-on-error: true
       
+      - name: Upload Trivy SARIF artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-results
+          path: trivy-results.sarif
+      
       - name: Trivy filesystem scan (table output)
         uses: aquasecurity/trivy-action@0.33.1
         with:
