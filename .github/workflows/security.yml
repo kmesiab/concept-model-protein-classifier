@@ -4,11 +4,9 @@ on:
   push:
     branches:
       - main
-      - develop
   pull_request:
     branches:
       - main
-      - develop
   schedule:
     # Run weekly security scans on Monday at 9 AM UTC
     - cron: '0 9 * * 1'
@@ -55,7 +53,7 @@ jobs:
       
       - name: Upload Bandit report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: bandit-report
           path: reports/bandit-report.json
@@ -64,14 +62,14 @@ jobs:
         run: |
           echo "Running Safety dependency vulnerability check..."
           # Create JSON report (Safety 3.x syntax)
-          safety scan --output json > reports/safety-report.json || true
+          safety scan --key ${{ secrets.SAFETY_API_KEY }} --output json > reports/safety-report.json || true
           # Display results
-          safety scan || echo "⚠️ Safety found vulnerabilities"
+          safety scan --key ${{ secrets.SAFETY_API_KEY }} || echo "⚠️ Safety found vulnerabilities"
         continue-on-error: true
       
       - name: Upload Safety report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: safety-report
           path: reports/safety-report.json
@@ -85,7 +83,7 @@ jobs:
       
       - name: Upload pip-audit report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: pip-audit-report
           path: reports/pip-audit-report.json

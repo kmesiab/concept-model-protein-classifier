@@ -493,9 +493,9 @@ Builds and pushes Docker images to Amazon ECR using OIDC authentication.
 4. **Set up Docker Buildx** - `docker/setup-buildx-action@v3`
 5. **Extract metadata for Docker** - `docker/metadata-action@v5`
    - Tags:
-     - `type=sha,prefix={{branch}}-` (commit SHA with branch prefix)
-     - `type=raw,value=latest,enable={{is_default_branch}}` (latest tag on main)
-     - `type=ref,event=branch` (branch name)
+     - `type=sha,prefix={{branch}}-` (commit SHA with branch prefix, e.g., `main-3fcf35c`)
+     - `type=sha` (commit SHA only, e.g., `3fcf35c`)
+   - **Note**: Static tags like `latest` and branch names removed to prevent conflicts with immutable ECR tags
 6. **Build and push Docker image** - `docker/build-push-action@v5`
    - Context: `./api`
    - Dockerfile: `./api/Dockerfile`
@@ -507,7 +507,7 @@ Builds and pushes Docker images to Amazon ECR using OIDC authentication.
 **Key Features:**
 
 - **OIDC Authentication**: No static AWS credentials stored in secrets
-- **Multi-tagging**: SHA-based + latest + branch name
+- **Unique Tagging**: SHA-based tags only to avoid immutable tag conflicts in ECR
 - **Build caching**: Uses GitHub Actions cache for faster builds
 - **Single platform**: linux/amd64 for ECS compatibility
 
@@ -543,13 +543,16 @@ Deploys Docker container to Amazon ECS after successful Docker build.
 4. **Get current task definition** - Retrieves existing ECS task definition
    - Outputs to `task-definition.json`
    - Fails with helpful message if infrastructure not deployed
-5. **Update task definition with new image** - `aws-actions/amazon-ecs-render-task-definition@v1`
-   - Updates container image to `latest` tag
-6. **Deploy to Amazon ECS** - `aws-actions/amazon-ecs-deploy-task-definition@v1`
+5. **Get image tag from commit SHA** - Determines the image tag to deploy
+   - Uses commit SHA from the triggering workflow run
+   - Generates short SHA (7 characters) for the image tag
+6. **Update task definition with new image** - `aws-actions/amazon-ecs-render-task-definition@v1`
+   - Updates container image to SHA-based tag (e.g., `3fcf35c`)
+7. **Deploy to Amazon ECS** - `aws-actions/amazon-ecs-deploy-task-definition@v1`
    - Registers new task definition
    - Updates ECS service
    - Waits for service stability (health checks, desired count)
-7. **Deployment summary** - Outputs cluster, service, and image details
+8. **Deployment summary** - Outputs cluster, service, and image details
 
 **Deployment Flow:**
 
