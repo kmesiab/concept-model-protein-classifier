@@ -53,11 +53,11 @@ This document describes all required and optional environment variables for depl
 - **Default**: `protein-classifier-magic-link-tokens`
 - **Example**: `DYNAMODB_MAGIC_LINKS_TABLE=protein-classifier-magic-link-tokens`
 
-#### DYNAMODB_AUDIT_TABLE
+#### DYNAMODB_AUDIT_LOGS_TABLE
 
 - **Purpose**: DynamoDB table name for audit log storage
 - **Default**: `protein-classifier-audit-logs`
-- **Example**: `DYNAMODB_AUDIT_TABLE=protein-classifier-audit-logs`
+- **Example**: `DYNAMODB_AUDIT_LOGS_TABLE=protein-classifier-audit-logs`
 
 ### AWS Configuration
 
@@ -165,7 +165,7 @@ Required for magic link authentication emails and API key notifications.
           "value": "protein-classifier-magic-link-tokens"
         },
         {
-          "name": "DYNAMODB_AUDIT_TABLE",
+          "name": "DYNAMODB_AUDIT_LOGS_TABLE",
           "value": "protein-classifier-audit-logs"
         },
         {
@@ -211,7 +211,7 @@ services:
       - DYNAMODB_API_KEYS_TABLE=protein-classifier-api-keys
       - DYNAMODB_SESSIONS_TABLE=protein-classifier-user-sessions
       - DYNAMODB_MAGIC_LINKS_TABLE=protein-classifier-magic-link-tokens
-      - DYNAMODB_AUDIT_TABLE=protein-classifier-audit-logs
+      - DYNAMODB_AUDIT_LOGS_TABLE=protein-classifier-audit-logs
       - AWS_REGION=us-west-2
       - REDIS_URL=redis://redis:6379/0
       - BASE_URL=http://localhost:8000

@@ -165,8 +165,16 @@ Protein Classifier API Team
 
         # Load HTML template
         template_path = self.templates_dir / "api_key_revoked.html"
+        base_url = os.getenv("BASE_URL", "http://localhost:8000")
+        portal_url = f"{base_url}/docs#/API%20Keys"
         html_body = self._load_template(
-            template_path, {"label": label, "api_key_id": api_key_id, "revoked_at": revoked_at}
+            template_path,
+            {
+                "label": label,
+                "api_key_id": api_key_id,
+                "revoked_at": revoked_at,
+                "portal_url": portal_url,
+            },
         )
 
         # Plain text fallback
