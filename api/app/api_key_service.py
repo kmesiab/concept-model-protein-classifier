@@ -113,7 +113,6 @@ class APIKeyService:
 
             # Audit log
             self._audit_log(
-                user_email=user_email,
                 action="api_key_created",
                 api_key_id=api_key_id,
                 details={"label": label, "tier": tier},
@@ -155,7 +154,7 @@ class APIKeyService:
             if item.get("status") != "active":
                 return None
 
-            # Update last_used_at timestamp asynchronously
+            # Update last_used_at timestamp synchronously
             self._update_last_used(api_key_hash)
 
             # Convert Decimal to int for compatibility
@@ -255,7 +254,6 @@ class APIKeyService:
 
         # Audit log
         self._audit_log(
-            user_email=user_email,
             action="api_key_rotated",
             api_key_id=api_key_id,
             details={"new_api_key_id": new_key["api_key_id"]},
@@ -296,7 +294,6 @@ class APIKeyService:
 
             # Audit log
             self._audit_log(
-                user_email=user_email,
                 action="api_key_revoked",
                 api_key_id=api_key_id,
                 details={},
@@ -347,25 +344,23 @@ class APIKeyService:
             # Non-critical error, just log it
             logger.warning(f"Failed to update last_used_at: {e}")
 
-    def _audit_log(self, user_email: str, action: str, api_key_id: str, details: Dict) -> None:
+    def _audit_log(self, action: str, api_key_id: str, details: Dict) -> None:
         """
         Create an audit log entry.
 
         Args:
-            user_email: User's email
             action: Action performed
             api_key_id: API key ID
             details: Additional details
         """
         timestamp = int(time.time())
-        event_id = f"{user_email}_{action}_{timestamp}_{secrets.token_hex(4)}"
+        event_id = f"{api_key_id}_{action}_{timestamp}_{secrets.token_hex(4)}"
 
         try:
             self.audit_table.put_item(
                 Item={
                     "event_id": event_id,
                     "timestamp": timestamp,
-                    "user_email": user_email,
                     "action": action,
                     "api_key_id": api_key_id,
                     "details": details,
