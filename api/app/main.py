@@ -142,14 +142,16 @@ async def audit_logging_middleware(request: Request, call_next):
                 if metadata:
                     user_email = metadata.get("email")
 
-        # Log the request (sequence length is approximate, we don't parse the body)
+        # Log the request
+        # TODO: Parse request body to get actual sequence_length for more useful audit logs
+        # Currently set to 0 for performance (avoids parsing request body in middleware)
         try:
             audit_log_service = get_audit_log_service()
             audit_log_service.log_request(
                 api_key=api_key,
                 api_key_id=api_key_id,
                 user_email=user_email,
-                sequence_length=0,  # We don't parse request body for performance
+                sequence_length=0,  # Limitation: Not parsed for performance reasons
                 processing_time_ms=processing_time_ms,
                 status=request_status,
                 error_code=error_code,

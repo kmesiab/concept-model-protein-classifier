@@ -222,8 +222,10 @@ class AuditLogService:
     @staticmethod
     def _mask_api_key(api_key: str) -> str:
         """Mask API key showing only last 4 characters."""
-        if not api_key or len(api_key) < 4:
+        if not api_key:
             return "****"
+        if len(api_key) <= 4:
+            return f"****{api_key}"
         return f"****{api_key[-4:]}"
 
     @staticmethod
