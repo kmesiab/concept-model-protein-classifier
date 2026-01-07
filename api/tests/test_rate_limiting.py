@@ -54,27 +54,33 @@ class TestAtomicRateLimiting:
         api_key_hash = "test_hash_atomic"
         max_requests = 5
         ttl = 60
+        test_key = f"test:atomic:{api_key_hash}"
 
-        # Make requests up to the limit
-        for i in range(max_requests):
+        try:
+            # Make requests up to the limit
+            for i in range(max_requests):
+                allowed, error_msg, error_details = rate_limiter._check_counter(
+                    test_key, max_requests, ttl, "test requests"
+                )
+                assert allowed is True
+                assert error_msg is None
+                assert error_details is None
+
+            # Next request should fail
             allowed, error_msg, error_details = rate_limiter._check_counter(
-                f"test:atomic:{api_key_hash}", max_requests, ttl, "test requests"
+                test_key, max_requests, ttl, "test requests"
             )
-            assert allowed is True
-            assert error_msg is None
-            assert error_details is None
-
-        # Next request should fail
-        allowed, error_msg, error_details = rate_limiter._check_counter(
-            f"test:atomic:{api_key_hash}", max_requests, ttl, "test requests"
-        )
-        assert allowed is False
-        assert error_msg is not None
-        assert error_details is not None
-        assert error_details["error_code"] == "ERR_RATE_LIMIT_EXCEEDED"
-        assert error_details["retry_after"] > 0
-        assert error_details["limit"] == max_requests
-        assert error_details["current"] == max_requests
+            assert allowed is False
+            assert error_msg is not None
+            assert error_details is not None
+            assert error_details["error_code"] == "ERR_RATE_LIMIT_EXCEEDED"
+            assert error_details["retry_after"] > 0
+            assert error_details["limit"] == max_requests
+            assert error_details["current"] == max_requests
+        finally:
+            # Cleanup: delete test key
+            if rate_limiter.redis_available and hasattr(rate_limiter, "redis_client"):
+                rate_limiter.redis_client.delete(test_key)
 
     def test_concurrent_requests_no_bypass(self, rate_limiter):
         """Test that concurrent requests cannot bypass rate limits."""
@@ -85,24 +91,31 @@ class TestAtomicRateLimiting:
         max_requests = 10
         ttl = 60
         num_threads = 20
+        test_key = f"test:concurrent:{api_key_hash}"
 
-        def make_request():
-            """Make a single rate limit check."""
-            allowed, _, _ = rate_limiter._check_counter(
-                f"test:concurrent:{api_key_hash}", max_requests, ttl, "test requests"
-            )
-            return allowed
+        try:
 
-        # Execute concurrent requests
-        with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
-            futures = [executor.submit(make_request) for _ in range(num_threads)]
-            results = [f.result() for f in concurrent.futures.as_completed(futures)]
+            def make_request():
+                """Make a single rate limit check."""
+                allowed, _, _ = rate_limiter._check_counter(
+                    test_key, max_requests, ttl, "test requests"
+                )
+                return allowed
 
-        # Count how many were allowed
-        allowed_count = sum(1 for r in results if r)
+            # Execute concurrent requests
+            with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
+                futures = [executor.submit(make_request) for _ in range(num_threads)]
+                results = [f.result() for f in concurrent.futures.as_completed(futures)]
 
-        # Should be exactly max_requests, not more (proving atomicity)
-        assert allowed_count == max_requests
+            # Count how many were allowed
+            allowed_count = sum(1 for r in results if r)
+
+            # Should be exactly max_requests, not more (proving atomicity)
+            assert allowed_count == max_requests
+        finally:
+            # Cleanup: delete test key
+            if rate_limiter.redis_available and hasattr(rate_limiter, "redis_client"):
+                rate_limiter.redis_client.delete(test_key)
 
     def test_concurrent_sequence_quota(self, rate_limiter):
         """Test atomic sequence quota with concurrent requests."""
@@ -114,29 +127,36 @@ class TestAtomicRateLimiting:
         ttl = 86400
         num_threads = 10
         sequences_per_request = 3
+        test_key = f"test:sequences:{api_key_hash}"
 
-        def make_request():
-            """Make a single quota check with multiple sequences."""
-            allowed, _, _ = rate_limiter._check_counter(
-                f"test:sequences:{api_key_hash}",
-                max_sequences,
-                ttl,
-                "test sequences",
-                increment=sequences_per_request,
-            )
-            return allowed
+        try:
 
-        # Execute concurrent requests
-        with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
-            futures = [executor.submit(make_request) for _ in range(num_threads)]
-            results = [f.result() for f in concurrent.futures.as_completed(futures)]
+            def make_request():
+                """Make a single quota check with multiple sequences."""
+                allowed, _, _ = rate_limiter._check_counter(
+                    test_key,
+                    max_sequences,
+                    ttl,
+                    "test sequences",
+                    increment=sequences_per_request,
+                )
+                return allowed
 
-        # Count allowed requests
-        allowed_count = sum(1 for r in results if r)
+            # Execute concurrent requests
+            with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
+                futures = [executor.submit(make_request) for _ in range(num_threads)]
+                results = [f.result() for f in concurrent.futures.as_completed(futures)]
 
-        # Should allow floor(max_sequences / sequences_per_request) requests
-        # 20 / 3 = 6 requests (18 sequences), 7th request would need 21 sequences
-        assert allowed_count == 6
+            # Count allowed requests
+            allowed_count = sum(1 for r in results if r)
+
+            # Should allow floor(max_sequences / sequences_per_request) requests
+            # 20 / 3 = 6 requests (18 sequences), 7th request would need 21 sequences
+            assert allowed_count == 6
+        finally:
+            # Cleanup: delete test key
+            if rate_limiter.redis_available and hasattr(rate_limiter, "redis_client"):
+                rate_limiter.redis_client.delete(test_key)
 
     def test_error_response_structure(self, rate_limiter):
         """Test that error responses contain all required fields."""
@@ -146,29 +166,35 @@ class TestAtomicRateLimiting:
         api_key_hash = "test_hash_error"
         max_requests = 1
         ttl = 60
+        test_key = f"test:error:{api_key_hash}"
 
-        # Use up the limit
-        rate_limiter._check_counter(f"test:error:{api_key_hash}", max_requests, ttl, "test")
+        try:
+            # Use up the limit
+            rate_limiter._check_counter(test_key, max_requests, ttl, "test")
 
-        # Next request should return error with all fields
-        allowed, error_msg, error_details = rate_limiter._check_counter(
-            f"test:error:{api_key_hash}",
-            max_requests,
-            ttl,
-            "test requests",
-            error_code="ERR_RATE_LIMIT_EXCEEDED",
-        )
+            # Next request should return error with all fields
+            allowed, error_msg, error_details = rate_limiter._check_counter(
+                test_key,
+                max_requests,
+                ttl,
+                "test requests",
+                error_code="ERR_RATE_LIMIT_EXCEEDED",
+            )
 
-        assert allowed is False
-        assert error_msg == "Rate limit exceeded: 1 test requests"
-        assert error_details is not None
-        assert "error_code" in error_details
-        assert "retry_after" in error_details
-        assert "limit" in error_details
-        assert "current" in error_details
-        assert error_details["error_code"] == "ERR_RATE_LIMIT_EXCEEDED"
-        assert error_details["retry_after"] > 0
-        assert error_details["limit"] == max_requests
+            assert allowed is False
+            assert error_msg == "Rate limit exceeded: 1 test requests"
+            assert error_details is not None
+            assert "error_code" in error_details
+            assert "retry_after" in error_details
+            assert "limit" in error_details
+            assert "current" in error_details
+            assert error_details["error_code"] == "ERR_RATE_LIMIT_EXCEEDED"
+            assert error_details["retry_after"] > 0
+            assert error_details["limit"] == max_requests
+        finally:
+            # Cleanup: delete test key
+            if rate_limiter.redis_available and hasattr(rate_limiter, "redis_client"):
+                rate_limiter.redis_client.delete(test_key)
 
     def test_quota_exceeded_error_code(self, rate_limiter):
         """Test that daily quota uses ERR_QUOTA_EXCEEDED error code."""
@@ -178,28 +204,34 @@ class TestAtomicRateLimiting:
         api_key_hash = "test_hash_quota"
         max_sequences = 5
         ttl = 86400
+        test_key = f"test:quota:{api_key_hash}"
 
-        # Use up the quota
-        for _ in range(max_sequences):
-            rate_limiter._check_counter(
-                f"test:quota:{api_key_hash}",
+        try:
+            # Use up the quota
+            for _ in range(max_sequences):
+                rate_limiter._check_counter(
+                    test_key,
+                    max_sequences,
+                    ttl,
+                    "sequences",
+                    error_code="ERR_QUOTA_EXCEEDED",
+                )
+
+            # Next request should return quota exceeded error
+            allowed, error_msg, error_details = rate_limiter._check_counter(
+                test_key,
                 max_sequences,
                 ttl,
-                "sequences",
+                "sequences per day",
                 error_code="ERR_QUOTA_EXCEEDED",
             )
 
-        # Next request should return quota exceeded error
-        allowed, error_msg, error_details = rate_limiter._check_counter(
-            f"test:quota:{api_key_hash}",
-            max_sequences,
-            ttl,
-            "sequences per day",
-            error_code="ERR_QUOTA_EXCEEDED",
-        )
-
-        assert allowed is False
-        assert error_details["error_code"] == "ERR_QUOTA_EXCEEDED"
+            assert allowed is False
+            assert error_details["error_code"] == "ERR_QUOTA_EXCEEDED"
+        finally:
+            # Cleanup: delete test key
+            if rate_limiter.redis_available and hasattr(rate_limiter, "redis_client"):
+                rate_limiter.redis_client.delete(test_key)
 
 
 class TestRateLimitingEndpoints:

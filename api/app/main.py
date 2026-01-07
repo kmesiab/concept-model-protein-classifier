@@ -177,6 +177,14 @@ def check_rate_limit(api_key: Optional[str], metadata: dict, num_sequences: int)
 
     if not allowed:
         # Construct proper rate limit error response
+        # error_details should always be present when allowed is False
+        if error_details is None:
+            # Fallback in case of unexpected None (defensive check)
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail={"error": "Rate limit exceeded", "detail": error_msg or "Unknown error"},
+            )
+
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail={
