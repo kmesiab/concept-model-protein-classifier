@@ -147,13 +147,12 @@ def create_issue_body(vulnerability: Dict[str, Any], fix_version: str, package: 
 
 ### 🤖 Action Required
 Please update `{package}` to version `{fix_version}` in `api/requirements.txt`:
-1. Update `{package}` to version `{fix_version}` in `api/requirements.txt`
-2. Update the version constraint to a compatible range (for example \
+1. Update the version constraint to a compatible range (for example \
 `~={fix_version}` or an upper-bounded range) to allow security patches \
 without unexpected breaking changes
-3. Run the test suite to ensure compatibility
-4. Open a PR with the changes
-5. Include a closing reference to this issue in the PR description
+2. Run the test suite to ensure compatibility
+3. Open a PR with the changes
+4. Include a closing reference to this issue in the PR description
 
 ### 📊 References
 - **CVE Details:** https://cve.mitre.org/cgi-bin/cvename.cgi?name={cve_id}
