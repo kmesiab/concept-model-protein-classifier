@@ -144,7 +144,7 @@ class RateLimitErrorResponse(BaseModel):
     """Rate limit error response model."""
 
     error: str = Field(..., description="Error message")
-    detail: Optional[str] = Field(None, description="Detailed error information")
+    detail: str = Field(..., description="Detailed error information")
     code: str = Field(..., description="Error code (ERR_RATE_LIMIT_EXCEEDED or ERR_QUOTA_EXCEEDED)")
     retry_after: int = Field(..., description="Seconds to wait before retrying", ge=0)
     limit: int = Field(..., description="Rate limit value", ge=0)

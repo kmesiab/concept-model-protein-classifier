@@ -143,6 +143,7 @@ class RateLimiter:
                 -- Set TTL only if this is a new key
                 if current_value == 0 then
                     redis.call('EXPIRE', key, ttl)
+                    return {1, new_value, ttl}
                 end
 
                 local remaining_ttl = redis.call('TTL', key)
