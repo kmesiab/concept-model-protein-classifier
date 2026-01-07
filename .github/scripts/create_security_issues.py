@@ -11,6 +11,7 @@ the GitHub CLI (gh) to be available in the environment.
 
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -20,6 +21,45 @@ from typing import Any, Dict, List, Set
 
 # Rate limiting: delay between issue creations to avoid API throttling
 ISSUE_CREATE_DELAY_SECONDS = 2
+
+# Content sanitization limits to prevent injection and oversized issues
+MAX_FIELD_LENGTH = 2000
+MAX_ADVISORY_LENGTH = 5000
+
+
+def sanitize_text(
+    text: str, max_length: int = MAX_FIELD_LENGTH, allow_newlines: bool = False
+) -> str:
+    """
+    Sanitize text to prevent markdown/control-character injection.
+
+    Removes control characters (except newlines if allowed) and enforces
+    length limits to prevent oversized issue bodies.
+
+    Args:
+        text: Text to sanitize
+        max_length: Maximum allowed length
+        allow_newlines: Whether to preserve newline characters
+
+    Returns:
+        Sanitized text string
+    """
+    if not isinstance(text, str):
+        text = str(text)
+
+    # Remove control characters except newlines if allowed
+    if allow_newlines:
+        # Keep newlines, remove other control chars (ASCII 0-31 except \n and \r)
+        text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", text)
+    else:
+        # Remove all control characters including newlines
+        text = re.sub(r"[\x00-\x1f\x7f]", "", text)
+
+    # Truncate to max length
+    if len(text) > max_length:
+        text = text[:max_length] + "... [truncated]"
+
+    return text
 
 
 def read_vulnerability_data(scan_file: Path) -> Dict[str, Any]:
@@ -35,6 +75,14 @@ def read_vulnerability_data(scan_file: Path) -> Dict[str, Any]:
     Raises:
         SystemExit: If file cannot be read or parsed
     """
+    # Check if scan failures should be skipped (for CI flexibility)
+    skip_failures = os.environ.get("SKIP_VULN_SCAN_FAILURES", "").lower() in [
+        "true",
+        "1",
+        "yes",
+    ]
+    exit_code = 0 if skip_failures else 1
+
     try:
         with open(scan_file, "r", encoding="utf-8") as file:
             return json.load(file)
@@ -44,13 +92,13 @@ def read_vulnerability_data(scan_file: Path) -> Dict[str, Any]:
             f"{exc}. Ensure the Safety CLI scan step completed successfully "
             "and produced a valid JSON file."
         )
-        sys.exit(0)
+        sys.exit(exit_code)
     except json.JSONDecodeError as exc:
         print(
             f"Error parsing JSON from {scan_file}: {exc}. "
             "The scan file may be corrupted or invalid."
         )
-        sys.exit(0)
+        sys.exit(exit_code)
 
 
 def get_existing_security_issues() -> Set[str]:
@@ -121,12 +169,35 @@ def create_issue_body(vulnerability: Dict[str, Any], fix_version: str, package: 
     Returns:
         Formatted issue body as markdown string
     """
-    cve_id = vulnerability.get("CVE") or vulnerability.get("vulnerability_id", "N/A")
-    current_version = vulnerability.get("analyzed_version", "unknown")
-    severity = vulnerability.get("severity", "unknown")
-    advisory = vulnerability.get("advisory", "No description available")
+    # Sanitize all fields to prevent injection and control character issues
+    cve_id = sanitize_text(vulnerability.get("CVE") or vulnerability.get("vulnerability_id", "N/A"))
+    current_version = sanitize_text(vulnerability.get("analyzed_version", "unknown"))
+    severity = sanitize_text(vulnerability.get("severity", "unknown"))
+    package = sanitize_text(package)
+    fix_version = sanitize_text(fix_version)
+
+    # Advisory allows newlines but has larger max length and is sanitized
+    advisory = sanitize_text(
+        vulnerability.get("advisory", "No description available"),
+        max_length=MAX_ADVISORY_LENGTH,
+        allow_newlines=True,
+    )
 
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+
+    # Use concatenation to avoid backslash continuation issues in f-strings
+    action_line_1 = (
+        "1. Update the version constraint to a compatible range (for example "
+        f"`~={fix_version}` or an upper-bounded range) to allow security "
+        "patches without unexpected breaking changes"
+    )
+    action_line_2 = "2. Run the test suite to ensure compatibility"
+    action_line_3 = "3. Open a PR with the changes"
+    action_line_4 = "4. Include a closing reference to this issue in the PR description"
+
+    safety_url = (
+        "https://platform.safetycli.com/codebases/" + "concept-model-protein-classifier/findings"
+    )
 
     return f"""## 🔒 Security Vulnerability Detected
 
@@ -145,16 +216,14 @@ def create_issue_body(vulnerability: Dict[str, Any], fix_version: str, package: 
 
 ### 🤖 Action Required
 Please update `{package}` to version `{fix_version}` in `api/requirements.txt`:
-1. Update the version constraint to a compatible range (for example \
-`~={fix_version}` or an upper-bounded range) to allow security patches \
-without unexpected breaking changes
-2. Run the test suite to ensure compatibility
-3. Open a PR with the changes
-4. Include a closing reference to this issue in the PR description
+{action_line_1}
+{action_line_2}
+{action_line_3}
+{action_line_4}
 
 ### 📊 References
 - **CVE Details:** https://cve.mitre.org/cgi-bin/cvename.cgi?name={cve_id}
-- **Safety Report:** https://platform.safetycli.com/codebases/concept-model-protein-classifier/findings
+- **Safety Report:** {safety_url}
 
 ---
 *This issue was automatically created by the security automation system.*
@@ -209,11 +278,18 @@ def write_workflow_summary(issues_created: int, total_vulns: int) -> None:
     """
     summary_file = Path(os.environ.get("GITHUB_STEP_SUMMARY", "/dev/null"))
     if summary_file != Path("/dev/null"):
-        with open(summary_file, "a", encoding="utf-8") as file:
-            file.write("## Security Scan Summary\n\n")
-            file.write(f"- **Total vulnerabilities found:** {total_vulns}\n")
-            file.write(f"- **Issues created:** {issues_created}\n")
-            file.write(f"- **Issues skipped:** {total_vulns - issues_created}\n\n")
+        try:
+            with open(summary_file, "a", encoding="utf-8") as file:
+                file.write("## Security Scan Summary\n\n")
+                file.write(f"- **Total vulnerabilities found:** {total_vulns}\n")
+                file.write(f"- **Issues created:** {issues_created}\n")
+                file.write(f"- **Issues skipped:** {total_vulns - issues_created}\n\n")
+        except (OSError, IOError) as exc:
+            # Log error but don't crash - summary is non-critical
+            print(
+                f"Warning: Failed to write workflow summary to {summary_file}: "
+                f"{exc}. Continuing without summary output."
+            )
 
 
 def main() -> None:
@@ -241,6 +317,14 @@ def main() -> None:
 
     # Process each vulnerability
     for vuln in vulnerabilities:
+        # Validate that the entry is a dictionary
+        if not isinstance(vuln, dict):
+            print(
+                f"Warning: Skipping malformed vulnerability entry "
+                f"(expected dict, got {type(vuln).__name__})"
+            )
+            continue
+
         package = vuln.get("package_name", "unknown")
         severity = vuln.get("severity", "unknown")
 
