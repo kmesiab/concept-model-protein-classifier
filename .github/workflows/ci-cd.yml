@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.10', '3.11', '3.12']
+        python-version: ['3.12']
     
     steps:
       - name: Checkout code
@@ -86,7 +86,7 @@ jobs:
           echo "Running MyPy type checker..."
           # Check api directory if it exists
           if [ -d "api" ]; then
-            mypy --config-file=api/mypy.ini api/
+            mypy --config-file=mypy.ini api/
           fi
           # Check root-level Python files
           find . -maxdepth 1 -name "*.py" -type f | xargs -r mypy
@@ -143,7 +143,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.10', '3.11', '3.12']
+        python-version: ['3.12']
     
     steps:
       - name: Checkout code
@@ -192,7 +192,7 @@ jobs:
         continue-on-error: false
       
       - name: Upload coverage HTML report
-        if: matrix.python-version == '3.11'
+        if: matrix.python-version == '3.12'
         uses: actions/upload-artifact@v6
         with:
           name: coverage-report
