@@ -5,8 +5,9 @@ Tests for API key management and authentication endpoints.
 from unittest.mock import patch
 
 import pytest
-from app.main import app
 from fastapi.testclient import TestClient
+
+from app.main import app
 
 
 @pytest.fixture
