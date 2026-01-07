@@ -156,8 +156,7 @@ without unexpected breaking changes
 
 ### 📊 References
 - **CVE Details:** https://cve.mitre.org/cgi-bin/cvename.cgi?name={cve_id}
-- **Safety Report:** https://platform.safetycli.com/codebases/\
-concept-model-protein-classifier/findings
+- **Safety Report:** https://platform.safetycli.com/codebases/concept-model-protein-classifier/findings
 
 ---
 *This issue was automatically created by the security automation system.*
