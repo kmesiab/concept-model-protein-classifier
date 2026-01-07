@@ -68,8 +68,8 @@ jobs:
         continue-on-error: true
         run: |
           # Use modern Safety CLI 3.x syntax with JSON output
-          # Redirect output to file for processing
-          (safety scan --output json --detailed-output > vulns.json) || true
+          # Write JSON output directly to file for processing
+          safety scan --output json --detailed-output --output-file vulns.json || true
           
           # Ensure vulns.json exists even if scan fails
           if [ -f vulns.json ]; then
