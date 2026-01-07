@@ -17,8 +17,10 @@ from fastapi import FastAPI, Header, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from .admin_routes import router as admin_router
 from .api_key_routes import router as api_key_router
 from .api_key_service import get_api_key_service
+from .audit_log_service import get_audit_log_service
 from .auth import api_key_manager
 from .auth_routes import router as auth_router
 from .classifier import classify_batch
@@ -91,9 +93,73 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers for authentication and API key management
+# Include routers for authentication, API key management, and admin
 app.include_router(auth_router)
 app.include_router(api_key_router)
+app.include_router(admin_router)
+
+
+# Middleware to log API requests for audit purposes
+@app.middleware("http")
+async def audit_logging_middleware(request: Request, call_next):
+    """
+    Middleware to log API requests for audit and compliance.
+
+    Logs classification requests with metadata (no sequence content).
+    """
+    start_time = time.time()
+
+    # Process the request
+    response = await call_next(request)
+
+    # Only log classification endpoints
+    if request.url.path.startswith("/api/v1/classify"):
+        processing_time_ms = (time.time() - start_time) * 1000
+
+        # Extract API key from headers
+        api_key = request.headers.get("X-API-Key")
+
+        # Get client IP
+        client_ip = request.client.host if request.client else None
+
+        # Determine status
+        request_status = "success" if response.status_code < 400 else "error"
+        error_code = str(response.status_code) if response.status_code >= 400 else None
+
+        # Get API key metadata if available
+        api_key_id = None
+        user_email = None
+        if api_key:
+            try:
+                api_key_service = get_api_key_service()
+                metadata = api_key_service.validate_api_key(api_key)
+                if metadata:
+                    api_key_id = metadata.get("api_key_id")
+                    user_email = metadata.get("email")
+            except (ClientError, NoCredentialsError):
+                # Fallback to in-memory manager
+                metadata = api_key_manager.validate_api_key(api_key)
+                if metadata:
+                    user_email = metadata.get("email")
+
+        # Log the request (sequence length is approximate, we don't parse the body)
+        try:
+            audit_log_service = get_audit_log_service()
+            audit_log_service.log_request(
+                api_key=api_key,
+                api_key_id=api_key_id,
+                user_email=user_email,
+                sequence_length=0,  # We don't parse request body for performance
+                processing_time_ms=processing_time_ms,
+                status=request_status,
+                error_code=error_code,
+                ip_address=client_ip,
+            )
+        except (ClientError, NoCredentialsError, Exception) as e:
+            # Non-critical error, just log it
+            logger.warning(f"Failed to log audit entry: {e}")
+
+    return response
 
 
 @app.exception_handler(Exception)

@@ -335,3 +335,56 @@ class RevokeAPIKeyResponse(BaseModel):
 
     class Config:
         json_schema_extra = {"example": {"revoked": True, "api_key_id": "key_xyz789"}}
+
+
+# Admin Audit Log models
+class AuditLogEntry(BaseModel):
+    """Single audit log entry."""
+
+    timestamp: str = Field(..., description="Request timestamp (ISO 8601)")
+    api_key: str = Field(..., description="Masked API key (last 4 chars visible)")
+    sequence_length: int = Field(..., description="Length of protein sequence processed")
+    processing_time_ms: float = Field(..., description="Processing time in milliseconds")
+    status: str = Field(..., description="Request status (success/error)")
+    error_code: Optional[str] = Field(None, description="Error code if request failed")
+    ip_address: str = Field(..., description="IP address (masked for privacy)")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "timestamp": "2024-01-01T10:00:00Z",
+                "api_key": "****1234",
+                "sequence_length": 250,
+                "processing_time_ms": 45.5,
+                "status": "success",
+                "error_code": None,
+                "ip_address": "192.168.1.0/24",
+            }
+        }
+
+
+class AuditLogsResponse(BaseModel):
+    """Response model for audit logs query."""
+
+    logs: List[AuditLogEntry] = Field(..., description="List of audit log entries")
+    total: int = Field(..., description="Total number of entries in this page")
+    next_token: Optional[str] = Field(None, description="Token for next page of results")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "logs": [
+                    {
+                        "timestamp": "2024-01-01T10:00:00Z",
+                        "api_key": "****1234",
+                        "sequence_length": 250,
+                        "processing_time_ms": 45.5,
+                        "status": "success",
+                        "error_code": None,
+                        "ip_address": "192.168.1.0/24",
+                    }
+                ],
+                "total": 1,
+                "next_token": None,
+            }
+        }
