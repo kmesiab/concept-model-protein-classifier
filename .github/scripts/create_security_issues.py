@@ -12,7 +12,8 @@ the GitHub CLI (gh) to be available in the environment.
 import json
 import os
 import re
-import subprocess
+import shutil
+import subprocess  # nosec B404  # Required for GitHub CLI (gh) interaction
 import sys
 import time
 from datetime import datetime, timezone
@@ -25,6 +26,22 @@ ISSUE_CREATE_DELAY_SECONDS = 2
 # Content sanitization limits to prevent injection and oversized issues
 MAX_FIELD_LENGTH = 2000
 MAX_ADVISORY_LENGTH = 5000
+
+
+def get_gh_executable() -> str:
+    """
+    Get the absolute path to the GitHub CLI executable.
+
+    Returns:
+        Absolute path to 'gh' executable
+
+    Raises:
+        RuntimeError: If 'gh' CLI is not found in PATH
+    """
+    gh_path = shutil.which("gh")
+    if not gh_path:
+        raise RuntimeError("GitHub CLI (gh) not found. Please ensure it is installed and in PATH.")
+    return gh_path
 
 
 def get_repository_name() -> str:
@@ -126,9 +143,10 @@ def get_existing_security_issues() -> Set[str]:
         If fetching fails, returns empty set to allow issue creation to proceed
     """
     try:
-        result = subprocess.run(
+        gh_cmd = get_gh_executable()
+        result = subprocess.run(  # nosec B603  # Safe: using absolute path with fixed args
             [
-                "gh",
+                gh_cmd,
                 "issue",
                 "list",
                 "--label",
@@ -260,13 +278,16 @@ def create_github_issue(title: str, body: str, labels: List[str]) -> subprocess.
     Raises:
         subprocess.CalledProcessError: If gh CLI command fails
     """
-    cmd = ["gh", "issue", "create", "--title", title, "--body", body]
+    gh_cmd = get_gh_executable()
+    cmd = [gh_cmd, "issue", "create", "--title", title, "--body", body]
 
     # Add each label separately as required by gh CLI
     for label in labels:
         cmd.extend(["--label", label])
 
-    return subprocess.run(cmd, check=True, capture_output=True, text=True)
+    return subprocess.run(  # nosec B603  # Safe: using absolute path with sanitized inputs
+        cmd, check=True, capture_output=True, text=True
+    )
 
 
 def should_create_issue(severity: str) -> bool:
