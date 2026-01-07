@@ -1,7 +1,17 @@
 name: Security Issue Automation
 
-# Automatically create GitHub issues for security vulnerabilities
-# detected by Safety CLI, assigning them to Copilot for automated remediation
+# Automatically create GitHub issues for security vulnerabilities detected by
+# Safety CLI. This workflow scans dependencies for known vulnerabilities and
+# creates labeled GitHub issues with remediation details for medium+ severity
+# findings.
+#
+# Workflow triggers:
+# - Every 6 hours on a schedule
+# - When api/requirements.txt is modified
+# - Manual dispatch
+#
+# The workflow prevents duplicate issues by checking existing security issues
+# before creating new ones.
 
 on:
   schedule:
@@ -9,7 +19,12 @@ on:
   workflow_dispatch:  # Allow manual triggering
   push:
     paths:
-      - '**/requirements.txt'  # Trigger on dependency changes
+      - 'api/requirements.txt'  # Trigger only on API requirements changes
+
+# Limit concurrent workflow runs to prevent conflicts when creating issues
+concurrency:
+  group: security-issue-automation
+  cancel-in-progress: false
 
 permissions:
   issues: write
@@ -20,12 +35,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
-          python-version: '3.11'
+          python-version: '3.12'
+
+      - name: Validate required tools
+        run: |
+          # Verify gh CLI is available
+          if ! command -v gh &> /dev/null; then
+            echo "❌ Error: GitHub CLI (gh) is not installed"
+            exit 1
+          fi
+          echo "✅ GitHub CLI is available"
+          
+          # Verify Python is available
+          if ! command -v python3 &> /dev/null; then
+            echo "❌ Error: Python 3 is not installed"
+            exit 1
+          fi
+          echo "✅ Python 3 is available"
 
       - name: Install Safety CLI
         run: |
@@ -36,10 +67,16 @@ jobs:
         id: scan
         continue-on-error: true
         run: |
-          safety check --json --output vulns.json api/requirements.txt || true
+          # Use modern Safety CLI 3.x syntax with JSON output
+          # Redirect output to file for processing
+          (safety scan --output json --detailed-output > vulns.json) || true
+          
+          # Ensure vulns.json exists even if scan fails
           if [ -f vulns.json ]; then
+            echo "✅ Vulnerability scan completed"
             cat vulns.json
           else
+            echo "⚠️  No scan results found, creating empty results file"
             echo '{"vulnerabilities":[]}' > vulns.json
           fi
 
@@ -47,106 +84,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          python3 << 'PYTHON_SCRIPT'
-          import json
-          import os
-          import subprocess
-          from datetime import datetime
+          # Make the script executable
+          chmod +x .github/scripts/create_security_issues.py
           
-          # Read vulnerability scan results
-          try:
-              with open('vulns.json', 'r', encoding='utf-8') as f:
-                  data = json.load(f)
-          except (FileNotFoundError, json.JSONDecodeError) as e:
-              print(f"Error reading vulns.json: {e}")
-              exit(0)
-          
-          vulnerabilities = data.get('vulnerabilities', [])
-          
-          if not vulnerabilities:
-              print("No vulnerabilities found")
-              exit(0)
-          
-          # Get existing security issues to avoid duplicates
-          try:
-              result = subprocess.run(
-                  ['gh', 'issue', 'list', '--label', 'security,automated', '--json', 'title'],
-                  capture_output=True, text=True, check=True
-              )
-              existing_issues = json.loads(result.stdout)
-              existing_titles = {issue['title'] for issue in existing_issues}
-          except (subprocess.CalledProcessError, json.JSONDecodeError) as e:
-              print(f"Error fetching existing issues: {e}")
-              existing_titles = set()
-          
-          issues_created = 0
-          
-          for vuln in vulnerabilities:
-              package = vuln.get('package_name', 'unknown')
-              current_version = vuln.get('analyzed_version', 'unknown')
-              cve_id = vuln.get('CVE') or vuln.get('vulnerability_id', 'N/A')
-              severity = vuln.get('severity', 'unknown')
-              
-              # Only create issues for medium or higher severity
-              if severity.lower() not in ['medium', 'high', 'critical']:
-                  continue
-              
-              title = f"[Security] Upgrade {package} to fix {cve_id}"
-              
-              # Skip if issue already exists
-              if title in existing_titles:
-                  print(f"Issue already exists: {title}")
-                  continue
-              
-              # Get fix version
-              fix_version = vuln.get('recommended_version') or vuln.get('secure_versions', ['latest'])[0] if vuln.get('secure_versions') else 'latest'
-              
-              # Create issue body
-              body = f"""## 🔒 Security Vulnerability Detected
-          
-          **Package:** `{package}`  
-          **Current Version:** `{current_version}`  
-          **Severity:** {severity.upper()}  
-          **CVE:** {cve_id}  
-          
-          ### 📋 CVE Description
-          {vuln.get('advisory', 'No description available')}
-          
-          ### 🔧 Remediation
-          **Recommended action:** Upgrade to version `{fix_version}`
-          
-          **Affected file:** `api/requirements.txt`
-          
-          ### 🤖 Action Required
-          @Copilot please:
-          1. Update `{package}` to version `{fix_version}` in `api/requirements.txt`
-          2. Update version constraint to use `>=` instead of `==` to allow future security patches
-          3. Run the test suite to ensure compatibility
-          4. Open a PR with the changes
-          5. Include "Fixes #{{issue_number}}" in the PR description
-          
-          ### 📊 References
-          - **CVE Details:** https://cve.mitre.org/cgi-bin/cvename.cgi?name={cve_id}
-          - **Safety Report:** https://platform.safetycli.com/codebases/concept-model-protein-classifier/findings
-          
-          ---
-          *This issue was automatically created by the security automation system.*  
-          *Last scanned: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC*
-          """
-              
-              # Create the issue
-              try:
-                  subprocess.run([
-                      'gh', 'issue', 'create',
-                      '--title', title,
-                      '--body', body,
-                      '--label', 'security,automated,dependency-upgrade',
-                      '--assignee', 'Copilot'
-                  ], check=True)
-                  print(f"✅ Created issue: {title}")
-                  issues_created += 1
-              except subprocess.CalledProcessError as e:
-                  print(f"❌ Failed to create issue for {package}: {e}")
-          
-          print(f"\nSummary: Created {issues_created} security issue(s)")
-          PYTHON_SCRIPT
+          # Run the security issue creation script
+          python3 .github/scripts/create_security_issues.py
