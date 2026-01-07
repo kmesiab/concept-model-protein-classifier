@@ -107,7 +107,7 @@ async def check_admin_rate_limit(request: Request):
     # Check rate limit: 10 admin requests per minute per IP
     # Note: max_sequences_per_day is a legacy parameter name from the rate limiter
     # but is being used here as a daily request limit (not sequence limit)
-    allowed, _ = rate_limiter.check_rate_limit(
+    allowed, error_msg, error_details = rate_limiter.check_rate_limit(
         api_key_hash=f"admin:{ip_hash}",
         max_requests_per_minute=10,
         max_sequences_per_day=1000,  # Used as daily request limit (legacy parameter name)
@@ -117,7 +117,7 @@ async def check_admin_rate_limit(request: Request):
     if not allowed:
         raise HTTPException(
             status_code=http_status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Too many admin requests. Please try again in a minute.",
+            detail=error_msg or "Too many admin requests. Please try again in a minute.",
         )
 
 

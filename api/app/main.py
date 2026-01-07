@@ -99,6 +99,44 @@ app.include_router(api_key_router)
 app.include_router(admin_router)
 
 
+@app.on_event("startup")
+async def startup_health_checks():
+    """
+    Perform startup health checks to verify critical services.
+
+    Verifies that the audit log service can connect to DynamoDB.
+    Logs warnings for non-critical failures to aid in troubleshooting.
+    """
+    logger.info("Running startup health checks...")
+
+    # Check audit log service connectivity
+    try:
+        audit_log_service = get_audit_log_service()
+        # Attempt a simple table describe operation to verify connectivity
+        # This doesn't write data but confirms we can access DynamoDB
+        if hasattr(audit_log_service, "table") and audit_log_service.table:
+            table_status = audit_log_service.table.table_status
+            logger.info(f"✓ Audit log service healthy - DynamoDB table status: {table_status}")
+        else:
+            logger.warning(
+                "✓ Audit log service initialized (table not accessible for health check)"
+            )
+    except (ClientError, NoCredentialsError) as aws_error:
+        logger.error(
+            "✗ Audit log service health check failed - AWS error: %s. "
+            "Audit logging may be disabled. Check AWS credentials and permissions.",
+            aws_error,
+        )
+    except Exception as error:
+        logger.warning(
+            "✗ Audit log service health check failed - unexpected error: %s. "
+            "Audit logging may not work correctly.",
+            error,
+        )
+
+    logger.info("Startup health checks completed")
+
+
 # Middleware to log API requests for audit purposes
 @app.middleware("http")
 async def audit_logging_middleware(request: Request, call_next):

@@ -152,7 +152,7 @@ class TestAuditLogsEndpoint:
         # Verify the service was called with correct parameters
         mock_audit.query_logs.assert_called_once()
         call_args = mock_audit.query_logs.call_args
-        assert call_args.kwargs["api_key"] == "key_xyz789"
+        assert call_args.kwargs["api_key_id"] == "key_xyz789"
         assert call_args.kwargs["status"] == "success"
         assert call_args.kwargs["limit"] == 50
 
