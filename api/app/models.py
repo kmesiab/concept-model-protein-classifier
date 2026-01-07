@@ -231,7 +231,7 @@ class APIKeyResponse(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "api_key": "pk_live_abc123def456...",
+                "api_key": "pk_live_abc123def456...",  # trivy:ignore:stripe-publishable-token
                 "api_key_id": "key_xyz789",
                 "created_at": "2024-01-01T10:00:00Z",
                 "label": "Production API",
