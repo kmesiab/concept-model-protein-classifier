@@ -165,11 +165,16 @@ class RateLimiter:
                     else:
                         retry_after = max(remaining_ttl, 1)
 
+                    # Note: current_value is the value before applying this request's increment.
+                    # Expose both the pre-increment value and the value that would result if the
+                    # increment were applied, to make it clear why the limit was exceeded.
                     error_details = {
                         "error_code": error_code,
                         "retry_after": retry_after,
                         "limit": limit,
                         "current": current_value,
+                        "current_after_attempt": current_value + increment,
+                        "increment": increment,
                     }
                     return (
                         False,

@@ -28,8 +28,19 @@ def headers():
 
 @pytest.fixture
 def rate_limiter():
-    """Create a rate limiter instance for testing."""
-    return RateLimiter()
+    """Create a rate limiter instance for testing with isolated Redis state."""
+    rate_limiter_instance = RateLimiter()
+    try:
+        # Provide the rate limiter to the test.
+        yield rate_limiter_instance
+    finally:
+        # Ensure Redis state created by this test does not affect other tests.
+        if getattr(rate_limiter_instance, "redis_available", False):
+            redis_client = getattr(rate_limiter_instance, "redis", None)
+            if redis_client is not None:
+                # Only remove keys created by this test suite (prefixed with "test:").
+                for key in redis_client.scan_iter("test:*"):
+                    redis_client.delete(key)
 
 
 class TestAtomicRateLimiting:
