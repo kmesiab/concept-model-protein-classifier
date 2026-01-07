@@ -252,6 +252,82 @@ Content-Type: application/json</code></pre>
         </div>
       </section>
 
+      <!-- Admin Endpoints -->
+      <section id="admin-endpoints">
+        <h2>Admin Endpoints</h2>
+        <p>Admin endpoints for monitoring and managing API usage. All endpoints require JWT Bearer token authentication obtained through the magic link authentication flow.</p>
+        
+        <div class="card">
+          <h3 id="audit-logs">GET /admin/audit-logs</h3>
+          <p>Query API usage audit logs for compliance monitoring, troubleshooting, and usage tracking.</p>
+          
+          <h4>Request Headers</h4>
+          <pre><code>Authorization: ******</code></pre>
+          
+          <h4>Query Parameters</h4>
+          <ul>
+            <li><code>start_time</code> (required) - ISO 8601 timestamp for start of query window</li>
+            <li><code>end_time</code> (required) - ISO 8601 timestamp for end of query window</li>
+            <li><code>api_key</code> (optional) - Filter by specific API key ID</li>
+            <li><code>status</code> (optional) - Filter by 'success' or 'error'</li>
+            <li><code>limit</code> (optional) - Results per page (default: 100, max: 1000)</li>
+            <li><code>next_token</code> (optional) - For pagination</li>
+          </ul>
+          
+          <h4>Example Request</h4>
+          <pre><code>curl -X GET "https://api.proteinclassifier.com/admin/audit-logs?start_time=2024-01-01T00:00:00Z&end_time=2024-01-02T00:00:00Z&status=success&limit=50" \
+  -H "Authorization: ******"</code></pre>
+          
+          <h4>Response</h4>
+          <pre><code>{
+  "logs": [
+    {
+      "timestamp": "2024-01-01T10:00:00Z",
+      "api_key": "****1234",
+      "sequence_length": 0,
+      "processing_time_ms": 45.5,
+      "status": "success",
+      "error_code": null,
+      "ip_address": "192.168.1.0/24"
+    }
+  ],
+  "total": 1,
+  "next_token": null
+}</code></pre>
+          
+          <h4>Response Fields</h4>
+          <ul>
+            <li><code>timestamp</code> - Request timestamp (ISO 8601)</li>
+            <li><code>api_key</code> - Masked API key (last 4 chars visible)</li>
+            <li><code>sequence_length</code> - Total length of sequences processed</li>
+            <li><code>processing_time_ms</code> - Processing time in milliseconds</li>
+            <li><code>status</code> - Request status ('success' or 'error')</li>
+            <li><code>error_code</code> - Error code if request failed</li>
+            <li><code>ip_address</code> - Masked IP address (privacy-protected)</li>
+          </ul>
+          
+          <h4>Security & Privacy</h4>
+          <ul>
+            <li>API keys masked (only last 4 characters visible)</li>
+            <li>IP addresses masked for privacy (first 3 octets only)</li>
+            <li>No sequence content ever exposed</li>
+            <li>30-day retention window (older records not available)</li>
+            <li>Audit log access is itself logged for security</li>
+            <li>Rate limited to 10 queries/minute per admin</li>
+          </ul>
+          
+          <div class="alert alert-info">
+            <strong>Use Cases:</strong>
+            <ul style="margin-bottom: 0;">
+              <li>Monitor API usage patterns and trends</li>
+              <li>Troubleshoot API errors and performance issues</li>
+              <li>Generate compliance reports and audits</li>
+              <li>Track usage for billing and analytics</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       <!-- Endpoints -->
       <section id="endpoints">
         <h2>Classification Endpoints</h2>
