@@ -27,6 +27,20 @@ MAX_FIELD_LENGTH = 2000
 MAX_ADVISORY_LENGTH = 5000
 
 
+def get_repository_name() -> str:
+    """
+    Get the current repository name from environment or fallback.
+
+    Returns:
+        Repository name in 'owner/repo' format
+    """
+    # GitHub Actions provides GITHUB_REPOSITORY env var in 'owner/repo' format
+    repo = os.environ.get("GITHUB_REPOSITORY", "")
+    if repo:
+        return repo.split("/")[-1]  # Extract just repo name
+    return "concept-model-protein-classifier"  # Fallback for local testing
+
+
 def sanitize_text(
     text: str, max_length: int = MAX_FIELD_LENGTH, allow_newlines: bool = False
 ) -> str:
@@ -185,19 +199,19 @@ def create_issue_body(vulnerability: Dict[str, Any], fix_version: str, package: 
 
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
-    # Use concatenation to avoid backslash continuation issues in f-strings
+    # Use explicit f-string for better readability
     action_line_1 = (
-        "1. Update the version constraint to a compatible range (for example "
-        f"`~={fix_version}` or an upper-bounded range) to allow security "
-        "patches without unexpected breaking changes"
+        f"1. Update the version constraint to a compatible range "
+        f"(for example `~={fix_version}` or an upper-bounded range) "
+        f"to allow security patches without unexpected breaking changes"
     )
     action_line_2 = "2. Run the test suite to ensure compatibility"
     action_line_3 = "3. Open a PR with the changes"
     action_line_4 = "4. Include a closing reference to this issue in the PR description"
 
-    safety_url = (
-        "https://platform.safetycli.com/codebases/" + "concept-model-protein-classifier/findings"
-    )
+    # Make repository name configurable for reusability
+    repo_name = get_repository_name()
+    safety_url = f"https://platform.safetycli.com/codebases/{repo_name}/findings"
 
     return f"""## 🔒 Security Vulnerability Detected
 
@@ -325,7 +339,12 @@ def main() -> None:
             )
             continue
 
-        package = vuln.get("package_name", "unknown")
+        # Check for required fields
+        package = vuln.get("package_name")
+        if not package:
+            print("Warning: Skipping vulnerability entry without 'package_name' field")
+            continue
+
         severity = vuln.get("severity", "unknown")
 
         # Only process medium or higher severity
