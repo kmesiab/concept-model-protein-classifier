@@ -13,9 +13,13 @@ import json
 import os
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Set
+
+# Rate limiting: delay between issue creations to avoid API throttling
+ISSUE_CREATE_DELAY_SECONDS = 2
 
 
 def read_vulnerability_data(scan_file: Path) -> Dict[str, Any]:
@@ -269,6 +273,10 @@ def main() -> None:
             create_github_issue(title, body, labels)
             print(f"✅ Created issue: {title}")
             issues_created += 1
+
+            # Rate limiting: Add delay between issue creations to avoid
+            # GitHub API throttling (secondary rate limits)
+            time.sleep(ISSUE_CREATE_DELAY_SECONDS)
         except subprocess.CalledProcessError as exc:
             print(f"❌ Failed to create issue for {package}: {exc}")
 
