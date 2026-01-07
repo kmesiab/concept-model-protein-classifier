@@ -429,10 +429,12 @@ pytest tests/test_api.py::TestPerformance -v
 Query API usage audit logs for compliance monitoring, troubleshooting, and usage tracking.
 
 **Authentication Required:**
+
 - JWT access token in `Authorization: ******` header
 - Admin-level access (all authenticated users currently have admin access)
 
 **Query Parameters:**
+
 - `start_time` (required): ISO 8601 timestamp - Start of query window
 - `end_time` (required): ISO 8601 timestamp - End of query window
 - `api_key` (optional): Filter by specific API key ID
@@ -468,6 +470,7 @@ curl -X GET "http://localhost:8000/admin/audit-logs?start_time=2024-01-01T00:00:
 ```
 
 **Security & Privacy:**
+
 - API keys masked (only last 4 characters visible)
 - IP addresses masked for privacy (first 3 octets only)
 - No sequence content ever exposed
@@ -476,6 +479,7 @@ curl -X GET "http://localhost:8000/admin/audit-logs?start_time=2024-01-01T00:00:
 - Rate limited to 10 queries/minute per admin
 
 **Use Cases:**
+
 - Monitor API usage patterns
 - Troubleshoot API errors
 - Compliance reporting and auditing
