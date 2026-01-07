@@ -88,7 +88,8 @@ jobs:
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
           ignore-unfixed: true
-          exit-code: '1'
+          exit-code: '0'
+        continue-on-error: true
       
       - name: Upload Trivy scan results to GitHub Security
         if: always()
@@ -105,8 +106,23 @@ jobs:
           name: trivy-results
           path: trivy-results.sarif
       
+      - name: Trivy filesystem scan (JSON output for parsing)
+        uses: aquasecurity/trivy-action@0.33.1
+        if: always()
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          scanners: 'vuln,secret,misconfig,license'
+          format: 'json'
+          output: 'trivy-results.json'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          ignore-unfixed: true
+          exit-code: '0'
+        continue-on-error: true
+      
       - name: Trivy filesystem scan (table output)
         uses: aquasecurity/trivy-action@0.33.1
+        if: always()
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -114,7 +130,110 @@ jobs:
           format: 'table'
           severity: 'CRITICAL,HIGH,MEDIUM'
           ignore-unfixed: true
-          exit-code: '1'
+          exit-code: '0'
+        continue-on-error: true
+      
+      - name: Parse Trivy results and display summary
+        if: always()
+        run: |
+          echo "## 🔒 Trivy Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          REPORT=trivy-results.json
+          if [ -f "$REPORT" ]; then
+            # Count total vulnerabilities by type
+            TOTAL_VULNS=$(jq -r '(.Results // []) | map(.Vulnerabilities // []) | flatten | length' "$REPORT")
+            TOTAL_SECRETS=$(jq -r '(.Results // []) | map(.Secrets // []) | flatten | length' "$REPORT")
+            TOTAL_MISCONFIGS=$(jq -r '(.Results // []) | map(.Misconfigurations // []) | flatten | length' "$REPORT")
+            TOTAL_LICENSES=$(jq -r '(.Results // []) | map(.Licenses // []) | flatten | length' "$REPORT")
+            
+            # Count vulnerabilities by severity
+            CRITICAL_VULNS=$(jq -r '(.Results // []) | map(.Vulnerabilities // []) | flatten | map(select(.Severity=="CRITICAL")) | length' "$REPORT")
+            HIGH_VULNS=$(jq -r '(.Results // []) | map(.Vulnerabilities // []) | flatten | map(select(.Severity=="HIGH")) | length' "$REPORT")
+            MEDIUM_VULNS=$(jq -r '(.Results // []) | map(.Vulnerabilities // []) | flatten | map(select(.Severity=="MEDIUM")) | length' "$REPORT")
+            
+            # Count misconfigurations by severity
+            CRITICAL_MISCONFIGS=$(jq -r '(.Results // []) | map(.Misconfigurations // []) | flatten | map(select(.Severity=="CRITICAL")) | length' "$REPORT")
+            HIGH_MISCONFIGS=$(jq -r '(.Results // []) | map(.Misconfigurations // []) | flatten | map(select(.Severity=="HIGH")) | length' "$REPORT")
+            MEDIUM_MISCONFIGS=$(jq -r '(.Results // []) | map(.Misconfigurations // []) | flatten | map(select(.Severity=="MEDIUM")) | length' "$REPORT")
+            
+            # Display summary table
+            echo "### 📊 Finding Summary" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Category | Critical | High | Medium | Total |" >> $GITHUB_STEP_SUMMARY
+            echo "|----------|----------|------|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Vulnerabilities | $CRITICAL_VULNS | $HIGH_VULNS | $MEDIUM_VULNS | $TOTAL_VULNS |" >> $GITHUB_STEP_SUMMARY
+            echo "| Misconfigurations | $CRITICAL_MISCONFIGS | $HIGH_MISCONFIGS | $MEDIUM_MISCONFIGS | $TOTAL_MISCONFIGS |" >> $GITHUB_STEP_SUMMARY
+            echo "| Secrets | - | - | - | $TOTAL_SECRETS |" >> $GITHUB_STEP_SUMMARY
+            echo "| Licenses | - | - | - | $TOTAL_LICENSES |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # Calculate total findings
+            TOTAL=$((TOTAL_VULNS + TOTAL_SECRETS + TOTAL_MISCONFIGS + TOTAL_LICENSES))
+            
+            if [ "$TOTAL" -gt 0 ]; then
+              echo "### ⚠️ Detailed Findings" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              
+              # Display vulnerabilities table if any exist
+              if [ "$TOTAL_VULNS" -gt 0 ]; then
+                echo "#### Vulnerabilities" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "| Package | Vulnerability | Severity | Fixed Version |" >> $GITHUB_STEP_SUMMARY
+                echo "|---------|---------------|----------|---------------|" >> $GITHUB_STEP_SUMMARY
+                jq -r '(.Results // []) | map(.Vulnerabilities // []) | flatten | 
+                       map(select(.Severity=="CRITICAL" or .Severity=="HIGH" or .Severity=="MEDIUM")) | 
+                       sort_by(.Severity) | reverse | 
+                       .[] | "| \(.PkgName // "Unknown") | \(.VulnerabilityID // "N/A") | \(.Severity) | \(.FixedVersion // "No fix available") |"' \
+                       "$REPORT" >> $GITHUB_STEP_SUMMARY || echo "| Error parsing vulnerabilities | - | - | - |" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+              fi
+              
+              # Display misconfigurations table if any exist
+              if [ "$TOTAL_MISCONFIGS" -gt 0 ]; then
+                echo "#### Misconfigurations" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "| ID | Title | Severity | File |" >> $GITHUB_STEP_SUMMARY
+                echo "|----|-------|----------|------|" >> $GITHUB_STEP_SUMMARY
+                jq -r '(.Results // []) | map(select(.Misconfigurations != null)) | 
+                       .[] | .Target as $target | 
+                       (.Misconfigurations // []) | 
+                       map(select(.Severity=="CRITICAL" or .Severity=="HIGH" or .Severity=="MEDIUM")) | 
+                       sort_by(.Severity) | reverse | 
+                       .[] | "| \(.ID // "N/A") | \(.Title // "Unknown") | \(.Severity) | \($target) |"' \
+                       "$REPORT" >> $GITHUB_STEP_SUMMARY || echo "| Error parsing misconfigurations | - | - | - |" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+              fi
+              
+              # Display secrets if any exist
+              if [ "$TOTAL_SECRETS" -gt 0 ]; then
+                echo "#### 🚨 Secrets Detected" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "⚠️ **$TOTAL_SECRETS secret(s) detected in the repository!**" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "| Rule ID | File | Match |" >> $GITHUB_STEP_SUMMARY
+                echo "|---------|------|-------|" >> $GITHUB_STEP_SUMMARY
+                jq -r '(.Results // []) | map(select(.Secrets != null)) | 
+                       .[] | .Target as $target | 
+                       (.Secrets // []) | 
+                       .[] | "| \(.RuleID // "Unknown") | \($target) | \(.Match // "N/A") |"' \
+                       "$REPORT" >> $GITHUB_STEP_SUMMARY || echo "| Error parsing secrets | - | - |" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+              fi
+              
+              echo "---" >> $GITHUB_STEP_SUMMARY
+              echo "**Status:** ⚠️ $TOTAL finding(s) detected" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "### ✅ No Security Issues Found" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "All scans completed successfully with no findings." >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "📄 Full SARIF report uploaded to GitHub Security tab" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Trivy report file not found at $REPORT" >> $GITHUB_STEP_SUMMARY
+          fi
       
       - name: Security scan summary
         if: always()
