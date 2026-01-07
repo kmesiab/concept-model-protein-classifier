@@ -140,7 +140,7 @@ class TestAuditLogsEndpoint:
             params={
                 "start_time": "2024-01-01T00:00:00Z",
                 "end_time": "2024-01-02T00:00:00Z",
-                "api_key": "key_xyz789",
+                "api_key_id": "key_xyz789",
                 "status": "success",
                 "limit": 50,
             },
@@ -282,6 +282,35 @@ class TestAuditLogsEndpoint:
         # limit > 1000 should be rejected by FastAPI validation
         assert response.status_code == 422  # Unprocessable Entity
 
+    @patch("app.admin_routes.get_session_service")
+    @patch("app.admin_routes.get_audit_log_service")
+    def test_query_audit_logs_timezone_handling(
+        self, mock_audit_service, mock_session_service, client, admin_headers
+    ):
+        """Test timestamp validation with different timezone formats."""
+        # Mock session service
+        mock_session = MagicMock()
+        mock_session.verify_access_token.return_value = {"email": "admin@example.com"}
+        mock_session_service.return_value = mock_session
+
+        # Mock audit log service
+        mock_audit = MagicMock()
+        mock_audit.query_logs.return_value = ([], None)
+        mock_audit_service.return_value = mock_audit
+
+        # Test with numeric offset format
+        response = client.get(
+            "/admin/audit-logs",
+            params={
+                "start_time": "2024-01-01T00:00:00+00:00",
+                "end_time": "2024-01-02T00:00:00+00:00",
+            },
+            headers=admin_headers,
+        )
+
+        # Should accept valid ISO 8601 format with timezone
+        assert response.status_code == 200
+
 
 class TestAuditLogService:
     """Tests for audit log service methods."""
@@ -309,3 +338,5 @@ class TestAuditLogService:
         # Invalid
         assert AuditLogService._mask_ip("") == "unknown"
         assert AuditLogService._mask_ip(None) == "unknown"
+        assert AuditLogService._mask_ip("invalid_ip") == "unknown"
+        assert AuditLogService._mask_ip("abc:def:ghi:invalid") == "unknown"

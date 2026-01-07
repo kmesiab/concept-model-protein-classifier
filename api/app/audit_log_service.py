@@ -154,6 +154,11 @@ class AuditLogService:
 
         try:
             # Build query parameters
+            # NOTE: This query relies on the DynamoDB Global Secondary Index (GSI)
+            # "UserEmailTimestampIndex" being defined on the audit log table with:
+            #   - Partition key: "user_email" (String)
+            #   - Sort key: "timestamp" (Number, Unix epoch seconds)
+            # If this index is not present or is misconfigured, this query will fail at runtime.
             query_params: Dict = {
                 "IndexName": "UserEmailTimestampIndex",
                 "KeyConditionExpression": Key("user_email").eq(user_email)
@@ -234,23 +239,30 @@ class AuditLogService:
         Mask IP address for privacy.
 
         Keeps first 3 octets for IPv4, first 3 hextets for IPv6.
+        Returns 'unknown' for malformed addresses.
         """
         if not ip_address:
             return "unknown"
 
         # Handle IPv4
-        if "." in ip_address:
+        if "." in ip_address and ":" not in ip_address:
             parts = ip_address.split(".")
-            if len(parts) == 4:
+            # Validate IPv4 format (4 octets)
+            if len(parts) == 4 and all(part.isdigit() and 0 <= int(part) <= 255 for part in parts):
                 return f"{parts[0]}.{parts[1]}.{parts[2]}.0/24"
 
         # Handle IPv6
         if ":" in ip_address:
             parts = ip_address.split(":")
-            if len(parts) >= 3:
+            # Basic validation: at least 3 parts for masking
+            # Full IPv6 validation is complex; this is a basic check
+            if len(parts) >= 3 and all(
+                all(c in "0123456789abcdefABCDEF" for c in part) for part in parts[:3] if part
+            ):
                 return f"{parts[0]}:{parts[1]}:{parts[2]}::/48"
 
-        return ip_address
+        # Return masked version for unrecognized format
+        return "unknown"
 
 
 # Global instance

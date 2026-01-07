@@ -8,9 +8,10 @@ Provides endpoints for:
 
 import hashlib
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
+from botocore.exceptions import ClientError
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from fastapi import status as http_status
 
@@ -32,9 +33,9 @@ def _anonymize_email(email: str) -> str:
         email: User's email address
 
     Returns:
-        Anonymized identifier (first 8 chars of SHA-256 hash)
+        Anonymized identifier (first 16 chars of SHA-256 hash for 64 bits of entropy)
     """
-    return hashlib.sha256(email.encode()).hexdigest()[:8]
+    return hashlib.sha256(email.encode()).hexdigest()[:16]
 
 
 async def get_current_admin_user(
@@ -104,11 +105,13 @@ async def check_admin_rate_limit(request: Request):
     ip_hash = hashlib.sha256(client_ip.encode()).hexdigest()[:16]
 
     # Check rate limit: 10 admin requests per minute per IP
+    # Note: max_sequences_per_day is a legacy parameter name from the rate limiter
+    # but is being used here as a daily request limit (not sequence limit)
     allowed, _ = rate_limiter.check_rate_limit(
         api_key_hash=f"admin:{ip_hash}",
         max_requests_per_minute=10,
-        max_sequences_per_day=1000,  # Legacy parameter name
-        num_sequences=1,  # Increment by 1
+        max_sequences_per_day=1000,  # Used as daily request limit (legacy parameter name)
+        num_sequences=1,  # Increment by 1 request
     )
 
     if not allowed:
@@ -133,7 +136,7 @@ async def check_admin_rate_limit(request: Request):
 async def get_audit_logs(
     start_time: str = Query(..., description="Start of query window (ISO 8601)"),
     end_time: str = Query(..., description="End of query window (ISO 8601)"),
-    api_key: Optional[str] = Query(None, description="Filter by specific API key ID"),
+    api_key_id: Optional[str] = Query(None, description="Filter by specific API key ID"),
     status: Optional[str] = Query(None, description="Filter by status (success/error)"),
     limit: int = Query(100, ge=1, le=1000, description="Results per page (max 1000)"),
     next_token: Optional[str] = Query(None, description="Pagination token"),
@@ -145,7 +148,7 @@ async def get_audit_logs(
     **Query Parameters:**
     - `start_time`: ISO 8601 timestamp (required)
     - `end_time`: ISO 8601 timestamp (required)
-    - `api_key`: Filter by specific API key ID (optional)
+    - `api_key_id`: Filter by specific API key ID (optional)
     - `status`: Filter by 'success' or 'error' (optional)
     - `limit`: Results per page, default 100, max 1000
     - `next_token`: For pagination (optional)
@@ -164,14 +167,26 @@ async def get_audit_logs(
     - Must include valid JWT access token in Authorization header
     - Format: `Authorization: Bearer <access_token>`
     """
-    # Parse timestamps
+    # Parse timestamps - handle various ISO 8601 formats
     try:
-        start_dt = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
-        end_dt = datetime.fromisoformat(end_time.replace("Z", "+00:00"))
-    except ValueError as e:
+        # Handle 'Z' suffix for UTC
+        start_time_normalized = start_time.replace("Z", "+00:00")
+        end_time_normalized = end_time.replace("Z", "+00:00")
+
+        # Parse timestamps - fromisoformat requires timezone-aware strings in Python 3.11+
+        start_dt = datetime.fromisoformat(start_time_normalized)
+        end_dt = datetime.fromisoformat(end_time_normalized)
+
+        # Ensure timestamps are timezone-aware (convert naive to UTC if needed)
+        if start_dt.tzinfo is None:
+            start_dt = start_dt.replace(tzinfo=timezone.utc)
+        if end_dt.tzinfo is None:
+            end_dt = end_dt.replace(tzinfo=timezone.utc)
+
+    except (ValueError, AttributeError) as e:
         raise HTTPException(
             status_code=http_status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid timestamp format. Use ISO 8601 format: {str(e)}",
+            detail=f"Invalid timestamp format. Use ISO 8601 format (e.g., '2024-01-01T00:00:00Z' or '2024-01-01T00:00:00+00:00'): {str(e)}",
         ) from e
 
     # Validate time range
@@ -196,28 +211,19 @@ async def get_audit_logs(
             user_email=current_user,
             start_time=start_dt,
             end_time=end_dt,
-            api_key_id=api_key,
+            api_key_id=api_key_id,
             status=status,
             limit=limit,
             next_token=next_token,
         )
 
-        # Log the audit log access (meta-logging)
-        audit_log_service.log_request(
-            api_key=None,
-            api_key_id="admin",
-            user_email=current_user,
-            sequence_length=0,
-            processing_time_ms=0,
-            status="success",
-            error_code=None,
-            ip_address=None,
-        )
-
+        # Log admin access for security auditing (not in audit log table to avoid pollution)
         logger.info(
-            "Admin %s queried audit logs: %d results",
+            "Admin %s queried audit logs: %d results (time range: %s to %s)",
             _anonymize_email(current_user),
             len(logs),
+            start_time,
+            end_time,
         )
 
         return AuditLogsResponse(
@@ -226,9 +232,15 @@ async def get_audit_logs(
             next_token=new_next_token,
         )
 
-    except Exception as e:
-        logger.error("Failed to query audit logs: %s", str(e))
+    except ClientError as e:
+        logger.error("Failed to query audit logs due to DynamoDB error: %s", str(e))
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to query audit logs",
+        ) from e
+    except ValueError as e:
+        # Re-raise validation errors as 400 Bad Request
+        raise HTTPException(
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
         ) from e

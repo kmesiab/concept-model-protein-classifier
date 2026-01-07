@@ -157,9 +157,16 @@ async def audit_logging_middleware(request: Request, call_next):
                 error_code=error_code,
                 ip_address=client_ip,
             )
-        except (ClientError, NoCredentialsError, Exception) as e:
-            # Non-critical error, just log it
-            logger.warning(f"Failed to log audit entry: {e}")
+        except (ClientError, NoCredentialsError) as aws_error:
+            # Critical for observability: AWS client/credential errors mean audit logging may be disabled
+            logger.error(
+                "Failed to log audit entry due to AWS client or credential error; "
+                "audit logging may be partially or fully disabled: %s",
+                aws_error,
+            )
+        except Exception as error:
+            # Non-critical unexpected error in audit logging; do not fail the request
+            logger.warning("Failed to log audit entry due to unexpected error: %s", error)
 
     return response
 
