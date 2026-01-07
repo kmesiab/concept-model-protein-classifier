@@ -60,7 +60,7 @@ class RateLimiter:
 
         Returns:
             Tuple of (is_allowed, error_message, error_details)
-            error_details contains: error_code, retry_after, reset_time
+            error_details dict contains: error_code, retry_after, limit, current
         """
         # Check per-minute rate limit
         minute_key = f"rate_limit:minute:{api_key_hash}:{self._get_current_minute()}"
@@ -101,9 +101,10 @@ class RateLimiter:
         error_code: str = "ERR_RATE_LIMIT_EXCEEDED",
     ) -> Tuple[bool, Optional[str], Optional[dict]]:
         """
-        Atomically check and increment a counter with limit.
+        Atomically check and increment a counter with limit using Lua script.
 
-        Uses Redis INCR for atomic operations to prevent race conditions.
+        Uses Redis Lua script with GET, INCRBY, EXPIRE, and TTL commands
+        for atomic operations to prevent race conditions.
 
         Args:
             key: Redis key
@@ -115,7 +116,7 @@ class RateLimiter:
 
         Returns:
             Tuple of (is_allowed, error_message, error_details)
-            error_details: dict with error_code, retry_after, reset_time
+            error_details dict contains: error_code, retry_after, limit, current
         """
         if self.redis_available:
             try:
@@ -156,7 +157,13 @@ class RateLimiter:
 
                 if not allowed:
                     # Calculate retry_after based on TTL
-                    retry_after = max(remaining_ttl, 1)
+                    # TTL returns -1 for keys with no expiry, -2 for non-existent keys
+                    # In both cases, default to 1 second retry
+                    if remaining_ttl < 0:
+                        retry_after = 1
+                    else:
+                        retry_after = max(remaining_ttl, 1)
+
                     error_details = {
                         "error_code": error_code,
                         "retry_after": retry_after,

@@ -327,7 +327,7 @@ class TestInMemoryFallback:
         )
         assert allowed is False
 
-        # Wait for TTL to expire
+        # Wait for TTL to expire (1.1s for 1s TTL to ensure expiration)
         time.sleep(1.1)
 
         # Should succeed after TTL expires
