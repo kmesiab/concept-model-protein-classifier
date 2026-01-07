@@ -138,3 +138,177 @@ class ErrorResponse(BaseModel):
                 "code": "VALIDATION_ERROR",
             }
         }
+
+
+# Authentication models
+class LoginRequest(BaseModel):
+    """Request model for magic link login."""
+
+    email: str = Field(..., description="User email address")
+
+    class Config:
+        json_schema_extra = {"example": {"email": "user@example.com"}}
+
+
+class LoginResponse(BaseModel):
+    """Response model for magic link login."""
+
+    message: str = Field(..., description="Status message")
+    email: str = Field(..., description="Email address where magic link was sent")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "message": "Magic link sent to your email",
+                "email": "user@example.com",
+            }
+        }
+
+
+class VerifyTokenRequest(BaseModel):
+    """Request model for magic link token verification."""
+
+    token: str = Field(..., description="Magic link token")
+
+    class Config:
+        json_schema_extra = {"example": {"token": "abc123def456..."}}
+
+
+class TokenResponse(BaseModel):
+    """Response model for authentication token."""
+
+    access_token: str = Field(..., description="JWT access token")
+    refresh_token: str = Field(..., description="Refresh token")
+    token_type: str = Field(..., description="Token type (bearer)")
+    expires_in: int = Field(..., description="Token expiration time in seconds")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                "refresh_token": "abc123def456...",
+                "token_type": "bearer",
+                "expires_in": 3600,
+            }
+        }
+
+
+class RefreshTokenResponse(BaseModel):
+    """Response model for refresh token endpoint."""
+
+    access_token: str = Field(..., description="New JWT access token")
+    token_type: str = Field(..., description="Token type (bearer)")
+    expires_in: int = Field(..., description="Token expiration time in seconds")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                "token_type": "bearer",
+                "expires_in": 3600,
+            }
+        }
+
+
+# API Key Management models
+class RegisterAPIKeyRequest(BaseModel):
+    """Request model for API key registration."""
+
+    label: Optional[str] = Field(None, description="Optional label for the API key")
+
+    class Config:
+        json_schema_extra = {"example": {"label": "Production API"}}
+
+
+class APIKeyResponse(BaseModel):
+    """Response model for API key creation/rotation."""
+
+    api_key: str = Field(..., description="API key (only shown once)")
+    api_key_id: str = Field(..., description="API key ID")
+    created_at: str = Field(..., description="Creation timestamp (ISO 8601)")
+    label: str = Field(..., description="API key label")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "api_key": "pk_live_abc123def456...",  # trivy:ignore:stripe-publishable-token
+                "api_key_id": "key_xyz789",
+                "created_at": "2024-01-01T10:00:00Z",
+                "label": "Production API",
+            }
+        }
+
+
+class APIKeyInfo(BaseModel):
+    """API key information (without the actual key value)."""
+
+    api_key_id: str = Field(..., description="API key ID")
+    label: str = Field(..., description="API key label")
+    status: str = Field(..., description="API key status (active/revoked)")
+    created_at: str = Field(..., description="Creation timestamp (ISO 8601)")
+    last_used_at: Optional[str] = Field(None, description="Last used timestamp (ISO 8601)")
+    tier: str = Field(..., description="Subscription tier (free/premium)")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "api_key_id": "key_xyz789",
+                "label": "Production API",
+                "status": "active",
+                "created_at": "2024-01-01T10:00:00Z",
+                "last_used_at": "2024-01-05T14:30:00Z",
+                "tier": "free",
+            }
+        }
+
+
+class ListAPIKeysResponse(BaseModel):
+    """Response model for listing API keys."""
+
+    keys: List[APIKeyInfo] = Field(..., description="List of API keys")
+    total: int = Field(..., description="Total number of keys")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "keys": [
+                    {
+                        "api_key_id": "key_xyz789",
+                        "label": "Production API",
+                        "status": "active",
+                        "created_at": "2024-01-01T10:00:00Z",
+                        "last_used_at": "2024-01-05T14:30:00Z",
+                        "tier": "free",
+                    }
+                ],
+                "total": 1,
+            }
+        }
+
+
+class RotateAPIKeyRequest(BaseModel):
+    """Request model for API key rotation."""
+
+    api_key_id: str = Field(..., description="ID of the API key to rotate")
+
+    class Config:
+        json_schema_extra = {"example": {"api_key_id": "key_xyz789"}}
+
+
+class RevokeAPIKeyRequest(BaseModel):
+    """Request model for API key revocation."""
+
+    api_key_id: str = Field(..., description="ID of the API key to revoke")
+
+    class Config:
+        json_schema_extra = {"example": {"api_key_id": "key_xyz789"}}
+
+
+class RevokeAPIKeyResponse(BaseModel):
+    """Response model for API key revocation."""
+
+    revoked: bool = Field(..., description="Whether the key was revoked successfully")
+    api_key_id: str = Field(..., description="ID of the revoked API key")
+
+    class Config:
+        json_schema_extra = {"example": {"revoked": True, "api_key_id": "key_xyz789"}}

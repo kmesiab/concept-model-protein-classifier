@@ -25,9 +25,31 @@ A commercial REST API service that predicts whether protein sequences are **stru
 
 ## ⚡ Quick Start
 
-### 1. Get Your Free API Key
+### 1. Register and Get Your API Key
 
-Visit our [Getting Started Guide](https://kmesiab.github.io/concept-model-protein-classifier/getting-started.html) to request your API key (1000 sequences/day free).
+Our self-service portal uses passwordless magic link authentication:
+
+```bash
+# Step 1: Request magic link
+curl -X POST https://api.proteinclassifier.com/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "your.email@example.com"}'
+
+# Step 2: Verify token from email
+curl -X POST https://api.proteinclassifier.com/api/v1/auth/verify \
+  -H "Content-Type: application/json" \
+  -d '{"token": "YOUR_TOKEN_FROM_EMAIL"}'
+# Returns: access_token, refresh_token
+
+# Step 3: Create API key
+curl -X POST https://api.proteinclassifier.com/api/v1/api-keys/register \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"label": "My API Key"}'
+# Returns: api_key (save this - only shown once!)
+```
+
+**[📖 Full Authentication Guide →](https://kmesiab.github.io/concept-model-protein-classifier/getting-started.html)**
 
 ### 2. Make Your First Request
 
@@ -60,6 +82,50 @@ curl -X POST https://api.proteinclassifier.com/api/v1/classify \
   ]
 }
 ```
+
+---
+
+## 🔑 API Key Management
+
+### Self-Service Portal
+
+Manage your API keys through our secure, self-service portal:
+
+#### Authentication Flow
+
+1. **Magic Link Login** - Passwordless email-based authentication
+2. **JWT Tokens** - Access tokens (1h) and refresh tokens (30d)
+3. **API Key Operations** - Create, list, rotate, and revoke keys
+
+#### Quick Reference
+
+```bash
+# List your API keys
+curl -X GET https://api.proteinclassifier.com/api/v1/api-keys/list \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+
+# Rotate an API key (creates new, revokes old)
+curl -X POST https://api.proteinclassifier.com/api/v1/api-keys/rotate \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"api_key_id": "key_xyz789"}'
+
+# Revoke an API key
+curl -X POST https://api.proteinclassifier.com/api/v1/api-keys/revoke \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"api_key_id": "key_xyz789"}'
+```
+
+#### Security Best Practices
+
+- 🔒 Never commit API keys to version control
+- 🔄 Rotate keys every 90 days (recommended)
+- 🎯 Use different keys for dev/staging/production
+- 👁️ Monitor key usage via the list endpoint
+- ⚡ Revoke immediately if compromised
+
+**[📖 Complete API Key Management Guide →](api/examples/api_key_management.md)**
 
 ---
 
@@ -219,6 +285,8 @@ terraform apply
 ```
 
 **[View AWS Deployment Guide →](docs/AWS_DEPLOYMENT.md)**
+
+**[View Environment Configuration Guide →](docs/DEPLOYMENT.md)**
 
 ---
 

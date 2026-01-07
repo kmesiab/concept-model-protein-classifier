@@ -27,7 +27,7 @@ Fast and accurate REST API for protein disorder prediction. Built on a validated
 ### Prerequisites
 
 - Docker and Docker Compose (recommended)
-- OR Python 3.11+ and Redis
+- OR Python 3.12+ and Redis
 
 ### Using Docker (Recommended)
 
@@ -61,13 +61,67 @@ curl http://localhost:8000/health
 
 ## 📖 API Usage
 
-### Get a Demo API Key
+### Authentication
+
+The API uses two types of authentication:
+
+1. **API Key Authentication** (for classification endpoints)
+   - Used with `X-API-Key` header
+   - Long-lived credentials for protein classification
+   - Created via the API key management portal
+
+2. **JWT Bearer Token Authentication** (for API key management)
+   - Used with `Authorization: Bearer` header
+   - Short-lived access tokens (1 hour)
+   - Obtained through magic link authentication
+
+### Get Your First API Key
+
+#### Step 1: Request Magic Link
 
 A demo API key is automatically created when the server starts. Check the server logs for:
 
 ```text
 Demo API Key created: pk_...
 ```
+
+For production use, register using magic link authentication:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "your.email@example.com"}'
+```
+
+#### Step 2: Verify Token and Get Access Token
+
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/verify \
+  -H "Content-Type: application/json" \
+  -d '{"token": "YOUR_TOKEN_FROM_EMAIL"}'
+```
+
+Response includes `access_token` and `refresh_token`.
+
+#### Step 3: Create API Key
+
+```bash
+curl -X POST http://localhost:8000/api/v1/api-keys/register \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"label": "Production API"}'
+```
+
+**⚠️ Save the API key immediately - it's only shown once!**
+
+### Manage Your API Keys
+
+See **[api/examples/api_key_management.md](examples/api_key_management.md)** for comprehensive examples of:
+
+- Listing all your API keys
+- Rotating API keys (recommended every 90 days)
+- Revoking compromised keys
+- Refreshing access tokens
 
 ### Endpoint: `/api/v1/classify` (JSON)
 
@@ -403,11 +457,26 @@ See the main repository README and `docs/VALIDATION.md` for detailed validation 
 
 ## 🔒 Security
 
-- API key authentication required for all endpoints
-- Rate limiting to prevent abuse
-- Input validation on all endpoints
-- Non-root user in Docker container
-- CORS configuration for production deployment
+### API Key Security
+
+- **API key authentication** required for all classification endpoints
+- **JWT Bearer token authentication** required for API key management
+- **Magic link authentication** - Passwordless, email-based login (15-minute TTL, single-use)
+- **Access tokens** - 1-hour lifetime for API key management operations
+- **Refresh tokens** - 30-day lifetime to obtain new access tokens
+- **Rate limiting** to prevent abuse
+- **Input validation** on all endpoints
+- **Non-root user** in Docker container
+- **CORS configuration** for production deployment
+
+### Best Practices
+
+1. **Never commit API keys to version control** - Use environment variables
+2. **Rotate API keys regularly** - Every 90 days recommended
+3. **Use different keys for different environments** - Dev, staging, production
+4. **Monitor key usage** - Check the `/api/v1/api-keys/list` endpoint
+5. **Revoke immediately if compromised** - Use `/api/v1/api-keys/revoke`
+6. **Store refresh tokens securely** - They're valid for 30 days
 
 ## 🤝 Contributing
 

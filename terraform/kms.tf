@@ -240,3 +240,243 @@ resource "aws_kms_key_policy" "ecr" {
     ]
   })
 }
+
+# KMS Key for API Keys Encryption
+resource "aws_kms_key" "api_keys" {
+  description             = "KMS key for API keys encryption"
+  deletion_window_in_days = 10
+  enable_key_rotation     = true
+
+  lifecycle {
+    prevent_destroy = true
+  }
+
+  tags = {
+    Name        = "protein-classifier-api-keys-kms"
+    Description = "KMS key for encrypting API keys in DynamoDB"
+  }
+}
+
+# KMS Key Alias for API keys encryption
+resource "aws_kms_alias" "api_keys" {
+  name          = "alias/protein-classifier-api-keys-kms"
+  target_key_id = aws_kms_key.api_keys.key_id
+}
+
+# KMS Key Policy for API keys encryption
+resource "aws_kms_key_policy" "api_keys" {
+  key_id = aws_kms_key.api_keys.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "Enable IAM User Permissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${var.aws_account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "Allow DynamoDB to use the key for API keys table"
+        Effect = "Allow"
+        Principal = {
+          Service = "dynamodb.amazonaws.com"
+        }
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:CreateGrant",
+          "kms:DescribeKey"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "kms:ViaService" = "dynamodb.${var.aws_region}.amazonaws.com"
+          }
+          StringLike = {
+            "kms:EncryptionContext:aws:dynamodb:table-name" = "protein-classifier-api-keys"
+          }
+        }
+      },
+      {
+        Sid    = "AllowECSTaskRoleToUseApiKeysKMS"
+        Effect = "Allow"
+        Principal = {
+          AWS = aws_iam_role.ecs_task_role.arn
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey",
+          "kms:GenerateDataKey"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# KMS Key for Sessions and Magic Links Encryption
+resource "aws_kms_key" "sessions" {
+  description             = "KMS key for user sessions and magic link tokens encryption"
+  deletion_window_in_days = 10
+  enable_key_rotation     = true
+
+  lifecycle {
+    prevent_destroy = true
+  }
+
+  tags = {
+    Name        = "protein-classifier-sessions-kms"
+    Description = "KMS key for encrypting user sessions and magic link tokens in DynamoDB"
+  }
+}
+
+# KMS Key Alias for sessions encryption
+resource "aws_kms_alias" "sessions" {
+  name          = "alias/protein-classifier-sessions-kms"
+  target_key_id = aws_kms_key.sessions.key_id
+}
+
+# KMS Key Policy for sessions encryption
+resource "aws_kms_key_policy" "sessions" {
+  key_id = aws_kms_key.sessions.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "Enable IAM User Permissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${var.aws_account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "Allow DynamoDB to use the key for sessions tables"
+        Effect = "Allow"
+        Principal = {
+          Service = "dynamodb.amazonaws.com"
+        }
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:CreateGrant",
+          "kms:DescribeKey"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "kms:ViaService" = "dynamodb.${var.aws_region}.amazonaws.com"
+          }
+          StringLike = {
+            "kms:EncryptionContext:aws:dynamodb:table-name" = [
+              "protein-classifier-user-sessions",
+              "protein-classifier-magic-link-tokens"
+            ]
+          }
+        }
+      },
+      {
+        Sid    = "AllowECSTaskRoleToUseSessionsKMS"
+        Effect = "Allow"
+        Principal = {
+          AWS = aws_iam_role.ecs_task_role.arn
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey",
+          "kms:GenerateDataKey"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# KMS Key for Audit Logs Encryption
+resource "aws_kms_key" "audit" {
+  description             = "KMS key for audit logs encryption"
+  deletion_window_in_days = 10
+  enable_key_rotation     = true
+
+  lifecycle {
+    prevent_destroy = true
+  }
+
+  tags = {
+    Name        = "protein-classifier-audit-kms"
+    Description = "KMS key for encrypting audit logs in DynamoDB"
+  }
+}
+
+# KMS Key Alias for audit logs encryption
+resource "aws_kms_alias" "audit" {
+  name          = "alias/protein-classifier-audit-kms"
+  target_key_id = aws_kms_key.audit.key_id
+}
+
+# KMS Key Policy for audit logs encryption
+resource "aws_kms_key_policy" "audit" {
+  key_id = aws_kms_key.audit.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "Enable IAM User Permissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${var.aws_account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "Allow DynamoDB to use the key for audit logs table"
+        Effect = "Allow"
+        Principal = {
+          Service = "dynamodb.amazonaws.com"
+        }
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:CreateGrant",
+          "kms:DescribeKey"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "kms:ViaService" = "dynamodb.${var.aws_region}.amazonaws.com"
+          }
+          StringLike = {
+            "kms:EncryptionContext:aws:dynamodb:table-name" = "protein-classifier-audit-logs"
+          }
+        }
+      },
+      {
+        Sid    = "AllowECSTaskRoleToUseAuditKMS"
+        Effect = "Allow"
+        Principal = {
+          AWS = aws_iam_role.ecs_task_role.arn
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey",
+          "kms:GenerateDataKey"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}

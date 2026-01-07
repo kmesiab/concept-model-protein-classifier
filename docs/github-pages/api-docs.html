@@ -39,10 +39,56 @@
       <!-- Authentication -->
       <section id="authentication">
         <h2>Authentication</h2>
-        <p>All API requests require authentication using an API key passed in the <code>X-API-Key</code> header.</p>
+        
+        <h3>API Key Authentication (Classification Endpoints)</h3>
+        <p>All classification requests require authentication using an API key passed in the <code>X-API-Key</code> header.</p>
         <pre><code>X-API-Key: your_api_key_here</code></pre>
+        
+        <h3>Magic Link Authentication (API Key Management)</h3>
+        <p>To manage your API keys (create, rotate, revoke), use our passwordless magic link authentication system:</p>
+        
+        <div class="card">
+          <h4>Authentication Flow</h4>
+          <ol>
+            <li><strong>Request Magic Link:</strong> Submit your email to receive a one-time login link (15-minute TTL)</li>
+            <li><strong>Verify Token:</strong> Click the magic link or exchange the token for JWT access/refresh tokens</li>
+            <li><strong>Access API Keys:</strong> Use the access token (1-hour lifetime) to manage your API keys</li>
+            <li><strong>Refresh Token:</strong> Use the refresh token (30-day lifetime) to obtain new access tokens without re-authentication</li>
+          </ol>
+          
+          <h4>Step 1: Request Magic Link</h4>
+          <pre><code>curl -X POST https://api.proteinclassifier.com/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "your.email@example.com"}'</code></pre>
+          
+          <p><strong>Response:</strong></p>
+          <pre><code>{
+  "message": "Magic link sent to your email",
+  "email": "your.email@example.com"
+}</code></pre>
+          
+          <h4>Step 2: Verify Magic Link Token</h4>
+          <p>After receiving the email, extract the token from the magic link and verify it:</p>
+          <pre><code>curl -X POST https://api.proteinclassifier.com/api/v1/auth/verify \
+  -H "Content-Type: application/json" \
+  -d '{"token": "YOUR_TOKEN_FROM_EMAIL"}'</code></pre>
+          
+          <p><strong>Response:</strong></p>
+          <pre><code>{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "abc123def456...",
+  "token_type": "bearer",
+  "expires_in": 3600
+}</code></pre>
+          
+          <h4>Step 3: Refresh Access Token (Optional)</h4>
+          <p>When your access token expires, use the refresh token to get a new one:</p>
+          <pre><code>curl -X POST https://api.proteinclassifier.com/api/v1/auth/refresh \
+  -H "X-Refresh-Token: YOUR_REFRESH_TOKEN"</code></pre>
+        </div>
+        
         <div class="alert alert-info">
-          <strong>Get Your API Key:</strong> Sign up at <a href="getting-started.html">Getting Started</a> to receive your free API key.
+          <strong>Get Started:</strong> Visit <a href="getting-started.html">Getting Started</a> to create your account and get your first API key using magic link authentication.
         </div>
       </section>
 
@@ -71,9 +117,144 @@
         </div>
       </section>
 
+      <!-- API Key Management -->
+      <section id="api-key-management">
+        <h2>API Key Management</h2>
+        <p>Self-service API key management endpoints. All endpoints require JWT Bearer token authentication obtained through the magic link authentication flow.</p>
+        
+        <div class="card">
+          <h3 id="register-api-key">POST /api/v1/api-keys/register</h3>
+          <p>Create a new API key for accessing classification endpoints.</p>
+          
+          <h4>Request Headers</h4>
+          <pre><code>Authorization: Bearer YOUR_ACCESS_TOKEN
+Content-Type: application/json</code></pre>
+          
+          <h4>Request Body</h4>
+          <pre><code>{
+  "label": "Production API"  // Optional: Descriptive label for your key
+}</code></pre>
+          
+          <h4>Example Request</h4>
+          <pre><code>curl -X POST https://api.proteinclassifier.com/api/v1/api-keys/register \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"label": "Production API"}'</code></pre>
+          
+          <h4>Response</h4>
+          <pre><code>{
+  "api_key": "pk_live_abc123def456...",  <!-- trivy:ignore:stripe-publishable-token -->
+  "api_key_id": "key_xyz789",
+  "created_at": "2024-01-01T10:00:00Z",
+  "label": "Production API"
+}</code></pre>
+          
+          <div class="alert alert-info">
+            <strong>⚠️ IMPORTANT:</strong> Save the <code>api_key</code> value immediately! It is only shown once and cannot be retrieved later.
+          </div>
+        </div>
+        
+        <div class="card">
+          <h3 id="list-api-keys">GET /api/v1/api-keys/list</h3>
+          <p>List all your API keys (active and revoked).</p>
+          
+          <h4>Request Headers</h4>
+          <pre><code>Authorization: Bearer YOUR_ACCESS_TOKEN</code></pre>
+          
+          <h4>Example Request</h4>
+          <pre><code>curl -X GET https://api.proteinclassifier.com/api/v1/api-keys/list \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"</code></pre>
+          
+          <h4>Response</h4>
+          <pre><code>{
+  "keys": [
+    {
+      "api_key_id": "key_xyz789",
+      "label": "Production API",
+      "status": "active",
+      "created_at": "2024-01-01T10:00:00Z",
+      "last_used_at": "2024-01-05T14:30:00Z",
+      "tier": "free"
+    },
+    {
+      "api_key_id": "key_old456",
+      "label": "Development API",
+      "status": "revoked",
+      "created_at": "2023-12-01T10:00:00Z",
+      "last_used_at": "2024-01-01T09:00:00Z",
+      "tier": "free"
+    }
+  ],
+  "total": 2
+}</code></pre>
+        </div>
+        
+        <div class="card">
+          <h3 id="rotate-api-key">POST /api/v1/api-keys/rotate</h3>
+          <p>Replace an existing API key with a new one. The old key is immediately revoked.</p>
+          
+          <h4>Request Headers</h4>
+          <pre><code>Authorization: Bearer YOUR_ACCESS_TOKEN
+Content-Type: application/json</code></pre>
+          
+          <h4>Request Body</h4>
+          <pre><code>{
+  "api_key_id": "key_xyz789"
+}</code></pre>
+          
+          <h4>Example Request</h4>
+          <pre><code>curl -X POST https://api.proteinclassifier.com/api/v1/api-keys/rotate \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"api_key_id": "key_xyz789"}'</code></pre>
+          
+          <h4>Response</h4>
+          <pre><code>{
+  "api_key": "pk_live_new789xyz...",
+  "api_key_id": "key_new123",
+  "created_at": "2024-01-05T15:00:00Z",
+  "label": "Production API (Rotated)"
+}</code></pre>
+          
+          <div class="alert alert-info">
+            <strong>⚠️ IMPORTANT:</strong> The old key is immediately revoked. Update your applications with the new key immediately!
+          </div>
+        </div>
+        
+        <div class="card">
+          <h3 id="revoke-api-key">POST /api/v1/api-keys/revoke</h3>
+          <p>Permanently deactivate an API key.</p>
+          
+          <h4>Request Headers</h4>
+          <pre><code>Authorization: Bearer YOUR_ACCESS_TOKEN
+Content-Type: application/json</code></pre>
+          
+          <h4>Request Body</h4>
+          <pre><code>{
+  "api_key_id": "key_xyz789"
+}</code></pre>
+          
+          <h4>Example Request</h4>
+          <pre><code>curl -X POST https://api.proteinclassifier.com/api/v1/api-keys/revoke \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"api_key_id": "key_xyz789"}'</code></pre>
+          
+          <h4>Response</h4>
+          <pre><code>{
+  "revoked": true,
+  "api_key_id": "key_xyz789"
+}</code></pre>
+          
+          <div class="alert alert-info">
+            <strong>⚠️ WARNING:</strong> This action cannot be undone. The key will be permanently deactivated within 5 minutes system-wide.
+          </div>
+        </div>
+      </section>
+
       <!-- Endpoints -->
       <section id="endpoints">
-        <h2>Endpoints</h2>
+        <h2>Classification Endpoints</h2>
 
         <!-- Classify Endpoint -->
         <div class="card">
@@ -466,6 +647,21 @@ curl -X GET https://api.proteinclassifier.com/v1/stats \
                 <td>INVALID_API_KEY</td>
                 <td>401</td>
                 <td>API key is missing, invalid, or expired</td>
+              </tr>
+              <tr>
+                <td>INVALID_TOKEN</td>
+                <td>401</td>
+                <td>JWT access token is missing, invalid, or expired</td>
+              </tr>
+              <tr>
+                <td>INVALID_REFRESH_TOKEN</td>
+                <td>401</td>
+                <td>Refresh token is missing, invalid, or expired</td>
+              </tr>
+              <tr>
+                <td>INVALID_MAGIC_LINK</td>
+                <td>401</td>
+                <td>Magic link token is invalid, expired, or already used</td>
               </tr>
               <tr>
                 <td>RATE_LIMIT_EXCEEDED</td>

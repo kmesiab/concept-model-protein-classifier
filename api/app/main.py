@@ -12,11 +12,15 @@ import time
 from datetime import datetime, timezone
 from typing import Optional
 
+from botocore.exceptions import ClientError, NoCredentialsError
 from fastapi import FastAPI, Header, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from .api_key_routes import router as api_key_router
+from .api_key_service import get_api_key_service
 from .auth import api_key_manager
+from .auth_routes import router as auth_router
 from .classifier import classify_batch
 from .models import (
     ClassificationResult,
@@ -50,10 +54,17 @@ app = FastAPI(
     - **Fast**: Threshold-based classification, no ML inference overhead
     - **Batch Processing**: Process up to 50 sequences per request (free tier)
     - **Multiple Input Formats**: JSON or FASTA
+    - **Self-Service API Keys**: Register and manage your own API keys
+
+    ## Getting Started
+    1. Request a magic link login at `/api/v1/auth/login`
+    2. Click the link in your email to get access tokens
+    3. Register an API key at `/api/v1/api-keys/register`
+    4. Use your API key to classify sequences
 
     ## Authentication
-    API keys are optional. Requests without an API key are treated as anonymous
-    users with free tier rate limits.
+    - **API Key Management**: Requires JWT token from magic link authentication
+    - **Classification Endpoints**: Require API key in `X-API-Key` header
 
     ## Rate Limits (Free Tier)
     - 1,000 sequences per day
@@ -79,6 +90,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Include routers for authentication and API key management
+app.include_router(auth_router)
+app.include_router(api_key_router)
+
 
 @app.exception_handler(Exception)
 async def global_exception_handler(_request: Request, exc: Exception):
@@ -101,8 +116,7 @@ def verify_api_key(api_key: Optional[str]) -> dict:
     """
     Verify API key and return metadata.
 
-    Temporarily allows empty API keys with default free tier metadata.
-    All anonymous users share the same identifier and rate limits.
+    Tries DynamoDB-based service first, falls back to in-memory for development.
 
     Raises:
         HTTPException: If API key is invalid
@@ -119,7 +133,13 @@ def verify_api_key(api_key: Optional[str]) -> dict:
             "max_batch_size": 50,
         }
 
-    metadata = api_key_manager.validate_api_key(api_key)
+    # Try DynamoDB service first, fallback to in-memory for development/testing
+    try:
+        api_key_service = get_api_key_service()
+        metadata = api_key_service.validate_api_key(api_key)
+    except (ClientError, NoCredentialsError):
+        # Fallback to in-memory manager for development/testing
+        metadata = api_key_manager.validate_api_key(api_key)
 
     if not metadata:
         raise HTTPException(

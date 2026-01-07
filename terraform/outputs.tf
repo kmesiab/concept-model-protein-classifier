@@ -37,3 +37,14 @@ output "alb_target_group_arn" {
   description = "ARN of the ALB target group"
   value       = aws_lb_target_group.ecs.arn
 }
+
+output "jwt_secret_arn" {
+  description = "ARN of the JWT secret in AWS Secrets Manager"
+  value       = aws_secretsmanager_secret.jwt_secret_key.arn
+  sensitive   = true
+}
+
+output "jwt_secret_name" {
+  description = "Name of the JWT secret in AWS Secrets Manager"
+  value       = aws_secretsmanager_secret.jwt_secret_key.name
+}
