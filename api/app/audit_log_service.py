@@ -14,7 +14,8 @@ import os
 import secrets
 import time
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Tuple
+from decimal import Decimal
+from typing import Any, Dict, List, Optional, Tuple
 
 import boto3
 from boto3.dynamodb.conditions import Key
@@ -109,7 +110,7 @@ class AuditLogService:
                     "user_email": user_email or "anonymous@example.com",
                     "masked_api_key": masked_key,
                     "sequence_length": sequence_length,
-                    "processing_time_ms": float(processing_time_ms),
+                    "processing_time_ms": Decimal(str(processing_time_ms)),
                     "status": status,
                     "error_code": error_code,
                     "ip_address": masked_ip,
@@ -194,12 +195,24 @@ class AuditLogService:
             # Convert to response format
             log_entries = []
             for item in filtered_items:
+                # Get values with proper type handling for DynamoDB
+                sequence_length_val: Any = item.get("sequence_length", 0)
+                processing_time_val: Any = item.get("processing_time_ms", 0.0)
+
                 log_entries.append(
                     {
                         "timestamp": item.get("timestamp_iso", ""),
                         "api_key": item.get("masked_api_key", "****"),
-                        "sequence_length": int(item.get("sequence_length", 0)),
-                        "processing_time_ms": float(item.get("processing_time_ms", 0.0)),
+                        "sequence_length": (
+                            int(sequence_length_val)
+                            if isinstance(sequence_length_val, (int, Decimal))
+                            else 0
+                        ),
+                        "processing_time_ms": (
+                            float(processing_time_val)
+                            if isinstance(processing_time_val, (float, int, Decimal))
+                            else 0.0
+                        ),
                         "status": item.get("status", "unknown"),
                         "error_code": item.get("error_code"),
                         "ip_address": item.get("ip_address", "unknown"),

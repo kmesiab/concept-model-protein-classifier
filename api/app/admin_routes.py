@@ -107,7 +107,7 @@ async def check_admin_rate_limit(request: Request):
     # Check rate limit: 10 admin requests per minute per IP
     # Note: max_sequences_per_day is a legacy parameter name from the rate limiter
     # but is being used here as a daily request limit (not sequence limit)
-    allowed, error_msg, error_details = rate_limiter.check_rate_limit(
+    allowed, error_msg, _ = rate_limiter.check_rate_limit(
         api_key_hash=f"admin:{ip_hash}",
         max_requests_per_minute=10,
         max_sequences_per_day=1000,  # Used as daily request limit (legacy parameter name)
@@ -186,7 +186,10 @@ async def get_audit_logs(
     except (ValueError, AttributeError) as e:
         raise HTTPException(
             status_code=http_status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid timestamp format. Use ISO 8601 format (e.g., '2024-01-01T00:00:00Z' or '2024-01-01T00:00:00+00:00'): {str(e)}",
+            detail=(
+                f"Invalid timestamp format. Use ISO 8601 format "
+                f"(e.g., '2024-01-01T00:00:00Z' or '2024-01-01T00:00:00+00:00'): {str(e)}"
+            ),
         ) from e
 
     # Validate time range
