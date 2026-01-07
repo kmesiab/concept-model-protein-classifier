@@ -140,6 +140,29 @@ class ErrorResponse(BaseModel):
         }
 
 
+class RateLimitErrorResponse(BaseModel):
+    """Rate limit error response model."""
+
+    error: str = Field(..., description="Error message")
+    detail: str = Field(..., description="Detailed error information")
+    code: str = Field(..., description="Error code (ERR_RATE_LIMIT_EXCEEDED or ERR_QUOTA_EXCEEDED)")
+    retry_after: int = Field(..., description="Seconds to wait before retrying", ge=0)
+    limit: int = Field(..., description="Rate limit value", ge=0)
+    current: int = Field(..., description="Current usage", ge=0)
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "error": "Rate limit exceeded",
+                "detail": "Rate limit exceeded: 100 requests per minute",
+                "code": "ERR_RATE_LIMIT_EXCEEDED",
+                "retry_after": 45,
+                "limit": 100,
+                "current": 100,
+            }
+        }
+
+
 # Authentication models
 class LoginRequest(BaseModel):
     """Request model for magic link login."""

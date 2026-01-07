@@ -45,7 +45,7 @@ async def check_auth_rate_limit(request: Request):
 
     # Check rate limit: 10 authentication requests per minute per IP
     # Note: Reusing existing rate_limiter infrastructure with adapted parameters
-    allowed, _ = rate_limiter.check_rate_limit(
+    allowed, _, _ = rate_limiter.check_rate_limit(
         api_key_hash=f"auth:{ip_hash}",  # Identifier (IP-based, not API key)
         max_requests_per_minute=10,  # Per-minute limit
         max_sequences_per_day=1000,  # Daily limit (parameter name is legacy)

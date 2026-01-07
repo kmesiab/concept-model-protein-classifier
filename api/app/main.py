@@ -29,6 +29,7 @@ from .models import (
     ErrorResponse,
     FeatureValues,
     HealthResponse,
+    RateLimitErrorResponse,
 )
 from .rate_limiter import get_rate_limiter
 from .utils import parse_fasta, validate_amino_acid_sequence
@@ -156,7 +157,7 @@ def check_rate_limit(api_key: Optional[str], metadata: dict, num_sequences: int)
     Check rate limits for the request.
 
     Raises:
-        HTTPException: If rate limit is exceeded
+        HTTPException: If rate limit is exceeded with proper error details
     """
     # Create rate limiting identifier
     # For authenticated users: hash of API key
@@ -170,12 +171,31 @@ def check_rate_limit(api_key: Optional[str], metadata: dict, num_sequences: int)
     limiter = get_rate_limiter()
 
     # Check limits
-    allowed, error_msg = limiter.check_rate_limit(
+    allowed, error_msg, error_details = limiter.check_rate_limit(
         rate_limit_key, metadata["rate_limit_per_minute"], metadata["daily_limit"], num_sequences
     )
 
     if not allowed:
-        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
+        # Construct proper rate limit error response
+        # error_details should always be present when allowed is False
+        if error_details is None:
+            # Fallback in case of unexpected None (defensive check)
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail={"error": "Rate limit exceeded", "detail": error_msg or "Unknown error"},
+            )
+
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail={
+                "error": "Rate limit exceeded",
+                "detail": error_msg,
+                "code": error_details["error_code"],
+                "retry_after": error_details["retry_after"],
+                "limit": error_details["limit"],
+                "current": error_details["current"],
+            },
+        )
 
 
 @app.get("/", include_in_schema=False)
@@ -210,7 +230,7 @@ async def health_check():
         200: {"description": "Successful classification"},
         400: {"description": "Invalid request", "model": ErrorResponse},
         401: {"description": "Invalid API key", "model": ErrorResponse},
-        429: {"description": "Rate limit exceeded", "model": ErrorResponse},
+        429: {"description": "Rate limit exceeded", "model": RateLimitErrorResponse},
     },
 )
 async def classify_sequences(
@@ -314,7 +334,7 @@ async def classify_sequences(
         200: {"description": "Successful classification"},
         400: {"description": "Invalid FASTA format", "model": ErrorResponse},
         401: {"description": "Invalid API key", "model": ErrorResponse},
-        429: {"description": "Rate limit exceeded", "model": ErrorResponse},
+        429: {"description": "Rate limit exceeded", "model": RateLimitErrorResponse},
     },
 )
 async def classify_fasta(
