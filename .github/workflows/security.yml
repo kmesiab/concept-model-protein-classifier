@@ -86,7 +86,7 @@ jobs:
           scanners: 'vuln,secret,misconfig,license'
           format: 'sarif'
           output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
+          severity: 'CRITICAL,HIGH,MEDIUM'
           ignore-unfixed: true
           exit-code: '0'
         continue-on-error: true
@@ -146,6 +146,15 @@ jobs:
             TOTAL_SECRETS=$(jq -r '(.Results // []) | map(.Secrets // []) | flatten | length' "$REPORT")
             TOTAL_MISCONFIGS=$(jq -r '(.Results // []) | map(.Misconfigurations // []) | flatten | length' "$REPORT")
             TOTAL_LICENSES=$(jq -r '(.Results // []) | map(.Licenses // []) | flatten | length' "$REPORT")
+            
+            # Normalize TOTAL_* variables to ensure they are numeric before arithmetic
+            for var_name in TOTAL_VULNS TOTAL_SECRETS TOTAL_MISCONFIGS TOTAL_LICENSES; do
+              value=${!var_name:-0}
+              if ! [[ "$value" =~ ^[0-9]+$ ]]; then
+                value=0
+              fi
+              printf -v "$var_name" '%d' "$value"
+            done
             
             # Count vulnerabilities by severity
             CRITICAL_VULNS=$(jq -r '(.Results // []) | map(.Vulnerabilities // []) | flatten | map(select(.Severity=="CRITICAL")) | length' "$REPORT")
@@ -211,13 +220,13 @@ jobs:
                 echo "" >> $GITHUB_STEP_SUMMARY
                 echo "⚠️ **$TOTAL_SECRETS secret(s) detected in the repository!**" >> $GITHUB_STEP_SUMMARY
                 echo "" >> $GITHUB_STEP_SUMMARY
-                echo "| Rule ID | File | Match |" >> $GITHUB_STEP_SUMMARY
-                echo "|---------|------|-------|" >> $GITHUB_STEP_SUMMARY
+                echo "| Rule ID | File | Line | Severity |" >> $GITHUB_STEP_SUMMARY
+                echo "|---------|------|------|----------|" >> $GITHUB_STEP_SUMMARY
                 jq -r '(.Results // []) | map(select(.Secrets != null)) | 
                        .[] | .Target as $target | 
                        (.Secrets // []) | 
-                       .[] | "| \(.RuleID // "Unknown") | \($target) | \(.Match // "N/A") |"' \
-                       "$REPORT" >> $GITHUB_STEP_SUMMARY || echo "| Error parsing secrets | - | - |" >> $GITHUB_STEP_SUMMARY
+                       .[] | "| \(.RuleID // "Unknown") | \($target) | \(.StartLine // "N/A") | \(.Severity // "UNKNOWN") |"' \
+                       "$REPORT" >> $GITHUB_STEP_SUMMARY || echo "| Error parsing secrets | - | - | - |" >> $GITHUB_STEP_SUMMARY
                 echo "" >> $GITHUB_STEP_SUMMARY
               fi
               
