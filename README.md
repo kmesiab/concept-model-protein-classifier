@@ -129,6 +129,68 @@ curl -X POST https://api.proteinclassifier.com/api/v1/api-keys/revoke \
 
 ---
 
+## 👨‍💼 Admin Audit Logs
+
+### Query API Usage Logs
+
+Monitor and audit your API usage with the admin audit log endpoint. Perfect for compliance, troubleshooting, and analytics.
+
+**Endpoint:** `GET /admin/audit-logs`
+
+```bash
+curl -X GET "https://api.proteinclassifier.com/admin/audit-logs?start_time=2024-01-01T00:00:00Z&end_time=2024-01-02T00:00:00Z&status=success&limit=50" \
+  -H "Authorization: ******"
+```
+
+**Key Features:**
+
+- 📊 **Usage Monitoring** - Track API usage patterns and trends
+- 🔍 **Troubleshooting** - Identify and debug API errors
+- 📈 **Analytics** - Generate usage reports and insights
+- 🔒 **Privacy-First** - API keys masked, IPs anonymized, no sequence content exposed
+- ⏱️ **Real-Time** - Query up to 30 days of historical data
+- 🔄 **Pagination** - Handle large result sets efficiently
+
+**Query Parameters:**
+
+- `start_time` (required) - ISO 8601 start timestamp
+- `end_time` (required) - ISO 8601 end timestamp
+- `api_key` (optional) - Filter by API key ID
+- `status` (optional) - Filter by `success` or `error`
+- `limit` (optional) - Results per page (default: 100, max: 1000)
+- `next_token` (optional) - For pagination
+
+**Response Example:**
+
+```json
+{
+  "logs": [
+    {
+      "timestamp": "2024-01-01T10:00:00Z",
+      "api_key": "****1234",
+      "sequence_length": 0,
+      "processing_time_ms": 45.5,
+      "status": "success",
+      "error_code": null,
+      "ip_address": "192.168.1.0/24"
+    }
+  ],
+  "total": 1,
+  "next_token": null
+}
+```
+
+**Security & Privacy:**
+
+- ✅ API keys masked (last 4 chars visible)
+- ✅ IP addresses anonymized (CIDR /24)
+- ✅ No sequence content stored or returned
+- ✅ 30-day retention window
+- ✅ Access is logged for security auditing
+- ✅ Rate limited to 10 queries/minute
+
+---
+
 ## ✨ Key Features
 
 | Feature | Description |
@@ -140,6 +202,7 @@ curl -X POST https://api.proteinclassifier.com/api/v1/api-keys/revoke \
 | **🐳 Easy Integration** | RESTful API with OpenAPI/Swagger docs |
 | **🔒 Enterprise Ready** | Rate limiting, authentication, Docker containerized |
 | **💰 Free Tier** | 1,000 sequences/day at no cost |
+| **📊 Audit Logs** | Query usage logs for compliance and monitoring |
 
 ---
 

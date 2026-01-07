@@ -17,8 +17,10 @@ from fastapi import FastAPI, Header, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from .admin_routes import router as admin_router
 from .api_key_routes import router as api_key_router
 from .api_key_service import get_api_key_service
+from .audit_log_service import get_audit_log_service
 from .auth import api_key_manager
 from .auth_routes import router as auth_router
 from .classifier import classify_batch
@@ -91,9 +93,120 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers for authentication and API key management
+# Include routers for authentication, API key management, and admin
 app.include_router(auth_router)
 app.include_router(api_key_router)
+app.include_router(admin_router)
+
+
+@app.on_event("startup")
+async def startup_health_checks():
+    """
+    Perform startup health checks to verify critical services.
+
+    Verifies that the audit log service can connect to DynamoDB.
+    Logs warnings for non-critical failures to aid in troubleshooting.
+    """
+    logger.info("Running startup health checks...")
+
+    # Check audit log service connectivity
+    try:
+        audit_log_service = get_audit_log_service()
+        # Attempt a simple table describe operation to verify connectivity
+        # This doesn't write data but confirms we can access DynamoDB
+        if hasattr(audit_log_service, "table") and audit_log_service.table:
+            table_status = audit_log_service.table.table_status
+            logger.info(f"✓ Audit log service healthy - DynamoDB table status: {table_status}")
+        else:
+            logger.warning(
+                "✓ Audit log service initialized (table not accessible for health check)"
+            )
+    except (ClientError, NoCredentialsError) as aws_error:
+        logger.error(
+            "✗ Audit log service health check failed - AWS error: %s. "
+            "Audit logging may be disabled. Check AWS credentials and permissions.",
+            aws_error,
+        )
+    except Exception as error:
+        logger.warning(
+            "✗ Audit log service health check failed - unexpected error: %s. "
+            "Audit logging may not work correctly.",
+            error,
+        )
+
+    logger.info("Startup health checks completed")
+
+
+# Middleware to log API requests for audit purposes
+@app.middleware("http")
+async def audit_logging_middleware(request: Request, call_next):
+    """
+    Middleware to log API requests for audit and compliance.
+
+    Logs classification requests with metadata (no sequence content).
+    """
+    start_time = time.time()
+
+    # Process the request
+    response = await call_next(request)
+
+    # Only log classification endpoints
+    if request.url.path.startswith("/api/v1/classify"):
+        processing_time_ms = (time.time() - start_time) * 1000
+
+        # Extract API key from headers
+        api_key = request.headers.get("X-API-Key")
+
+        # Get client IP
+        client_ip = request.client.host if request.client else None
+
+        # Determine status
+        request_status = "success" if response.status_code < 400 else "error"
+        error_code = str(response.status_code) if response.status_code >= 400 else None
+
+        # Get API key metadata if available
+        api_key_id = None
+        user_email = None
+        if api_key:
+            try:
+                api_key_service = get_api_key_service()
+                metadata = api_key_service.validate_api_key(api_key)
+                if metadata:
+                    api_key_id = metadata.get("api_key_id")
+                    user_email = metadata.get("email")
+            except (ClientError, NoCredentialsError):
+                # Fallback to in-memory manager
+                metadata = api_key_manager.validate_api_key(api_key)
+                if metadata:
+                    user_email = metadata.get("email")
+
+        # Log the request
+        # TODO: Parse request body to get actual sequence_length for more useful audit logs
+        # Currently set to 0 for performance (avoids parsing request body in middleware)
+        try:
+            audit_log_service = get_audit_log_service()
+            audit_log_service.log_request(
+                api_key=api_key,
+                api_key_id=api_key_id,
+                user_email=user_email,
+                sequence_length=0,  # Limitation: Not parsed for performance reasons
+                processing_time_ms=processing_time_ms,
+                status=request_status,
+                error_code=error_code,
+                ip_address=client_ip,
+            )
+        except (ClientError, NoCredentialsError) as aws_error:
+            # Critical for observability: AWS client/credential errors mean audit logging may be disabled
+            logger.error(
+                "Failed to log audit entry due to AWS client or credential error; "
+                "audit logging may be partially or fully disabled: %s",
+                aws_error,
+            )
+        except Exception as error:
+            # Non-critical unexpected error in audit logging; do not fail the request
+            logger.warning("Failed to log audit entry due to unexpected error: %s", error)
+
+    return response
 
 
 @app.exception_handler(Exception)
