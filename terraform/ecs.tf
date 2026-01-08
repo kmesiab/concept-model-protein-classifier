@@ -86,6 +86,10 @@ resource "aws_ecs_task_definition" "api" {
           value = aws_dynamodb_table.audit_logs.name
         },
         {
+          name  = "DYNAMODB_USAGE_AUDIT_TABLE"
+          value = aws_dynamodb_table.audit_logs.name
+        },
+        {
           name  = "JWT_SECRET_NAME"
           value = aws_secretsmanager_secret.jwt_secret_key.name
         },

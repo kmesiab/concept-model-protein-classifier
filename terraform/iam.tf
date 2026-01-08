@@ -83,7 +83,8 @@ resource "aws_iam_role_policy" "ecs_task_policy" {
           "dynamodb:PutItem",
           "dynamodb:UpdateItem",
           "dynamodb:DeleteItem",
-          "dynamodb:Query"
+          "dynamodb:Query",
+          "dynamodb:DescribeTable"
         ]
         Resource = [
           aws_dynamodb_table.api_keys.arn,
@@ -129,4 +130,3 @@ resource "aws_iam_role_policy" "ecs_task_policy" {
     ]
   })
 }
-
