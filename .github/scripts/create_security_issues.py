@@ -210,7 +210,11 @@ def create_issue_body(
         Formatted issue body as markdown string
     """
     # Sanitize all fields to prevent injection and control character issues
-    cve_id = sanitize_text(vulnerability.get("CVE") or vulnerability.get("vulnerability_id", "N/A"))
+    cve_id = sanitize_text(
+        vulnerability.get("cve")
+        or vulnerability.get("CVE")
+        or vulnerability.get("vulnerability_id", "N/A")
+    )
     current_version = sanitize_text(vulnerability.get("analyzed_version", "unknown"))
     severity = sanitize_text(vulnerability.get("severity", "unknown"))
     package = sanitize_text(package)
@@ -386,7 +390,7 @@ def main() -> None:
             continue
 
         total_medium_plus += 1
-        cve_id = vuln.get("CVE") or vuln.get("vulnerability_id", "N/A")
+        cve_id = vuln.get("cve") or vuln.get("CVE") or vuln.get("vulnerability_id", "N/A")
         title = f"[Security] Upgrade {package} to fix {cve_id}"
 
         # Skip if issue already exists
