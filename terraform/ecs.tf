@@ -82,7 +82,7 @@ resource "aws_ecs_task_definition" "api" {
           value = aws_dynamodb_table.magic_link_tokens.name
         },
         {
-          name  = "DYNAMODB_AUDIT_LOGS_TABLE"
+          name  = "DYNAMODB_USAGE_AUDIT_TABLE"
           value = aws_dynamodb_table.audit_logs.name
         },
         {
