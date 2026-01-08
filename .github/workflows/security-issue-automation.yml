@@ -70,9 +70,9 @@ jobs:
           REQUIREMENTS_FILE: api/requirements.txt
         run: |
           # Use modern Safety CLI 3.x syntax with JSON output
-          # Explicitly scan the specified requirements file for accurate issue reporting
-          safety scan --output json --detailed-output --output-file vulns.json --target "$REQUIREMENTS_FILE" || true
-          
+          # Scan the directory containing the requirements file for accurate issue reporting
+          safety scan --output json --detailed-output "$(dirname "$REQUIREMENTS_FILE")" > vulns.json || true
+
           # Ensure vulns.json exists even if scan fails
           if [ -f vulns.json ]; then
             echo "✅ Vulnerability scan completed for $REQUIREMENTS_FILE"
