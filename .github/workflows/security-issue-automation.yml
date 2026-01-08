@@ -83,6 +83,7 @@ jobs:
       - name: Create issues for vulnerabilities
         env:
           GH_TOKEN: ${{ github.token }}
+          REQUIREMENTS_FILE: api/requirements.txt
         run: |
           # Run the security issue creation script
           python3 .github/scripts/create_security_issues.py
