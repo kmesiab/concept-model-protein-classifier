@@ -151,6 +151,8 @@ def get_existing_security_issues() -> Set[str]:
                 "list",
                 "--label",
                 "security",
+                "--label",
+                "automated",
                 "--json",
                 "title",
             ],
