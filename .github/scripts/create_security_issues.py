@@ -215,6 +215,7 @@ def create_issue_body(
     severity = sanitize_text(vulnerability.get("severity", "unknown"))
     package = sanitize_text(package)
     fix_version = sanitize_text(fix_version)
+    affected_file = sanitize_text(affected_file)
 
     # Advisory allows newlines but has larger max length and is sanitized
     advisory = sanitize_text(
