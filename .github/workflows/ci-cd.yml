@@ -254,7 +254,7 @@ jobs:
         with:
           images: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}
           tags: |
-            type=sha
+            type=sha,format=short,prefix=
 
       - name: Build and push Docker image
         if: steps.check-image.outputs.exists != 'true'
