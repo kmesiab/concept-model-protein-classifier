@@ -229,16 +229,35 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Compute image tag
+        id: image-tag
+        run: |
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Check if image tag exists in ECR
+        id: check-image
+        run: |
+          if aws ecr describe-images \
+            --repository-name ${{ env.ECR_REPOSITORY }} \
+            --image-ids imageTag=${{ steps.image-tag.outputs.short_sha }} \
+            --region ${{ env.AWS_REGION }} > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Image tag ${{ steps.image-tag.outputs.short_sha }} already exists in ECR; skipping build/push."
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Extract metadata for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}
           tags: |
-            type=sha,prefix={{branch}}-
-            type=sha
+            type=sha,format=short,prefix=
 
       - name: Build and push Docker image
+        if: steps.check-image.outputs.exists != 'true'
         uses: docker/build-push-action@v5
         with:
           context: ./api
@@ -251,4 +270,5 @@ jobs:
           platforms: linux/amd64,linux/arm64
 
       - name: Image digest
+        if: steps.check-image.outputs.exists != 'true'
         run: echo "Image pushed with digest ${{ steps.meta.outputs.digest }}"

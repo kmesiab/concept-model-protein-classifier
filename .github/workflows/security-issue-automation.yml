@@ -1,17 +1,4 @@
-name: Security Issue Automation
-
-# Automatically create GitHub issues for security vulnerabilities detected by
-# Safety CLI. This workflow scans dependencies for known vulnerabilities and
-# creates labeled GitHub issues with remediation details for medium+ severity
-# findings.
-#
-# Workflow triggers:
-# - Every 6 hours on a schedule
-# - When api/requirements.txt is modified
-# - Manual dispatch
-#
-# The workflow prevents duplicate issues by checking existing security issues
-# before creating new ones.
+name: Security Self-Healing
 
 on:
   schedule:
@@ -19,73 +6,21 @@ on:
   workflow_dispatch:  # Allow manual triggering
   push:
     paths:
-      - 'api/requirements.txt'  # Trigger only on API requirements changes
-
-# Limit concurrent workflow runs to prevent conflicts when creating issues
-concurrency:
-  group: security-issue-automation
-  cancel-in-progress: false
+      - 'api/requirements.txt'  # Trigger on requirements changes
 
 permissions:
-  issues: write
   contents: read
+  issues: write
+  security-events: write
 
 jobs:
-  scan-and-create-issues:
+  security-scan:
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - name: Run SafetyCLI Self-Healing Action
+        uses: kmesiab/safetycli-self-healing-action@main
         with:
-          python-version: '3.12'
-
-      - name: Validate required tools
-        run: |
-          # Verify gh CLI is available
-          if ! command -v gh &> /dev/null; then
-            echo "❌ Error: GitHub CLI (gh) is not installed"
-            exit 1
-          fi
-          echo "✅ GitHub CLI is available"
-          
-          # Verify Python is available
-          if ! command -v python3 &> /dev/null; then
-            echo "❌ Error: Python 3 is not installed"
-            exit 1
-          fi
-          echo "✅ Python 3 is available"
-
-      - name: Install Safety CLI
-        run: |
-          pip install --upgrade pip
-          pip install safety
-
-      - name: Scan for vulnerabilities
-        id: scan
-        continue-on-error: true
-        env:
-          REQUIREMENTS_FILE: api/requirements.txt
-        run: |
-          # Use modern Safety CLI 3.x syntax with JSON output
-          # Explicitly scan the specified requirements file for accurate issue reporting
-          safety scan --output json --detailed-output --output-file vulns.json --target "$REQUIREMENTS_FILE" || true
-          
-          # Ensure vulns.json exists even if scan fails
-          if [ -f vulns.json ]; then
-            echo "✅ Vulnerability scan completed for $REQUIREMENTS_FILE"
-            cat vulns.json
-          else
-            echo "⚠️  No scan results found, creating empty results file"
-            echo '{"vulnerabilities":[]}' > vulns.json
-          fi
-
-      - name: Create issues for vulnerabilities
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REQUIREMENTS_FILE: api/requirements.txt
-        run: |
-          # Run the security issue creation script
-          python3 .github/scripts/create_security_issues.py
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          project_path: './api'
+          severity_threshold: 'medium'
