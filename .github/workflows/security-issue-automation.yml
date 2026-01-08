@@ -66,14 +66,16 @@ jobs:
       - name: Scan for vulnerabilities
         id: scan
         continue-on-error: true
+        env:
+          REQUIREMENTS_FILE: api/requirements.txt
         run: |
           # Use modern Safety CLI 3.x syntax with JSON output
-          # Write JSON output directly to file for processing
-          safety scan --output json --detailed-output --output-file vulns.json || true
+          # Explicitly scan the specified requirements file for accurate issue reporting
+          safety scan --output json --detailed-output --output-file vulns.json --target "$REQUIREMENTS_FILE" || true
           
           # Ensure vulns.json exists even if scan fails
           if [ -f vulns.json ]; then
-            echo "✅ Vulnerability scan completed"
+            echo "✅ Vulnerability scan completed for $REQUIREMENTS_FILE"
             cat vulns.json
           else
             echo "⚠️  No scan results found, creating empty results file"
@@ -83,6 +85,7 @@ jobs:
       - name: Create issues for vulnerabilities
         env:
           GH_TOKEN: ${{ github.token }}
+          REQUIREMENTS_FILE: api/requirements.txt
         run: |
           # Run the security issue creation script
           python3 .github/scripts/create_security_issues.py

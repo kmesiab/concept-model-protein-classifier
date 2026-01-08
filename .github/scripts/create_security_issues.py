@@ -191,7 +191,12 @@ def determine_fix_version(vulnerability: Dict[str, Any]) -> str:
     return "latest"
 
 
-def create_issue_body(vulnerability: Dict[str, Any], fix_version: str, package: str) -> str:
+def create_issue_body(
+    vulnerability: Dict[str, Any],
+    fix_version: str,
+    package: str,
+    affected_file: str = "api/requirements.txt",
+) -> str:
     """
     Generate the issue body content for a vulnerability.
 
@@ -199,6 +204,7 @@ def create_issue_body(vulnerability: Dict[str, Any], fix_version: str, package: 
         vulnerability: Vulnerability data dictionary
         fix_version: Recommended version to fix the vulnerability
         package: Package name
+        affected_file: Path to the requirements file containing the vulnerable package
 
     Returns:
         Formatted issue body as markdown string
@@ -209,6 +215,7 @@ def create_issue_body(vulnerability: Dict[str, Any], fix_version: str, package: 
     severity = sanitize_text(vulnerability.get("severity", "unknown"))
     package = sanitize_text(package)
     fix_version = sanitize_text(fix_version)
+    affected_file = sanitize_text(affected_file)
 
     # Advisory allows newlines but has larger max length and is sanitized
     advisory = sanitize_text(
@@ -246,10 +253,10 @@ def create_issue_body(vulnerability: Dict[str, Any], fix_version: str, package: 
 ### 🔧 Remediation
 **Recommended action:** Upgrade to version `{fix_version}`
 
-**Affected file:** `api/requirements.txt`
+**Affected file:** `{affected_file}`
 
 ### 🤖 Action Required
-Please update `{package}` to version `{fix_version}` in `api/requirements.txt`:
+Please update `{package}` to version `{fix_version}` in `{affected_file}`:
 {action_line_1}
 {action_line_2}
 {action_line_3}
@@ -340,6 +347,10 @@ def main() -> None:
     scan_file = Path("vulns.json")
     data = read_vulnerability_data(scan_file)
 
+    # Determine the affected requirements file path
+    # Can be set via environment variable or defaults to api/requirements.txt
+    affected_file = os.environ.get("REQUIREMENTS_FILE", "api/requirements.txt")
+
     vulnerabilities: List[Dict[str, Any]] = data.get("vulnerabilities", [])
 
     if not vulnerabilities:
@@ -387,7 +398,7 @@ def main() -> None:
         fix_version = determine_fix_version(vuln)
 
         # Create issue body
-        body = create_issue_body(vuln, fix_version, package)
+        body = create_issue_body(vuln, fix_version, package, affected_file)
 
         # Create the issue
         labels = ["security", "automated", "dependency-upgrade"]
