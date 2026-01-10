@@ -10,6 +10,7 @@ on:
   schedule:
     # Run weekly security scans on Monday at 9 AM UTC
     - cron: '0 9 * * 1'
+      workflow_dispatch:
 
 permissions:
   contents: read
