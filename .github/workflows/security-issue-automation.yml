@@ -19,8 +19,11 @@ jobs:
     
     steps:
       - name: Run SafetyCLI Self-Healing Action
-        uses: kmesiab/safetycli-self-healing-action@main
+        uses: kmesiab/safetycli-self-healing-action@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           project_path: './api'
           severity_threshold: 'medium'
+          assign_to_copilot: 'true'
+          copilot_agent: 'copilot'
+          fallback_assignee: 'kmesiab'
