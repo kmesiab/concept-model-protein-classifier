@@ -10,7 +10,7 @@ on:
   schedule:
     # Run weekly security scans on Monday at 9 AM UTC
     - cron: '0 9 * * 1'
-      workflow_dispatch:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -19,16 +19,16 @@ permissions:
 jobs:
   security:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-      
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      
+
       - name: Cache pip packages
         uses: actions/cache@v4
         with:
@@ -37,48 +37,71 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-security-
             ${{ runner.os }}-pip-
-      
+
       - name: Install security tools
         run: |
           python -m pip install --upgrade pip
           pip install bandit pip-audit
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-      
+
       - name: Bandit security scan
         run: |
           echo "Running Bandit security scan..."
           mkdir -p reports
-          bandit -r . --configfile pyproject.toml -f json -o reports/bandit-report.json || true
+          bandit -r . --configfile pyproject.toml -f json -o reports/bandit-report.json
           bandit -r . --configfile pyproject.toml -f txt
+        continue-on-error: true
+
+      - name: Check Bandit report exists
+        if: always()
+        run: |
+          .github/scripts/check-file-exists.sh reports/bandit-report.json "Bandit JSON report"
         continue-on-error: false
-      
+
+      - name: Annotate Bandit findings
+        if: always()
+        run: |
+          python3 .github/scripts/annotate-bandit-findings.py reports/bandit-report.json HIGH
+        continue-on-error: true
+
       - name: Upload Bandit report
         if: always()
         uses: actions/upload-artifact@v6
         with:
           name: bandit-report
           path: reports/bandit-report.json
-      
+
       - name: Run Safety CLI to check for vulnerabilities
         uses: pyupio/safety-action@v1
         with:
           api-key: ${{ secrets.SAFETY_API_KEY }}
         continue-on-error: true
-      
+
       - name: Pip audit
         run: |
           echo "Running pip-audit for dependency vulnerabilities..."
-          pip-audit --desc --format json --output reports/pip-audit-report.json || true
-          pip-audit --desc || echo "⚠️ pip-audit found vulnerabilities"
+          pip-audit --desc --format json --output reports/pip-audit-report.json
         continue-on-error: true
-      
+
+      - name: Check pip-audit report exists
+        if: always()
+        run: |
+          .github/scripts/check-file-exists.sh reports/pip-audit-report.json "pip-audit JSON report"
+        continue-on-error: false
+
+      - name: Annotate pip-audit findings
+        if: always()
+        run: |
+          python3 .github/scripts/annotate-pip-audit-findings.py reports/pip-audit-report.json
+        continue-on-error: true
+
       - name: Upload pip-audit report
         if: always()
         uses: actions/upload-artifact@v6
         with:
           name: pip-audit-report
           path: reports/pip-audit-report.json
-      
+
       - name: Trivy filesystem scan
         uses: aquasecurity/trivy-action@0.33.1
         with:
@@ -91,7 +114,13 @@ jobs:
           ignore-unfixed: true
           exit-code: '0'
         continue-on-error: true
-      
+
+      - name: Check Trivy SARIF exists
+        if: always()
+        run: |
+          .github/scripts/check-file-exists.sh trivy-results.sarif "Trivy SARIF report"
+        continue-on-error: false
+
       - name: Upload Trivy scan results to GitHub Security
         if: always()
         uses: github/codeql-action/upload-sarif@v4
@@ -99,14 +128,14 @@ jobs:
           sarif_file: 'trivy-results.sarif'
           category: trivy-filesystem
         continue-on-error: true
-      
+
       - name: Upload Trivy SARIF artifact
         if: always()
         uses: actions/upload-artifact@v6
         with:
           name: trivy-results
           path: trivy-results.sarif
-      
+
       - name: Trivy filesystem scan (JSON output for parsing)
         uses: aquasecurity/trivy-action@0.33.1
         if: always()
@@ -120,7 +149,7 @@ jobs:
           ignore-unfixed: true
           exit-code: '0'
         continue-on-error: true
-      
+
       - name: Trivy filesystem scan (table output)
         uses: aquasecurity/trivy-action@0.33.1
         if: always()
@@ -133,13 +162,25 @@ jobs:
           ignore-unfixed: true
           exit-code: '0'
         continue-on-error: true
-      
+
+      - name: Check Trivy JSON exists
+        if: always()
+        run: |
+          .github/scripts/check-file-exists.sh trivy-results.json "Trivy JSON report"
+        continue-on-error: false
+
+      - name: Annotate Trivy findings
+        if: always()
+        run: |
+          python3 .github/scripts/annotate-trivy-findings.py trivy-results.json HIGH
+        continue-on-error: true
+
       - name: Parse Trivy results and display summary
         if: always()
         run: |
           echo "## 🔒 Trivy Security Scan Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           REPORT=trivy-results.json
           if [ -f "$REPORT" ]; then
             # Count total vulnerabilities by type
@@ -147,7 +188,7 @@ jobs:
             TOTAL_SECRETS=$(jq -r '(.Results // []) | map(.Secrets // []) | flatten | length' "$REPORT")
             TOTAL_MISCONFIGS=$(jq -r '(.Results // []) | map(.Misconfigurations // []) | flatten | length' "$REPORT")
             TOTAL_LICENSES=$(jq -r '(.Results // []) | map(.Licenses // []) | flatten | length' "$REPORT")
-            
+
             # Normalize TOTAL_* variables to ensure they are numeric before arithmetic
             for var_name in TOTAL_VULNS TOTAL_SECRETS TOTAL_MISCONFIGS TOTAL_LICENSES; do
               value=${!var_name:-0}
@@ -156,17 +197,17 @@ jobs:
               fi
               printf -v "$var_name" '%d' "$value"
             done
-            
+
             # Count vulnerabilities by severity
             CRITICAL_VULNS=$(jq -r '(.Results // []) | map(.Vulnerabilities // []) | flatten | map(select(.Severity=="CRITICAL")) | length' "$REPORT")
             HIGH_VULNS=$(jq -r '(.Results // []) | map(.Vulnerabilities // []) | flatten | map(select(.Severity=="HIGH")) | length' "$REPORT")
             MEDIUM_VULNS=$(jq -r '(.Results // []) | map(.Vulnerabilities // []) | flatten | map(select(.Severity=="MEDIUM")) | length' "$REPORT")
-            
+
             # Count misconfigurations by severity
             CRITICAL_MISCONFIGS=$(jq -r '(.Results // []) | map(.Misconfigurations // []) | flatten | map(select(.Severity=="CRITICAL")) | length' "$REPORT")
             HIGH_MISCONFIGS=$(jq -r '(.Results // []) | map(.Misconfigurations // []) | flatten | map(select(.Severity=="HIGH")) | length' "$REPORT")
             MEDIUM_MISCONFIGS=$(jq -r '(.Results // []) | map(.Misconfigurations // []) | flatten | map(select(.Severity=="MEDIUM")) | length' "$REPORT")
-            
+
             # Display summary table
             echo "### 📊 Finding Summary" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
@@ -177,44 +218,44 @@ jobs:
             echo "| Secrets | - | - | - | $TOTAL_SECRETS |" >> $GITHUB_STEP_SUMMARY
             echo "| Licenses | - | - | - | $TOTAL_LICENSES |" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            
+
             # Calculate total findings
             TOTAL=$((TOTAL_VULNS + TOTAL_SECRETS + TOTAL_MISCONFIGS + TOTAL_LICENSES))
-            
+
             if [ "$TOTAL" -gt 0 ]; then
               echo "### ⚠️ Detailed Findings" >> $GITHUB_STEP_SUMMARY
               echo "" >> $GITHUB_STEP_SUMMARY
-              
+
               # Display vulnerabilities table if any exist
               if [ "$TOTAL_VULNS" -gt 0 ]; then
                 echo "#### Vulnerabilities" >> $GITHUB_STEP_SUMMARY
                 echo "" >> $GITHUB_STEP_SUMMARY
                 echo "| Package | Vulnerability | Severity | Fixed Version |" >> $GITHUB_STEP_SUMMARY
                 echo "|---------|---------------|----------|---------------|" >> $GITHUB_STEP_SUMMARY
-                jq -r '(.Results // []) | map(.Vulnerabilities // []) | flatten | 
-                       map(select(.Severity=="CRITICAL" or .Severity=="HIGH" or .Severity=="MEDIUM")) | 
-                       sort_by(.Severity) | reverse | 
+                jq -r '(.Results // []) | map(.Vulnerabilities // []) | flatten |
+                       map(select(.Severity=="CRITICAL" or .Severity=="HIGH" or .Severity=="MEDIUM")) |
+                       sort_by(.Severity) | reverse |
                        .[] | "| \(.PkgName // "Unknown") | \(.VulnerabilityID // "N/A") | \(.Severity) | \(.FixedVersion // "No fix available") |"' \
                        "$REPORT" >> $GITHUB_STEP_SUMMARY || echo "| Error parsing vulnerabilities | - | - | - |" >> $GITHUB_STEP_SUMMARY
                 echo "" >> $GITHUB_STEP_SUMMARY
               fi
-              
+
               # Display misconfigurations table if any exist
               if [ "$TOTAL_MISCONFIGS" -gt 0 ]; then
                 echo "#### Misconfigurations" >> $GITHUB_STEP_SUMMARY
                 echo "" >> $GITHUB_STEP_SUMMARY
                 echo "| ID | Title | Severity | File |" >> $GITHUB_STEP_SUMMARY
                 echo "|----|-------|----------|------|" >> $GITHUB_STEP_SUMMARY
-                jq -r '(.Results // []) | map(select(.Misconfigurations != null)) | 
-                       .[] | .Target as $target | 
-                       (.Misconfigurations // []) | 
-                       map(select(.Severity=="CRITICAL" or .Severity=="HIGH" or .Severity=="MEDIUM")) | 
-                       sort_by(.Severity) | reverse | 
+                jq -r '(.Results // []) | map(select(.Misconfigurations != null)) |
+                       .[] | .Target as $target |
+                       (.Misconfigurations // []) |
+                       map(select(.Severity=="CRITICAL" or .Severity=="HIGH" or .Severity=="MEDIUM")) |
+                       sort_by(.Severity) | reverse |
                        .[] | "| \(.ID // "N/A") | \(.Title // "Unknown") | \(.Severity) | \($target) |"' \
                        "$REPORT" >> $GITHUB_STEP_SUMMARY || echo "| Error parsing misconfigurations | - | - | - |" >> $GITHUB_STEP_SUMMARY
                 echo "" >> $GITHUB_STEP_SUMMARY
               fi
-              
+
               # Display secrets if any exist
               if [ "$TOTAL_SECRETS" -gt 0 ]; then
                 echo "#### 🚨 Secrets Detected" >> $GITHUB_STEP_SUMMARY
@@ -223,14 +264,14 @@ jobs:
                 echo "" >> $GITHUB_STEP_SUMMARY
                 echo "| Rule ID | File | Line | Severity |" >> $GITHUB_STEP_SUMMARY
                 echo "|---------|------|------|----------|" >> $GITHUB_STEP_SUMMARY
-                jq -r '(.Results // []) | map(select(.Secrets != null)) | 
-                       .[] | .Target as $target | 
-                       (.Secrets // []) | 
+                jq -r '(.Results // []) | map(select(.Secrets != null)) |
+                       .[] | .Target as $target |
+                       (.Secrets // []) |
                        .[] | "| \(.RuleID // "Unknown") | \($target) | \(.StartLine // "N/A") | \(.Severity // "UNKNOWN") |"' \
                        "$REPORT" >> $GITHUB_STEP_SUMMARY || echo "| Error parsing secrets | - | - | - |" >> $GITHUB_STEP_SUMMARY
                 echo "" >> $GITHUB_STEP_SUMMARY
               fi
-              
+
               echo "---" >> $GITHUB_STEP_SUMMARY
               echo "**Status:** ⚠️ $TOTAL finding(s) detected" >> $GITHUB_STEP_SUMMARY
             else
@@ -238,13 +279,13 @@ jobs:
               echo "" >> $GITHUB_STEP_SUMMARY
               echo "All scans completed successfully with no findings." >> $GITHUB_STEP_SUMMARY
             fi
-            
+
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "📄 Full SARIF report uploaded to GitHub Security tab" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ Trivy report file not found at $REPORT" >> $GITHUB_STEP_SUMMARY
           fi
-      
+
       - name: Security scan summary
         if: always()
         run: |
