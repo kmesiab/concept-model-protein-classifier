@@ -1,0 +1,196 @@
+name: Terraform Destroy
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "destroy" to confirm infrastructure destruction'
+        required: true
+        type: string
+      remove_lifecycle_protections:
+        description: 'Remove lifecycle prevent_destroy protections (required for complete teardown)'
+        required: true
+        type: boolean
+        default: false
+
+# Prevent concurrent Terraform runs to avoid state lock conflicts
+concurrency:
+  group: terraform-apply
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  validate:
+    name: Pre-Destroy Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Verify Confirmation
+        run: |
+          if [ "${{ inputs.confirm }}" != "destroy" ]; then
+            echo "❌ Confirmation failed. You must type 'destroy' to proceed."
+            exit 1
+          fi
+          echo "✅ Confirmation received. Proceeding with destruction..."
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/github-actions-terraform
+          aws-region: ${{ vars.TF_STATE_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Terraform Init
+        env:
+          TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+          TF_STATE_KEY: ${{ vars.TF_STATE_KEY }}
+          TF_STATE_REGION: ${{ vars.TF_STATE_REGION }}
+          TF_STATE_DYNAMODB_TABLE: ${{ vars.TF_STATE_DYNAMODB_TABLE }}
+        run: |
+          terraform -chdir=terraform init \
+            -backend-config="bucket=${TF_STATE_BUCKET}" \
+            -backend-config="key=${TF_STATE_KEY}" \
+            -backend-config="region=${TF_STATE_REGION}" \
+            -backend-config="dynamodb_table=${TF_STATE_DYNAMODB_TABLE}"
+
+      - name: Terraform Validate
+        run: terraform -chdir=terraform validate
+      
+      - name: Display Protected Resources Warning
+        run: |
+          echo "### ⚠️ Protected Resources" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The following resources have \`prevent_destroy\` lifecycle protection:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **KMS Keys** (7 keys with 10-30 day deletion windows)" >> $GITHUB_STEP_SUMMARY
+          echo "- **DynamoDB State Lock Table** (required for Terraform operations)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Secrets Manager Secrets** (contain sensitive data)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ inputs.remove_lifecycle_protections }}" != "true" ]; then
+            echo "🛡️ **Lifecycle protections are ENABLED** - These resources will NOT be destroyed." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "To remove these protections and destroy ALL resources, re-run with \`remove_lifecycle_protections: true\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ **Lifecycle protections will be REMOVED** - All resources will be destroyed!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**WARNING**: KMS keys will enter a deletion waiting period (10-30 days)." >> $GITHUB_STEP_SUMMARY
+            echo "You cannot recreate keys with the same alias during this period." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  terraform-destroy:
+    name: Destroy Terraform Infrastructure
+    runs-on: ubuntu-latest
+    needs: validate
+    environment:
+      name: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Remove Lifecycle Protections
+        if: inputs.remove_lifecycle_protections == true
+        run: |
+          cd terraform
+          echo "🔓 Removing prevent_destroy lifecycle protections..."
+          
+          # Disable prevent_destroy in KMS keys lifecycle blocks
+          sed -i -E 's/^([[:space:]]*prevent_destroy[[:space:]]*=[[:space:]]*)true/\1false/' kms.tf
+          
+          # Disable prevent_destroy in DynamoDB table lifecycle blocks
+          sed -i -E 's/^([[:space:]]*prevent_destroy[[:space:]]*=[[:space:]]*)true/\1false/' dynamodb.tf
+          
+          # Disable prevent_destroy in Secrets lifecycle blocks (preserve other lifecycle blocks like ignore_changes)
+          sed -i -E 's/^([[:space:]]*prevent_destroy[[:space:]]*=[[:space:]]*)true/\1false/' secrets.tf
+          
+          # Verify that no prevent_destroy protections remain in any Terraform files
+          if grep -R --include='*.tf' -n 'prevent_destroy[[:space:]]*=[[:space:]]*true' .; then
+            echo "❌ Failed to remove all prevent_destroy lifecycle protections. Aborting destroy."
+            exit 1
+          fi
+          
+          echo "✅ Lifecycle protections removed"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/github-actions-terraform
+          aws-region: ${{ vars.TF_STATE_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Terraform Init
+        env:
+          TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+          TF_STATE_KEY: ${{ vars.TF_STATE_KEY }}
+          TF_STATE_REGION: ${{ vars.TF_STATE_REGION }}
+          TF_STATE_DYNAMODB_TABLE: ${{ vars.TF_STATE_DYNAMODB_TABLE }}
+        run: |
+          terraform -chdir=terraform init \
+            -backend-config="bucket=${TF_STATE_BUCKET}" \
+            -backend-config="key=${TF_STATE_KEY}" \
+            -backend-config="region=${TF_STATE_REGION}" \
+            -backend-config="dynamodb_table=${TF_STATE_DYNAMODB_TABLE}"
+
+      - name: Terraform Destroy
+        id: destroy
+        run: |
+          cd terraform
+          echo "🗑️ Destroying Terraform infrastructure..."
+          terraform destroy -auto-approve -no-color -var="aws_account_id=${{ vars.AWS_ACCOUNT_ID }}"
+          echo "✅ Terraform destroy completed successfully!"
+
+      - name: Output Destruction Summary
+        if: success()
+        run: |
+          echo "## 🗑️ Infrastructure Destruction Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ inputs.remove_lifecycle_protections }}" == "true" ]; then
+            echo "✅ **All managed resources destroyed** (including protected resources)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ **Unprotected resources destroyed**" >> $GITHUB_STEP_SUMMARY
+            echo "🛡️ **Protected resources preserved** (KMS keys, state lock table, secrets)" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Resources Outside Terraform Management:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "These resources remain unchanged and must be managed separately:" >> $GITHUB_STEP_SUMMARY
+          echo "- **GitHub OIDC Provider** - \`arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:oidc-provider/token.actions.githubusercontent.com\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **GitHub Actions IAM Role** - \`github-actions-terraform\` (data source only)" >> $GITHUB_STEP_SUMMARY
+          echo "- **S3 State Bucket** - \`protein-classifier-terraform-state\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Route 53 Hosted Zone** - \`proteinclassifier.com\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔄 Recreating Infrastructure:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ inputs.remove_lifecycle_protections }}" == "true" ]; then
+            echo "⚠️ **KMS Keys Deletion Period**: KMS keys are scheduled for deletion (10-30 days)." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**To recreate infrastructure immediately:**" >> $GITHUB_STEP_SUMMARY
+            echo "1. Wait for KMS key deletion period OR cancel scheduled deletion in AWS Console" >> $GITHUB_STEP_SUMMARY
+            echo "2. Update KMS key aliases in \`terraform/kms.tf\` to use different names" >> $GITHUB_STEP_SUMMARY
+            echo "3. Run Terraform Apply workflow" >> $GITHUB_STEP_SUMMARY
+            echo "4. Manual KMS permissions bootstrap may be required (see docs/KMS_BOOTSTRAP.md)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**To recreate infrastructure:**" >> $GITHUB_STEP_SUMMARY
+            echo "1. Run the Terraform Apply workflow" >> $GITHUB_STEP_SUMMARY
+            echo "2. Protected resources (KMS keys, state lock) are still available" >> $GITHUB_STEP_SUMMARY
+            echo "3. No bootstrap process needed" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📖 See [Terraform README](terraform/README.md) for detailed recreation instructions." >> $GITHUB_STEP_SUMMARY
