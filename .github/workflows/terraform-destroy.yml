@@ -7,6 +7,11 @@ on:
         description: 'Type "destroy" to confirm infrastructure destruction'
         required: true
         type: string
+      remove_lifecycle_protections:
+        description: 'Remove lifecycle prevent_destroy protections (required for complete teardown)'
+        required: true
+        type: boolean
+        default: false
 
 # Prevent concurrent Terraform runs to avoid state lock conflicts
 concurrency:
@@ -60,6 +65,27 @@ jobs:
 
       - name: Terraform Validate
         run: terraform -chdir=terraform validate
+      
+      - name: Display Protected Resources Warning
+        run: |
+          echo "### ⚠️ Protected Resources" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The following resources have \`prevent_destroy\` lifecycle protection:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **KMS Keys** (6 keys with 10-30 day deletion windows)" >> $GITHUB_STEP_SUMMARY
+          echo "- **DynamoDB State Lock Table** (required for Terraform operations)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Secrets Manager Secrets** (contain sensitive data)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ inputs.remove_lifecycle_protections }}" != "true" ]; then
+            echo "🛡️ **Lifecycle protections are ENABLED** - These resources will NOT be destroyed." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "To remove these protections and destroy ALL resources, re-run with \`remove_lifecycle_protections: true\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ **Lifecycle protections will be REMOVED** - All resources will be destroyed!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**WARNING**: KMS keys will enter a deletion waiting period (10-30 days)." >> $GITHUB_STEP_SUMMARY
+            echo "You cannot recreate keys with the same alias during this period." >> $GITHUB_STEP_SUMMARY
+          fi
 
   terraform-destroy:
     name: Destroy Terraform Infrastructure
@@ -71,6 +97,26 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+
+      - name: Remove Lifecycle Protections
+        if: inputs.remove_lifecycle_protections == true
+        run: |
+          cd terraform
+          echo "🔓 Removing prevent_destroy lifecycle protections..."
+          
+          # Remove prevent_destroy from KMS keys
+          sed -i '/lifecycle {/,/prevent_destroy = true/d' kms.tf
+          sed -i '/^[[:space:]]*}[[:space:]]*$/N;s/}\n$/}/' kms.tf
+          
+          # Remove prevent_destroy from DynamoDB table
+          sed -i '/lifecycle {/,/prevent_destroy = true/d' dynamodb.tf
+          sed -i '/^[[:space:]]*}[[:space:]]*$/N;s/}\n$/}/' dynamodb.tf
+          
+          # Remove prevent_destroy from Secrets
+          sed -i '/lifecycle {/,/prevent_destroy = true/d' secrets.tf
+          sed -i '/^[[:space:]]*}[[:space:]]*$/N;s/}\n$/}/' secrets.tf
+          
+          echo "✅ Lifecycle protections removed"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v5
@@ -109,11 +155,39 @@ jobs:
         run: |
           echo "## 🗑️ Infrastructure Destruction Successful!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "All managed infrastructure resources have been destroyed." >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ inputs.remove_lifecycle_protections }}" == "true" ]; then
+            echo "✅ **All managed resources destroyed** (including protected resources)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ **Unprotected resources destroyed**" >> $GITHUB_STEP_SUMMARY
+            echo "🛡️ **Protected resources preserved** (KMS keys, state lock table, secrets)" >> $GITHUB_STEP_SUMMARY
+          fi
+          
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### ⚠️ Note:" >> $GITHUB_STEP_SUMMARY
-          echo "- The OIDC provider and GitHub Actions role remain unchanged" >> $GITHUB_STEP_SUMMARY
-          echo "- The S3 state bucket and DynamoDB lock table remain unchanged" >> $GITHUB_STEP_SUMMARY
-          echo "- The Route 53 hosted zone remains unchanged" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Resources Outside Terraform Management:" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🔄 You can recreate the infrastructure by running the Terraform Apply workflow." >> $GITHUB_STEP_SUMMARY
+          echo "These resources remain unchanged and must be managed separately:" >> $GITHUB_STEP_SUMMARY
+          echo "- **GitHub OIDC Provider** - \`arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:oidc-provider/token.actions.githubusercontent.com\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **GitHub Actions IAM Role** - \`github-actions-terraform\` (data source only)" >> $GITHUB_STEP_SUMMARY
+          echo "- **S3 State Bucket** - \`protein-classifier-terraform-state\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Route 53 Hosted Zone** - \`proteinclassifier.com\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔄 Recreating Infrastructure:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ inputs.remove_lifecycle_protections }}" == "true" ]; then
+            echo "⚠️ **KMS Keys Deletion Period**: KMS keys are scheduled for deletion (10-30 days)." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**To recreate infrastructure immediately:**" >> $GITHUB_STEP_SUMMARY
+            echo "1. Wait for KMS key deletion period OR cancel scheduled deletion in AWS Console" >> $GITHUB_STEP_SUMMARY
+            echo "2. Update KMS key aliases in \`terraform/kms.tf\` to use different names" >> $GITHUB_STEP_SUMMARY
+            echo "3. Run Terraform Apply workflow" >> $GITHUB_STEP_SUMMARY
+            echo "4. Manual KMS permissions bootstrap may be required (see docs/KMS_BOOTSTRAP.md)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**To recreate infrastructure:**" >> $GITHUB_STEP_SUMMARY
+            echo "1. Run the Terraform Apply workflow" >> $GITHUB_STEP_SUMMARY
+            echo "2. Protected resources (KMS keys, state lock) are still available" >> $GITHUB_STEP_SUMMARY
+            echo "3. No bootstrap process needed" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📖 See [Terraform README](terraform/README.md) for detailed recreation instructions." >> $GITHUB_STEP_SUMMARY
