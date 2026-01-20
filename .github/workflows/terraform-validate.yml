@@ -36,7 +36,7 @@ jobs:
           terraform_version: 1.6.0
 
       - name: Cache TFLint plugin directory
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.tflint.d/plugins
           key: ${{ runner.os }}-tflint-${{ hashFiles('.tflint.hcl') }}
@@ -240,7 +240,7 @@ jobs:
       - name: Post Cost Estimation Comment
         id: post_cost_comment
         if: github.event_name == 'pull_request' && always()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');
