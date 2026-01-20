@@ -46,7 +46,7 @@ These resources **are managed by Terraform** but have `prevent_destroy` lifecycl
    - **Required for Terraform state locking**
    - Encrypted with KMS
 
-2. **KMS Keys** (6 total):
+2. **KMS Keys** (7 total):
    - `protein-classifier-cloudwatch-logs-kms` - CloudWatch log encryption
    - `protein-classifier-dynamodb-kms` - DynamoDB encryption (including state lock)
    - `protein-classifier-ecr-kms` - ECR Docker image encryption
@@ -258,7 +258,7 @@ This requires addressing chicken-and-egg scenarios:
      name          = "alias/protein-classifier-dynamodb-kms-v2"
      target_key_id = aws_kms_key.dynamodb.key_id
    }
-   # Repeat for all 6 KMS aliases
+   # Repeat for all 7 KMS aliases
    ```
 
 2. Follow [DynamoDB bootstrap](../terraform/README.md#bootstrap-process-first-time-setup)
@@ -342,4 +342,4 @@ This requires addressing chicken-and-egg scenarios:
 - [Terraform README](../terraform/README.md) - Main Terraform documentation
 - [KMS Bootstrap Guide](KMS_BOOTSTRAP.md) - KMS permissions bootstrap
 - [Terraform Validation](TERRAFORM_VALIDATION.md) - CI/CD pipeline
-- [GitHub Actions Workflows](../.github/workflows/README.md) - Workflow documentation
+- [GitHub Actions Workflows](../.github/workflows/) - Workflow configuration files
