@@ -48,9 +48,21 @@ jobs:
         run: |
           echo "Running Bandit security scan..."
           mkdir -p reports
-          bandit -r . --configfile pyproject.toml -f json -o reports/bandit-report.json || true
+          bandit -r . --configfile pyproject.toml -f json -o reports/bandit-report.json
           bandit -r . --configfile pyproject.toml -f txt
         continue-on-error: false
+      
+      - name: Check Bandit report exists
+        if: always()
+        run: |
+          .github/scripts/check-file-exists.sh reports/bandit-report.json "Bandit JSON report"
+        continue-on-error: false
+      
+      - name: Annotate Bandit findings
+        if: always()
+        run: |
+          python3 .github/scripts/annotate-bandit-findings.py reports/bandit-report.json HIGH
+        continue-on-error: true
       
       - name: Upload Bandit report
         if: always()
@@ -72,6 +84,18 @@ jobs:
           pip-audit --desc || echo "⚠️ pip-audit found vulnerabilities"
         continue-on-error: true
       
+      - name: Check pip-audit report exists
+        if: always()
+        run: |
+          .github/scripts/check-file-exists.sh reports/pip-audit-report.json "pip-audit JSON report"
+        continue-on-error: false
+      
+      - name: Annotate pip-audit findings
+        if: always()
+        run: |
+          python3 .github/scripts/annotate-pip-audit-findings.py reports/pip-audit-report.json
+        continue-on-error: true
+      
       - name: Upload pip-audit report
         if: always()
         uses: actions/upload-artifact@v6
@@ -91,6 +115,12 @@ jobs:
           ignore-unfixed: true
           exit-code: '0'
         continue-on-error: true
+      
+      - name: Check Trivy SARIF exists
+        if: always()
+        run: |
+          .github/scripts/check-file-exists.sh trivy-results.sarif "Trivy SARIF report"
+        continue-on-error: false
       
       - name: Upload Trivy scan results to GitHub Security
         if: always()
@@ -132,6 +162,18 @@ jobs:
           severity: 'CRITICAL,HIGH,MEDIUM'
           ignore-unfixed: true
           exit-code: '0'
+        continue-on-error: true
+      
+      - name: Check Trivy JSON exists
+        if: always()
+        run: |
+          .github/scripts/check-file-exists.sh trivy-results.json "Trivy JSON report"
+        continue-on-error: false
+      
+      - name: Annotate Trivy findings
+        if: always()
+        run: |
+          python3 .github/scripts/annotate-trivy-findings.py trivy-results.json HIGH
         continue-on-error: true
       
       - name: Parse Trivy results and display summary
