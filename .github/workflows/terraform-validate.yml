@@ -36,7 +36,7 @@ jobs:
           terraform_version: 1.6.0
 
       - name: Cache TFLint plugin directory
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.tflint.d/plugins
           key: ${{ runner.os }}-tflint-${{ hashFiles('.tflint.hcl') }}
