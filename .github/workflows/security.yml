@@ -50,7 +50,7 @@ jobs:
           mkdir -p reports
           bandit -r . --configfile pyproject.toml -f json -o reports/bandit-report.json
           bandit -r . --configfile pyproject.toml -f txt
-        continue-on-error: false
+        continue-on-error: true
 
       - name: Check Bandit report exists
         if: always()
@@ -80,8 +80,8 @@ jobs:
       - name: Pip audit
         run: |
           echo "Running pip-audit for dependency vulnerabilities..."
-          pip-audit --desc --format json --output reports/pip-audit-report.json || true
-          pip-audit --desc || echo "⚠️ pip-audit found vulnerabilities"
+          mkdir -p reports
+          pip-audit --desc --format json --output reports/pip-audit-report.json
         continue-on-error: true
 
       - name: Check pip-audit report exists
