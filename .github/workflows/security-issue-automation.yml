@@ -19,7 +19,7 @@ jobs:
     
     steps:
       - name: Run SafetyCLI Self-Healing Action
-        uses: kmesiab/safetycli-self-healing-action@v1
+        uses: kmesiab/safetycli-self-healing-action@v2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           project_path: './api'
