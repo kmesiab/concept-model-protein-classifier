@@ -103,7 +103,7 @@ jobs:
           path: reports/pip-audit-report.json
 
       - name: Trivy filesystem scan
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.34.1
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -137,7 +137,7 @@ jobs:
           path: trivy-results.sarif
 
       - name: Trivy filesystem scan (JSON output for parsing)
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.34.1
         if: always()
         with:
           scan-type: 'fs'
@@ -151,7 +151,7 @@ jobs:
         continue-on-error: true
 
       - name: Trivy filesystem scan (table output)
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.34.1
         if: always()
         with:
           scan-type: 'fs'
