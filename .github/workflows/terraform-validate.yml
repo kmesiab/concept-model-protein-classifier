@@ -126,7 +126,7 @@ jobs:
 
       - name: Run Trivy security scan
         id: trivy
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.34.1
         with:
           scan-type: 'config'
           scan-ref: 'terraform'
@@ -137,7 +137,7 @@ jobs:
       - name: Run Trivy with SARIF output
         id: trivy_sarif
         if: always()  # Run even if previous step fails
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.34.1
         with:
           scan-type: 'config'
           scan-ref: 'terraform'
